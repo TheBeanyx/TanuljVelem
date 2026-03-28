@@ -34,10 +34,10 @@ const Landing = () => {
             <span className="text-xl font-extrabold text-primary-foreground">TanuljVelem</span>
           </Link>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" className="text-primary-foreground hover:bg-white/20 rounded-full" asChild>
+            <Button variant="ghost" className="text-primary-foreground hover:bg-white/20 rounded-full font-semibold" asChild>
               <Link to="/login">Bejelentkezés</Link>
             </Button>
-            <Button className="bg-card text-foreground hover:bg-card/90 rounded-full font-bold shadow-lg" asChild>
+            <Button variant="outline" className="border-2 border-primary-foreground text-primary-foreground bg-transparent hover:bg-white/10 rounded-full font-bold" asChild>
               <Link to="/register">Regisztráció</Link>
             </Button>
           </div>
