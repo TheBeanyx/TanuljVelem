@@ -65,7 +65,7 @@ const Landing = () => {
             transition={{ delay: 0.2 }}
             className="text-xl text-primary-foreground/80 max-w-2xl mx-auto mb-10"
           >
-            A te személyes tanulási segítőd – házi feladatok, játékok, tesztek és még sok más egy helyen!
+            A te személyes tanulási segítőd házi feladatokhoz és szórakoztató tanulós játékokhoz 1–12. osztályig
           </motion.p>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
