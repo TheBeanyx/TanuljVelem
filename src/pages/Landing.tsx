@@ -57,7 +57,7 @@ const Landing = () => {
             className="text-5xl md:text-7xl font-black text-primary-foreground leading-tight mb-6"
           >
             Tanulj Okosabban,{" "}
-            <span className="text-warning">Játssz Jobban!</span>
+            <span className="text-warning italic">Játssz Jobban!</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
