@@ -1,0 +1,77 @@
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
+const navItems = [
+  { to: "/dashboard", label: "Házi Feladat", icon: BookOpen },
+  { to: "/games", label: "Játékok", icon: Gamepad2 },
+  { to: "/tests", label: "Tesztek", icon: ClipboardList },
+  { to: "/classes", label: "Osztályok", icon: Users },
+  { to: "/friends", label: "Barátok", icon: UserPlus },
+];
+
+const DashboardNav = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem("user") || '{"username":"Demo","role":"student"}');
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+
+  return (
+    <header className="bg-card border-b border-border sticky top-0 z-50">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+        <Link to="/dashboard" className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-lg gradient-hero flex items-center justify-center">
+            <GraduationCap className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-extrabold hidden sm:block">TanuljVelem</span>
+        </Link>
+
+        <nav className="flex items-center gap-1">
+          {navItems.map((item) => {
+            const active = location.pathname === item.to;
+            return (
+              <Link key={item.to} to={item.to}>
+                <Button
+                  variant={active ? "default" : "ghost"}
+                  size="sm"
+                  className={`rounded-full gap-1.5 text-sm ${active ? "bg-primary text-primary-foreground" : ""}`}
+                >
+                  <item.icon className="w-4 h-4" />
+                  <span className="hidden md:inline">{item.label}</span>
+                </Button>
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <Link to="/notifications">
+            <Button variant="ghost" size="icon" className="relative rounded-full">
+              <Bell className="w-5 h-5" />
+              <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-[10px] bg-destructive text-destructive-foreground border-2 border-card">3</Badge>
+            </Button>
+          </Link>
+          <Link to="/profile">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <Settings className="w-5 h-5" />
+            </Button>
+          </Link>
+          <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border ml-2">
+            <span className="text-sm font-semibold">{user.displayName || user.username}</span>
+            {user.role === "teacher" && <Badge variant="secondary" className="text-xs">Tanár</Badge>}
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full text-muted-foreground hover:text-destructive">
+            <LogOut className="w-5 h-5" />
+          </Button>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+export default DashboardNav;
