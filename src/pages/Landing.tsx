@@ -78,7 +78,7 @@ const Landing = () => {
                 Kezdjük! <ArrowRight className="ml-2 w-5 h-5" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-2 border-primary-foreground text-primary-foreground hover:bg-white/10 rounded-full text-lg font-bold px-8" asChild>
+            <Button size="lg" variant="outline" className="border-2 border-primary-foreground text-primary-foreground bg-transparent hover:bg-white/10 rounded-full text-lg font-bold px-8" asChild>
               <Link to="/games">Játékok Böngészése</Link>
             </Button>
           </motion.div>
