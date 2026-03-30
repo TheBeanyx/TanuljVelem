@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
+import { supabase } from "@/integrations/supabase/client";
 
 const Profile = () => {
   const user = JSON.parse(localStorage.getItem("user") || '{"username":"Demo","displayName":"Demo","role":"student"}');
@@ -15,10 +16,33 @@ const Profile = () => {
   const [notifTests, setNotifTests] = useState(true);
   const [notifGames, setNotifGames] = useState(false);
   const [notifResults, setNotifResults] = useState(true);
+  const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = () => {
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data } = await supabase
+        .from("user_settings")
+        .select("setting_value")
+        .eq("setting_key", "auto_delete_expired_homework")
+        .single();
+      if (data) setAutoDeleteExpired(data.setting_value === "true");
+    };
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
     localStorage.setItem("user", JSON.stringify({ ...user, displayName }));
+
+    const { error } = await supabase
+      .from("user_settings")
+      .update({ setting_value: autoDeleteExpired ? "true" : "false" })
+      .eq("setting_key", "auto_delete_expired_homework");
+
+    if (error) {
+      toast({ title: "Hiba a mentésnél", variant: "destructive" });
+      return;
+    }
     toast({ title: "Beállítások mentve!" });
   };
 
@@ -52,6 +76,17 @@ const Profile = () => {
                 </select>
               </div>
             )}
+          </div>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-6 mb-6">
+          <h2 className="font-bold text-lg mb-4">Házi feladat beállítások</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Lejárt házi feladatok automatikus törlése</span>
+              <p className="text-xs text-muted-foreground mt-0.5">Ha bekapcsolod, a lejárt határidejű házi feladatok automatikusan eltűnnek.</p>
+            </div>
+            <Switch checked={autoDeleteExpired} onCheckedChange={setAutoDeleteExpired} />
           </div>
         </div>
 
