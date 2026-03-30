@@ -44,6 +44,124 @@ export type Database = {
         }
         Relationships: []
       }
+      test_questions: {
+        Row: {
+          correct_answer: string
+          explanation: string | null
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          sort_order: number
+          test_id: string
+        }
+        Insert: {
+          correct_answer: string
+          explanation?: string | null
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+          sort_order?: number
+          test_id: string
+        }
+        Update: {
+          correct_answer?: string
+          explanation?: string | null
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question?: string
+          sort_order?: number
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_questions_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_results: {
+        Row: {
+          answers: Json
+          completed_at: string
+          id: string
+          percentage: number
+          score: number
+          test_id: string
+          total_questions: number
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          id?: string
+          percentage: number
+          score: number
+          test_id: string
+          total_questions: number
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          id?: string
+          percentage?: number
+          score?: number
+          test_id?: string
+          total_questions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_results_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tests: {
+        Row: {
+          created_at: string
+          creator_name: string
+          grade: number
+          id: string
+          is_system: boolean
+          subject: string
+          time_limit_minutes: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          creator_name?: string
+          grade?: number
+          id?: string
+          is_system?: boolean
+          subject: string
+          time_limit_minutes?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          creator_name?: string
+          grade?: number
+          id?: string
+          is_system?: boolean
+          subject?: string
+          time_limit_minutes?: number
+          title?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           id: string
