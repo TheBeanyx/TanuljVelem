@@ -8,21 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNav from "@/components/DashboardNav";
 
-const demoFriends = [
-  { id: 1, name: "Kiss Péter", username: "kisspeti", role: "Diák", classmate: true },
-  { id: 2, name: "Nagy Anna", username: "nagya", role: "Diák", classmate: true },
-  { id: 3, name: "Tóth Gábor", username: "tothg", role: "Diák", classmate: false },
-];
+const demoFriends: { id: number; name: string; username: string; role: string; classmate: boolean }[] = [];
 
 const demoRequests = {
-  incoming: [{ id: 4, name: "Varga Lili", username: "vargal", role: "Diák" }],
-  outgoing: [{ id: 5, name: "Fehér Márk", username: "feherm", role: "Diák" }],
+  incoming: [] as { id: number; name: string; username: string; role: string }[],
+  outgoing: [] as { id: number; name: string; username: string; role: string }[],
 };
 
-const demoClassmates = [
-  { id: 6, name: "Molnár Zoli", className: "8.A Matematika", isFriend: false },
-  { id: 7, name: "Kiss Péter", className: "8.A Matematika", isFriend: true },
-];
+const demoClassmates: { id: number; name: string; className: string; isFriend: boolean }[] = [];
 
 const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");

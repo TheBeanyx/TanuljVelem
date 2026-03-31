@@ -11,23 +11,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
 
-const demoClasses = [
-  { id: 1, name: "8.A Matematika", members: 28, grade: 8, code: "MAT8A1", owner: true },
-  { id: 2, name: "7.B Magyar", members: 25, grade: 7, code: "MAG7B2", owner: false },
-];
+const demoClasses: { id: number; name: string; members: number; grade: number; code: string; owner: boolean }[] = [];
 
-const demoMembers = [
-  { id: 1, name: "Kovács Tanár", role: "teacher", isOwner: true },
-  { id: 2, name: "Kiss Péter", role: "student", isOwner: false },
-  { id: 3, name: "Nagy Anna", role: "student", isOwner: false },
-  { id: 4, name: "Szabó Bence", role: "student", isOwner: false },
-];
+const demoMembers: { id: number; name: string; role: string; isOwner: boolean }[] = [];
 
-const demoMessages = [
-  { id: 1, sender: "Kovács Tanár", text: "Holnap dolgozatot írunk!", time: "10:30", own: false },
-  { id: 2, sender: "Te", text: "Melyik anyagból?", time: "10:32", own: true },
-  { id: 3, sender: "Kovács Tanár", text: "Másodfokú egyenletek", time: "10:33", own: false },
-];
+const demoMessages: { id: number; sender: string; text: string; time: string; own: boolean }[] = [];
 
 const Classes = () => {
   const [selectedClass, setSelectedClass] = useState(demoClasses[0]);
