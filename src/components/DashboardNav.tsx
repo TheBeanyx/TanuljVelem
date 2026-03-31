@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -9,6 +9,8 @@ const navItems = [
   { to: "/tests", label: "Tesztek", icon: ClipboardList },
   { to: "/classes", label: "Osztályok", icon: Users },
   { to: "/friends", label: "Barátok", icon: UserPlus },
+  { to: "/messages", label: "Üzenetek", icon: MessageSquare },
+  { to: "/announcements", label: "Közlemények", icon: Megaphone },
 ];
 
 const DashboardNav = () => {
