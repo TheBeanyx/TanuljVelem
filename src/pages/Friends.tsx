@@ -8,21 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNav from "@/components/DashboardNav";
 
-const demoFriends = [
-  { id: 1, name: "Kiss Péter", username: "kisspeti", role: "Diák", classmate: true },
-  { id: 2, name: "Nagy Anna", username: "nagya", role: "Diák", classmate: true },
-  { id: 3, name: "Tóth Gábor", username: "tothg", role: "Diák", classmate: false },
-];
+const demoFriends: { id: number; name: string; username: string; role: string; classmate: boolean }[] = [];
 
 const demoRequests = {
-  incoming: [{ id: 4, name: "Varga Lili", username: "vargal", role: "Diák" }],
-  outgoing: [{ id: 5, name: "Fehér Márk", username: "feherm", role: "Diák" }],
+  incoming: [] as { id: number; name: string; username: string; role: string }[],
+  outgoing: [] as { id: number; name: string; username: string; role: string }[],
 };
 
-const demoClassmates = [
-  { id: 6, name: "Molnár Zoli", className: "8.A Matematika", isFriend: false },
-  { id: 7, name: "Kiss Péter", className: "8.A Matematika", isFriend: true },
-];
+const demoClassmates: { id: number; name: string; className: string; isFriend: boolean }[] = [];
 
 const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,87 +46,111 @@ const Friends = () => {
           </TabsList>
 
           <TabsContent value="friends">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {demoFriends.map((f, i) => (
-                <motion.div key={f.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  className="bg-card rounded-2xl border border-border p-4 hover:shadow-lg transition-shadow group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                      {f.name.charAt(0)}
+            {demoFriends.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Még nincsenek barátaid</p>
+                <p className="text-sm mt-1">Keress rá ismerőseidre a kereső mezővel!</p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {demoFriends.map((f, i) => (
+                  <motion.div key={f.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                    className="bg-card rounded-2xl border border-border p-4 hover:shadow-lg transition-shadow group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                        {f.name.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-bold">{f.name}</p>
+                        <p className="text-xs text-muted-foreground">@{f.username} · {f.role}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <p className="font-bold">{f.name}</p>
-                      <p className="text-xs text-muted-foreground">@{f.username} · {f.role}</p>
+                    <div className="flex items-center justify-between mt-3">
+                      {f.classmate && <Badge variant="outline" className="text-xs bg-primary/5">Osztálytárs</Badge>}
+                      <div className="flex gap-1 ml-auto">
+                        <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full w-8 h-8"><MessageSquare className="w-4 h-4" /></Button></Link>
+                        <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-4 h-4" /></Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center justify-between mt-3">
-                    {f.classmate && <Badge variant="outline" className="text-xs bg-primary/5">Osztálytárs</Badge>}
-                    <div className="flex gap-1 ml-auto">
-                      <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full w-8 h-8"><MessageSquare className="w-4 h-4" /></Button></Link>
-                      <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-4 h-4" /></Button>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="requests">
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-bold mb-3">Beérkezett kérések</h3>
-                {demoRequests.incoming.map((r) => (
-                  <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success font-bold">{r.name.charAt(0)}</div>
-                      <div>
-                        <p className="font-semibold">{r.name}</p>
-                        <p className="text-xs text-muted-foreground">@{r.username}</p>
+            {demoRequests.incoming.length === 0 && demoRequests.outgoing.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
+                <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Nincs függő kérés</p>
+                <p className="text-sm mt-1">Jelenleg nincsenek beérkezett vagy elküldött barátkéréseid.</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-bold mb-3">Beérkezett kérések</h3>
+                  {demoRequests.incoming.map((r) => (
+                    <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success font-bold">{r.name.charAt(0)}</div>
+                        <div>
+                          <p className="font-semibold">{r.name}</p>
+                          <p className="text-xs text-muted-foreground">@{r.username}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" className="rounded-full bg-success hover:bg-success/90 text-success-foreground gap-1"><Check className="w-3 h-3" /> Elfogad</Button>
+                        <Button size="sm" variant="ghost" className="rounded-full text-destructive"><X className="w-4 h-4" /></Button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" className="rounded-full bg-success hover:bg-success/90 text-success-foreground gap-1"><Check className="w-3 h-3" /> Elfogad</Button>
-                      <Button size="sm" variant="ghost" className="rounded-full text-destructive"><X className="w-4 h-4" /></Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div>
-                <h3 className="font-bold mb-3">Elküldött kérések</h3>
-                {demoRequests.outgoing.map((r) => (
-                  <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning font-bold">{r.name.charAt(0)}</div>
-                      <div>
-                        <p className="font-semibold">{r.name}</p>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Várakozik...</p>
+                  ))}
+                </div>
+                <div>
+                  <h3 className="font-bold mb-3">Elküldött kérések</h3>
+                  {demoRequests.outgoing.map((r) => (
+                    <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning font-bold">{r.name.charAt(0)}</div>
+                        <div>
+                          <p className="font-semibold">{r.name}</p>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Várakozik...</p>
+                        </div>
                       </div>
+                      <Button size="sm" variant="outline" className="rounded-full">Visszavon</Button>
                     </div>
-                    <Button size="sm" variant="outline" className="rounded-full">Visszavon</Button>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </TabsContent>
 
           <TabsContent value="classmates">
-            <div className="space-y-3">
-              {demoClassmates.map((c) => (
-                <div key={c.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{c.name.charAt(0)}</div>
-                    <div>
-                      <p className="font-semibold">{c.name}</p>
-                      <p className="text-xs text-muted-foreground">{c.className}</p>
+            {demoClassmates.length === 0 ? (
+              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Nincs osztálytárs</p>
+                <p className="text-sm mt-1">Csatlakozz egy osztályhoz, hogy itt lásd az osztálytársaidat!</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {demoClassmates.map((c) => (
+                  <div key={c.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{c.name.charAt(0)}</div>
+                      <div>
+                        <p className="font-semibold">{c.name}</p>
+                        <p className="text-xs text-muted-foreground">{c.className}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button></Link>
+                      {c.isFriend ? <Badge className="bg-success/10 text-success">Barát</Badge> : <Button size="sm" className="rounded-full gap-1 bg-primary"><UserPlus className="w-3 h-3" /> Hozzáadás</Button>}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button></Link>
-                    {c.isFriend ? <Badge className="bg-success/10 text-success">Barát</Badge> : <Button size="sm" className="rounded-full gap-1 bg-primary"><UserPlus className="w-3 h-3" /> Hozzáadás</Button>}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>

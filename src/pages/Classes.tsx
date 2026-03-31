@@ -11,26 +11,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
 
-const demoClasses = [
-  { id: 1, name: "8.A Matematika", members: 28, grade: 8, code: "MAT8A1", owner: true },
-  { id: 2, name: "7.B Magyar", members: 25, grade: 7, code: "MAG7B2", owner: false },
-];
+const demoClasses: { id: number; name: string; members: number; grade: number; code: string; owner: boolean }[] = [];
 
-const demoMembers = [
-  { id: 1, name: "Kovács Tanár", role: "teacher", isOwner: true },
-  { id: 2, name: "Kiss Péter", role: "student", isOwner: false },
-  { id: 3, name: "Nagy Anna", role: "student", isOwner: false },
-  { id: 4, name: "Szabó Bence", role: "student", isOwner: false },
-];
+const demoMembers: { id: number; name: string; role: string; isOwner: boolean }[] = [];
 
-const demoMessages = [
-  { id: 1, sender: "Kovács Tanár", text: "Holnap dolgozatot írunk!", time: "10:30", own: false },
-  { id: 2, sender: "Te", text: "Melyik anyagból?", time: "10:32", own: true },
-  { id: 3, sender: "Kovács Tanár", text: "Másodfokú egyenletek", time: "10:33", own: false },
-];
+const demoMessages: { id: number; sender: string; text: string; time: string; own: boolean }[] = [];
 
 const Classes = () => {
-  const [selectedClass, setSelectedClass] = useState(demoClasses[0]);
+  const [selectedClass, setSelectedClass] = useState<typeof demoClasses[0] | null>(demoClasses[0] || null);
   const [message, setMessage] = useState("");
   const { toast } = useToast();
 
@@ -100,70 +88,80 @@ const Classes = () => {
           </div>
 
           {/* Right - Class details */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold">{selectedClass.name}</h2>
-                <p className="text-sm text-muted-foreground">{selectedClass.members} tag · {selectedClass.grade}. évfolyam</p>
+          {selectedClass ? (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">{selectedClass.name}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedClass.members} tag · {selectedClass.grade}. évfolyam</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1 cursor-pointer" onClick={() => { navigator.clipboard.writeText(selectedClass.code); toast({ title: "Kód másolva!" }); }}>
+                    <Copy className="w-3 h-3" /> {selectedClass.code}
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="rounded-full text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="gap-1 cursor-pointer" onClick={() => { navigator.clipboard.writeText(selectedClass.code); toast({ title: "Kód másolva!" }); }}>
-                  <Copy className="w-3 h-3" /> {selectedClass.code}
-                </Badge>
-                <Button variant="ghost" size="icon" className="rounded-full text-destructive"><Trash2 className="w-4 h-4" /></Button>
-              </div>
-            </div>
 
-            <Tabs defaultValue="chat">
-              <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-5 pt-2">
-                <TabsTrigger value="chat" className="rounded-t-lg">Chat</TabsTrigger>
-                <TabsTrigger value="members" className="rounded-t-lg">Tagok</TabsTrigger>
-              </TabsList>
+              <Tabs defaultValue="chat">
+                <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-5 pt-2">
+                  <TabsTrigger value="chat" className="rounded-t-lg">Chat</TabsTrigger>
+                  <TabsTrigger value="members" className="rounded-t-lg">Tagok</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="chat" className="p-0">
-                <div className="h-[400px] flex flex-col">
-                  <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                    {demoMessages.map((m) => (
-                      <div key={m.id} className={`flex ${m.own ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${m.own ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                          {!m.own && <p className="text-xs font-semibold mb-1 opacity-70">{m.sender}</p>}
-                          <p className="text-sm">{m.text}</p>
-                          <p className={`text-[10px] mt-1 ${m.own ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{m.time}</p>
+                <TabsContent value="chat" className="p-0">
+                  <div className="h-[400px] flex flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                      {demoMessages.map((m) => (
+                        <div key={m.id} className={`flex ${m.own ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${m.own ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                            {!m.own && <p className="text-xs font-semibold mb-1 opacity-70">{m.sender}</p>}
+                            <p className="text-sm">{m.text}</p>
+                            <p className={`text-[10px] mt-1 ${m.own ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{m.time}</p>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    <div className="p-4 border-t border-border flex gap-2">
+                      <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Üzenet írása..." className="rounded-full" />
+                      <Button size="icon" className="rounded-full bg-primary shrink-0"><Send className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="members" className="p-5">
+                  <div className="space-y-3">
+                    {demoMembers.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                            {m.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm flex items-center gap-1.5">
+                              {m.name} {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{m.role === "teacher" ? "Tanár" : "Diák"}</p>
+                          </div>
+                        </div>
+                        {!m.isOwner && (
+                          <Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <div className="p-4 border-t border-border flex gap-2">
-                    <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Üzenet írása..." className="rounded-full" />
-                    <Button size="icon" className="rounded-full bg-primary shrink-0"><Send className="w-4 h-4" /></Button>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="members" className="p-5">
-                <div className="space-y-3">
-                  {demoMembers.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                          {m.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm flex items-center gap-1.5">
-                            {m.name} {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{m.role === "teacher" ? "Tanár" : "Diák"}</p>
-                        </div>
-                      </div>
-                      {!m.isOwner && (
-                        <Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border flex items-center justify-center min-h-[300px]">
+              <div className="text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Még nincs osztályod</p>
+                <p className="text-sm mt-1">Hozz létre egyet vagy csatlakozz egy meglévőhöz!</p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
