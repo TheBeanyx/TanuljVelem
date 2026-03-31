@@ -18,7 +18,7 @@ const demoMembers: { id: number; name: string; role: string; isOwner: boolean }[
 const demoMessages: { id: number; sender: string; text: string; time: string; own: boolean }[] = [];
 
 const Classes = () => {
-  const [selectedClass, setSelectedClass] = useState(demoClasses[0]);
+  const [selectedClass, setSelectedClass] = useState<typeof demoClasses[0] | null>(demoClasses[0] || null);
   const [message, setMessage] = useState("");
   const { toast } = useToast();
 
