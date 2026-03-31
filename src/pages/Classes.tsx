@@ -88,70 +88,80 @@ const Classes = () => {
           </div>
 
           {/* Right - Class details */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden">
-            <div className="p-5 border-b border-border flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold">{selectedClass.name}</h2>
-                <p className="text-sm text-muted-foreground">{selectedClass.members} tag · {selectedClass.grade}. évfolyam</p>
+          {selectedClass ? (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="p-5 border-b border-border flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold">{selectedClass.name}</h2>
+                  <p className="text-sm text-muted-foreground">{selectedClass.members} tag · {selectedClass.grade}. évfolyam</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1 cursor-pointer" onClick={() => { navigator.clipboard.writeText(selectedClass.code); toast({ title: "Kód másolva!" }); }}>
+                    <Copy className="w-3 h-3" /> {selectedClass.code}
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="rounded-full text-destructive"><Trash2 className="w-4 h-4" /></Button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="gap-1 cursor-pointer" onClick={() => { navigator.clipboard.writeText(selectedClass.code); toast({ title: "Kód másolva!" }); }}>
-                  <Copy className="w-3 h-3" /> {selectedClass.code}
-                </Badge>
-                <Button variant="ghost" size="icon" className="rounded-full text-destructive"><Trash2 className="w-4 h-4" /></Button>
-              </div>
-            </div>
 
-            <Tabs defaultValue="chat">
-              <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-5 pt-2">
-                <TabsTrigger value="chat" className="rounded-t-lg">Chat</TabsTrigger>
-                <TabsTrigger value="members" className="rounded-t-lg">Tagok</TabsTrigger>
-              </TabsList>
+              <Tabs defaultValue="chat">
+                <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-5 pt-2">
+                  <TabsTrigger value="chat" className="rounded-t-lg">Chat</TabsTrigger>
+                  <TabsTrigger value="members" className="rounded-t-lg">Tagok</TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="chat" className="p-0">
-                <div className="h-[400px] flex flex-col">
-                  <div className="flex-1 overflow-y-auto p-5 space-y-3">
-                    {demoMessages.map((m) => (
-                      <div key={m.id} className={`flex ${m.own ? "justify-end" : "justify-start"}`}>
-                        <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${m.own ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                          {!m.own && <p className="text-xs font-semibold mb-1 opacity-70">{m.sender}</p>}
-                          <p className="text-sm">{m.text}</p>
-                          <p className={`text-[10px] mt-1 ${m.own ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{m.time}</p>
+                <TabsContent value="chat" className="p-0">
+                  <div className="h-[400px] flex flex-col">
+                    <div className="flex-1 overflow-y-auto p-5 space-y-3">
+                      {demoMessages.map((m) => (
+                        <div key={m.id} className={`flex ${m.own ? "justify-end" : "justify-start"}`}>
+                          <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 ${m.own ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                            {!m.own && <p className="text-xs font-semibold mb-1 opacity-70">{m.sender}</p>}
+                            <p className="text-sm">{m.text}</p>
+                            <p className={`text-[10px] mt-1 ${m.own ? "text-primary-foreground/60" : "text-muted-foreground"}`}>{m.time}</p>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                    <div className="p-4 border-t border-border flex gap-2">
+                      <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Üzenet írása..." className="rounded-full" />
+                      <Button size="icon" className="rounded-full bg-primary shrink-0"><Send className="w-4 h-4" /></Button>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="members" className="p-5">
+                  <div className="space-y-3">
+                    {demoMembers.map((m) => (
+                      <div key={m.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
+                            {m.name.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm flex items-center gap-1.5">
+                              {m.name} {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{m.role === "teacher" ? "Tanár" : "Diák"}</p>
+                          </div>
+                        </div>
+                        {!m.isOwner && (
+                          <Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button>
+                        )}
                       </div>
                     ))}
                   </div>
-                  <div className="p-4 border-t border-border flex gap-2">
-                    <Input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Üzenet írása..." className="rounded-full" />
-                    <Button size="icon" className="rounded-full bg-primary shrink-0"><Send className="w-4 h-4" /></Button>
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="members" className="p-5">
-                <div className="space-y-3">
-                  {demoMembers.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                          {m.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-semibold text-sm flex items-center gap-1.5">
-                            {m.name} {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{m.role === "teacher" ? "Tanár" : "Diák"}</p>
-                        </div>
-                      </div>
-                      {!m.isOwner && (
-                        <Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          ) : (
+            <div className="bg-card rounded-2xl border border-border flex items-center justify-center min-h-[300px]">
+              <div className="text-center text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p className="font-semibold">Még nincs osztályod</p>
+                <p className="text-sm mt-1">Hozz létre egyet vagy csatlakozz egy meglévőhöz!</p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>
