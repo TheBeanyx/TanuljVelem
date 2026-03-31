@@ -150,7 +150,7 @@ const Friends = () => {
                   </div>
                 ))}
               </div>
-            )}
+          </TabsContent>
         </Tabs>
       </main>
     </div>
