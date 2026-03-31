@@ -35,6 +35,7 @@ const App = () => (
           <Route path="/classes" element={<Classes />} />
           <Route path="/friends" element={<Friends />} />
           <Route path="/messages" element={<Messages />} />
+          <Route path="/announcements" element={<Announcements />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<NotFound />} />
