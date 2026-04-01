@@ -160,7 +160,8 @@ const Announcements = () => {
         </div>
 
         <div className="max-w-3xl mx-auto space-y-6">
-          {/* New announcement form */}
+          {/* New announcement form - only for teachers */}
+          {profile?.role === "teacher" && (
           <div className="bg-card rounded-2xl border border-border p-5">
             <button
               onClick={() => setShowNewAnnouncement(!showNewAnnouncement)}
