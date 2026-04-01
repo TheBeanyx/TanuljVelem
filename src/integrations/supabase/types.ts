@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          class_name: string | null
+          created_at: string
+          grade: string | null
+          id: string
+          image_url: string | null
+          message: string
+          recipient_id: string | null
+          sender_id: string
+          subject: string | null
+          visibility: string
+          weight: string | null
+        }
+        Insert: {
+          class_name?: string | null
+          created_at?: string
+          grade?: string | null
+          id?: string
+          image_url?: string | null
+          message: string
+          recipient_id?: string | null
+          sender_id: string
+          subject?: string | null
+          visibility?: string
+          weight?: string | null
+        }
+        Update: {
+          class_name?: string | null
+          created_at?: string
+          grade?: string | null
+          id?: string
+          image_url?: string | null
+          message?: string
+          recipient_id?: string | null
+          sender_id?: string
+          subject?: string | null
+          visibility?: string
+          weight?: string | null
+        }
+        Relationships: []
+      }
       homeworks: {
         Row: {
           created_at: string
@@ -41,6 +83,30 @@ export type Database = {
           subject?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          role: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          role?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          role?: string
+          username?: string
         }
         Relationships: []
       }
