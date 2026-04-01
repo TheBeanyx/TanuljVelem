@@ -319,6 +319,7 @@ const Announcements = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Announcements list */}
           {announcements.length === 0 ? (
