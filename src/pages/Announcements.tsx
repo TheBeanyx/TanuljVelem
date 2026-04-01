@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight, Lock, Globe, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,27 +8,141 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import DashboardNav from "@/components/DashboardNav";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 type Announcement = {
-  id: number;
-  sender: string;
-  subject: string;
+  id: string;
+  sender_id: string;
+  visibility: string;
+  recipient_id: string | null;
+  class_name: string | null;
+  subject: string | null;
   message: string;
-  grade?: string;
-  weight?: string;
-  imageUrl?: string;
-  date: string;
+  grade: string | null;
+  weight: string | null;
+  image_url: string | null;
+  created_at: string;
+  sender_profile?: { display_name: string | null; username: string };
+  recipient_profile?: { display_name: string | null; username: string } | null;
+};
+
+type Profile = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  role: string;
 };
 
 const Announcements = () => {
-  const [announcements] = useState<Announcement[]>([]);
-  const [newAnnouncement, setNewAnnouncement] = useState({
-    subject: "",
-    message: "",
-    grade: "",
-    weight: "",
-  });
+  const { user, profile } = useAuth();
+  const { toast } = useToast();
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [showNewAnnouncement, setShowNewAnnouncement] = useState(false);
+  const [visibility, setVisibility] = useState<"public" | "private">("public");
+  const [selectedRecipient, setSelectedRecipient] = useState<string>("");
+  const [className, setClassName] = useState("");
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [grade, setGrade] = useState("");
+  const [weight, setWeight] = useState("");
+  const [students, setStudents] = useState<Profile[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    fetchAnnouncements();
+    fetchStudents();
+  }, [user]);
+
+  const fetchAnnouncements = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("announcements")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (data) {
+      // Fetch sender profiles
+      const senderIds = [...new Set(data.map((a) => a.sender_id))];
+      const recipientIds = [...new Set(data.filter((a) => a.recipient_id).map((a) => a.recipient_id!))];
+      const allIds = [...new Set([...senderIds, ...recipientIds])];
+      
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, username, display_name")
+        .in("id", allIds);
+
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+      
+      setAnnouncements(
+        data.map((a) => ({
+          ...a,
+          sender_profile: profileMap.get(a.sender_id) as any,
+          recipient_profile: a.recipient_id ? profileMap.get(a.recipient_id) as any : null,
+        }))
+      );
+    }
+  };
+
+  const fetchStudents = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("role", "student");
+    if (data) setStudents(data);
+  };
+
+  const handleSend = async () => {
+    if (!user || !message.trim()) return;
+    if (visibility === "private" && !selectedRecipient) {
+      toast({ title: "Hiba", description: "Válaszd ki a diákot!", variant: "destructive" });
+      return;
+    }
+    if (visibility === "public" && !className.trim()) {
+      toast({ title: "Hiba", description: "Add meg az osztály nevét!", variant: "destructive" });
+      return;
+    }
+    setSending(true);
+    const { error } = await supabase.from("announcements").insert({
+      sender_id: user.id,
+      visibility,
+      recipient_id: visibility === "private" ? selectedRecipient : null,
+      class_name: visibility === "public" ? className : null,
+      subject: subject || null,
+      message,
+      grade: grade || null,
+      weight: weight || null,
+    });
+    setSending(false);
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Közlemény elküldve!" });
+      resetForm();
+      fetchAnnouncements();
+    }
+  };
+
+  const resetForm = () => {
+    setShowNewAnnouncement(false);
+    setVisibility("public");
+    setSelectedRecipient("");
+    setClassName("");
+    setSubject("");
+    setMessage("");
+    setGrade("");
+    setWeight("");
+    setStudentSearch("");
+  };
+
+  const filteredStudents = students.filter(
+    (s) =>
+      s.username.toLowerCase().includes(studentSearch.toLowerCase()) ||
+      (s.display_name || "").toLowerCase().includes(studentSearch.toLowerCase())
+  );
+
+  const selectedStudentName = students.find((s) => s.id === selectedRecipient);
 
   return (
     <div className="min-h-screen bg-background">
@@ -62,11 +176,89 @@ const Announcements = () => {
 
             {showNewAnnouncement && (
               <div className="mt-4 space-y-4 border-t border-border pt-4">
+                {/* Visibility toggle */}
+                <div>
+                  <Label className="font-semibold mb-3 block">Típus</Label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setVisibility("public")}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 ${visibility === "public" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                    >
+                      <Globe className="w-4 h-4" /> Publikus (osztály)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setVisibility("private")}
+                      className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 ${visibility === "private" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                    >
+                      <Lock className="w-4 h-4" /> Privát (diák)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Recipient selection */}
+                {visibility === "private" ? (
+                  <div>
+                    <Label className="font-semibold">Diák kiválasztása</Label>
+                    <div className="relative mt-1.5">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        value={studentSearch}
+                        onChange={(e) => setStudentSearch(e.target.value)}
+                        placeholder="Keresés név vagy felhasználónév alapján..."
+                        className="rounded-xl pl-9"
+                      />
+                    </div>
+                    {studentSearch && filteredStudents.length > 0 && !selectedRecipient && (
+                      <div className="mt-2 border border-border rounded-xl max-h-40 overflow-y-auto">
+                        {filteredStudents.map((s) => (
+                          <button
+                            key={s.id}
+                            onClick={() => {
+                              setSelectedRecipient(s.id);
+                              setStudentSearch("");
+                            }}
+                            className="w-full text-left px-4 py-2 hover:bg-muted text-sm flex items-center gap-2"
+                          >
+                            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                              {(s.display_name || s.username).charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-semibold">{s.display_name || s.username}</p>
+                              <p className="text-xs text-muted-foreground">@{s.username}</p>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {selectedRecipient && selectedStudentName && (
+                      <div className="mt-2 flex items-center gap-2 bg-primary/10 rounded-xl px-3 py-2">
+                        <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xs font-bold">
+                          {(selectedStudentName.display_name || selectedStudentName.username).charAt(0)}
+                        </div>
+                        <span className="text-sm font-semibold">{selectedStudentName.display_name || selectedStudentName.username}</span>
+                        <button onClick={() => setSelectedRecipient("")} className="ml-auto text-xs text-muted-foreground hover:text-destructive">✕</button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <Label className="font-semibold">Osztály neve</Label>
+                    <Input
+                      value={className}
+                      onChange={(e) => setClassName(e.target.value)}
+                      placeholder="pl. 9.A"
+                      className="mt-1.5 rounded-xl"
+                    />
+                  </div>
+                )}
+
                 <div>
                   <Label>Tantárgy</Label>
                   <Input
-                    value={newAnnouncement.subject}
-                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, subject: e.target.value })}
+                    value={subject}
+                    onChange={(e) => setSubject(e.target.value)}
                     placeholder="pl. Matematika"
                     className="mt-1.5 rounded-xl"
                   />
@@ -74,8 +266,8 @@ const Announcements = () => {
                 <div>
                   <Label>Üzenet</Label>
                   <Textarea
-                    value={newAnnouncement.message}
-                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
                     placeholder="Írj egy közleményt..."
                     className="mt-1.5 rounded-xl min-h-[100px]"
                   />
@@ -83,10 +275,7 @@ const Announcements = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="flex items-center gap-1.5"><Star className="w-3.5 h-3.5" /> Jegy (opcionális)</Label>
-                    <Select
-                      value={newAnnouncement.grade}
-                      onValueChange={(v) => setNewAnnouncement({ ...newAnnouncement, grade: v })}
-                    >
+                    <Select value={grade} onValueChange={setGrade}>
                       <SelectTrigger className="mt-1.5 rounded-xl">
                         <SelectValue placeholder="Válassz jegyet" />
                       </SelectTrigger>
@@ -101,10 +290,7 @@ const Announcements = () => {
                   </div>
                   <div>
                     <Label className="flex items-center gap-1.5"><Weight className="w-3.5 h-3.5" /> Súlyozás (opcionális)</Label>
-                    <Select
-                      value={newAnnouncement.weight}
-                      onValueChange={(v) => setNewAnnouncement({ ...newAnnouncement, weight: v })}
-                    >
+                    <Select value={weight} onValueChange={setWeight}>
                       <SelectTrigger className="mt-1.5 rounded-xl">
                         <SelectValue placeholder="Válassz súlyt" />
                       </SelectTrigger>
@@ -122,18 +308,11 @@ const Announcements = () => {
                     <ImagePlus className="w-4 h-4" /> Kép csatolása
                   </Button>
                   <div className="flex-1" />
-                  <Button
-                    variant="ghost"
-                    className="rounded-full"
-                    onClick={() => {
-                      setShowNewAnnouncement(false);
-                      setNewAnnouncement({ subject: "", message: "", grade: "", weight: "" });
-                    }}
-                  >
+                  <Button variant="ghost" className="rounded-full" onClick={resetForm}>
                     Mégse
                   </Button>
-                  <Button className="rounded-full bg-primary gap-2">
-                    <Send className="w-4 h-4" /> Küldés
+                  <Button className="rounded-full bg-primary gap-2" onClick={handleSend} disabled={sending}>
+                    <Send className="w-4 h-4" /> {sending ? "Küldés..." : "Küldés"}
                   </Button>
                 </div>
               </div>
@@ -152,21 +331,33 @@ const Announcements = () => {
               <div key={a.id} className="bg-card rounded-2xl border border-border p-5">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
-                    {a.sender.charAt(0)}
+                    {(a.sender_profile?.display_name || a.sender_profile?.username || "?").charAt(0)}
                   </div>
                   <div className="flex-1">
-                    <p className="font-bold text-sm">{a.sender}</p>
-                    <p className="text-xs text-muted-foreground">{a.date}</p>
+                    <p className="font-bold text-sm">{a.sender_profile?.display_name || a.sender_profile?.username}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(a.created_at).toLocaleDateString("hu-HU")}
+                      {a.visibility === "private" && a.recipient_profile && (
+                        <span className="ml-2">→ {a.recipient_profile.display_name || a.recipient_profile.username}</span>
+                      )}
+                    </p>
                   </div>
-                  {a.grade && (
-                    <Badge className={`text-sm px-3 py-1 ${
-                      Number(a.grade) >= 4 ? "bg-success/10 text-success" :
-                      Number(a.grade) === 3 ? "bg-warning/10 text-warning" :
-                      "bg-destructive/10 text-destructive"
-                    }`}>
-                      Jegy: {a.grade}
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {a.visibility === "private" ? (
+                      <Badge variant="outline" className="gap-1"><Lock className="w-3 h-3" /> Privát</Badge>
+                    ) : (
+                      <Badge variant="outline" className="gap-1"><Globe className="w-3 h-3" /> {a.class_name}</Badge>
+                    )}
+                    {a.grade && (
+                      <Badge className={`text-sm px-3 py-1 ${
+                        Number(a.grade) >= 4 ? "bg-green-500/10 text-green-600" :
+                        Number(a.grade) === 3 ? "bg-yellow-500/10 text-yellow-600" :
+                        "bg-destructive/10 text-destructive"
+                      }`}>
+                        Jegy: {a.grade}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 {a.subject && (
                   <Badge variant="outline" className="mb-2">{a.subject}</Badge>
@@ -175,8 +366,8 @@ const Announcements = () => {
                 {a.weight && (
                   <p className="text-xs text-muted-foreground mt-2">Súlyozás: {a.weight}%</p>
                 )}
-                {a.imageUrl && (
-                  <img src={a.imageUrl} alt="Csatolmány" className="mt-3 rounded-xl max-h-48 object-cover" />
+                {a.image_url && (
+                  <img src={a.image_url} alt="Csatolmány" className="mt-3 rounded-xl max-h-48 object-cover" />
                 )}
               </div>
             ))

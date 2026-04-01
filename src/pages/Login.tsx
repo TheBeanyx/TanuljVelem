@@ -1,24 +1,28 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Demo login
-    if (username && password) {
-      localStorage.setItem("user", JSON.stringify({ username, displayName: username, role: "student" }));
+    setLoading(true);
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    } else {
       toast({ title: "Sikeres bejelentkezés!" });
       navigate("/dashboard");
     }
@@ -26,7 +30,6 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex">
-      {/* Left - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 md:px-16 lg:px-24">
         <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 w-fit">
           <ArrowLeft className="w-4 h-4" /> Vissza a főoldalra
@@ -42,12 +45,13 @@ const Login = () => {
 
         <form onSubmit={handleLogin} className="space-y-5 max-w-sm">
           <div>
-            <Label htmlFor="username" className="font-semibold">Felhasználónév</Label>
+            <Label htmlFor="email" className="font-semibold">Email cím</Label>
             <Input
-              id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Add meg a felhasználóneved"
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Add meg az email címed"
               className="mt-1.5 rounded-xl"
               required
             />
@@ -69,8 +73,8 @@ const Login = () => {
               </button>
             </div>
           </div>
-          <Button type="submit" className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
-            Bejelentkezés
+          <Button type="submit" disabled={loading} className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
+            {loading ? "Bejelentkezés..." : "Bejelentkezés"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Még nincs fiókod? <Link to="/register" className="text-primary font-semibold hover:underline">Regisztrálj itt</Link>
@@ -78,7 +82,6 @@ const Login = () => {
         </form>
       </div>
 
-      {/* Right - Decorative */}
       <div className="hidden lg:flex flex-1 gradient-hero items-center justify-center p-12">
         <div className="text-center">
           <GraduationCap className="w-24 h-24 text-primary-foreground/30 mx-auto mb-6 animate-float" />

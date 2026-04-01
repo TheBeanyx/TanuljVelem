@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 const navItems = [
   { to: "/dashboard", label: "Házi Feladat", icon: BookOpen },
@@ -16,10 +17,10 @@ const navItems = [
 const DashboardNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || '{"username":"Demo","role":"student"}');
+  const { profile, signOut } = useAuth();
 
-  const handleLogout = () => {
-    localStorage.removeItem("user");
+  const handleLogout = async () => {
+    await signOut();
     navigate("/");
   };
 
@@ -55,7 +56,6 @@ const DashboardNav = () => {
           <Link to="/notifications">
             <Button variant="ghost" size="icon" className="relative rounded-full">
               <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center p-0 text-[10px] bg-destructive text-destructive-foreground border-2 border-card">3</Badge>
             </Button>
           </Link>
           <Link to="/profile">
@@ -64,8 +64,8 @@ const DashboardNav = () => {
             </Button>
           </Link>
           <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border ml-2">
-            <span className="text-sm font-semibold">{user.displayName || user.username}</span>
-            {user.role === "teacher" && <Badge variant="secondary" className="text-xs">Tanár</Badge>}
+            <span className="text-sm font-semibold">{profile?.display_name || profile?.username || "..."}</span>
+            {profile?.role === "teacher" && <Badge variant="secondary" className="text-xs">Tanár</Badge>}
           </div>
           <Button variant="ghost" size="icon" onClick={handleLogout} className="rounded-full text-muted-foreground hover:text-destructive">
             <LogOut className="w-5 h-5" />

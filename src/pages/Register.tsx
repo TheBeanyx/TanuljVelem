@@ -5,26 +5,49 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [role, setRole] = useState<"student" | "teacher">("student");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       toast({ title: "Hiba", description: "A jelszavak nem egyeznek!", variant: "destructive" });
       return;
     }
-    localStorage.setItem("user", JSON.stringify({ username, displayName: displayName || username, role }));
-    toast({ title: "Sikeres regisztráció!" });
-    navigate("/dashboard");
+    if (password.length < 6) {
+      toast({ title: "Hiba", description: "A jelszónak legalább 6 karakter hosszúnak kell lennie!", variant: "destructive" });
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          username,
+          display_name: displayName || username,
+          role,
+        },
+      },
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Sikeres regisztráció!" });
+      navigate("/dashboard");
+    }
   };
 
   return (
@@ -67,6 +90,10 @@ const Register = () => {
             <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Válassz felhasználónevet" className="mt-1.5 rounded-xl" required />
           </div>
           <div>
+            <Label htmlFor="email" className="font-semibold">Email cím *</Label>
+            <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="pelda@email.com" className="mt-1.5 rounded-xl" required />
+          </div>
+          <div>
             <Label htmlFor="password" className="font-semibold">Jelszó *</Label>
             <div className="relative mt-1.5">
               <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Legalább 6 karakter" className="rounded-xl pr-10" required />
@@ -80,8 +107,8 @@ const Register = () => {
             <Input id="confirmPassword" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Írd be újra a jelszavad" className="mt-1.5 rounded-xl" required />
           </div>
 
-          <Button type="submit" className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
-            Fiók Létrehozása
+          <Button type="submit" disabled={loading} className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
+            {loading ? "Regisztráció..." : "Fiók Létrehozása"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Van már fiókod? <Link to="/login" className="text-primary font-semibold hover:underline">Bejelentkezés</Link>
