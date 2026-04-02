@@ -462,7 +462,7 @@ const Announcements = () => {
                   </div>
                 </div>
                 {a.subject && <Badge variant="outline" className="mb-2">{a.subject}</Badge>}
-                <p className="text-sm">{a.message}</p>
+                <div className="text-sm">{renderFormattedText(a.message)}</div>
                 {a.weight && <p className="text-xs text-muted-foreground mt-2">Súlyozás: {a.weight}%</p>}
                 {a.image_url && <img src={a.image_url} alt="Csatolmány" className="mt-3 rounded-xl max-h-48 object-cover" />}
 
