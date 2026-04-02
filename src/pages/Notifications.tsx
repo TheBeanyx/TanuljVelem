@@ -18,62 +18,78 @@ const Notifications = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const { profile } = useAuth();
+  const isTeacher = profile?.role === "teacher";
+
   useEffect(() => {
     if (!user) return;
     const fetchNotifications = async () => {
       const items: NotificationItem[] = [];
 
-      // Fetch announcements visible to user
-      const { data: announcements } = await supabase
-        .from("announcements")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      if (!isTeacher) {
+        // Student: show announcements sent to them (private) or public
+        const { data: announcements } = await supabase
+          .from("announcements")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(50);
 
-      // Fetch sender profiles
-      const senderIds = [...new Set((announcements || []).map((a) => a.sender_id))];
-      let profileMap = new Map<string, any>();
-      if (senderIds.length > 0) {
-        const { data: profiles } = await supabase.from("profiles").select("id, username, display_name").in("id", senderIds);
-        profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
-      }
+        const senderIds = [...new Set((announcements || []).map((a) => a.sender_id))];
+        let profileMap = new Map<string, any>();
+        if (senderIds.length > 0) {
+          const { data: profiles } = await supabase.from("profiles").select("id, username, display_name").in("id", senderIds);
+          profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+        }
 
-      for (const a of announcements || []) {
-        const sender = profileMap.get(a.sender_id);
-        const name = sender?.display_name || sender?.username || "Ismeretlen";
-        items.push({
-          id: `a-${a.id}`,
-          type: "announcement",
-          title: `Közlemény: ${a.subject || "Általános"}`,
-          desc: `${name}: ${a.message.slice(0, 80)}${a.message.length > 80 ? "..." : ""}`,
-          date: new Date(a.created_at).toLocaleDateString("hu-HU"),
-        });
-      }
-
-      // Fetch comments on user's announcements (if teacher) or comments user made
-      const { data: comments } = await supabase
-        .from("announcement_comments")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      const commentUserIds = [...new Set((comments || []).map((c) => c.user_id))];
-      if (commentUserIds.length > 0) {
-        const { data: cProfiles } = await supabase.from("profiles").select("id, username, display_name").in("id", commentUserIds);
-        const cpMap = new Map(cProfiles?.map((p) => [p.id, p]) || []);
-        for (const c of comments || []) {
-          const commenter = cpMap.get(c.user_id);
+        for (const a of announcements || []) {
+          const sender = profileMap.get(a.sender_id);
+          const name = sender?.display_name || sender?.username || "Ismeretlen";
           items.push({
-            id: `c-${c.id}`,
-            type: "comment",
-            title: "Új hozzászólás",
-            desc: `${commenter?.display_name || commenter?.username || "Valaki"}: ${c.message.slice(0, 80)}`,
-            date: new Date(c.created_at).toLocaleDateString("hu-HU"),
+            id: `a-${a.id}`,
+            type: "announcement",
+            title: `Közlemény: ${a.subject || "Általános"}`,
+            desc: `${name}: ${a.message.slice(0, 80)}${a.message.length > 80 ? "..." : ""}`,
+            date: new Date(a.created_at).toLocaleDateString("hu-HU"),
           });
+        }
+      } else {
+        // Teacher: show comments on their own announcements
+        const { data: myAnnouncements } = await supabase
+          .from("announcements")
+          .select("id, subject")
+          .eq("sender_id", user.id);
+
+        const announcementIds = (myAnnouncements || []).map((a) => a.id);
+        const announcementMap = new Map(myAnnouncements?.map((a) => [a.id, a]) || []);
+
+        if (announcementIds.length > 0) {
+          const { data: comments } = await supabase
+            .from("announcement_comments")
+            .select("*")
+            .in("announcement_id", announcementIds)
+            .order("created_at", { ascending: false })
+            .limit(50);
+
+          const commentUserIds = [...new Set((comments || []).map((c) => c.user_id))];
+          let cpMap = new Map<string, any>();
+          if (commentUserIds.length > 0) {
+            const { data: cProfiles } = await supabase.from("profiles").select("id, username, display_name").in("id", commentUserIds);
+            cpMap = new Map(cProfiles?.map((p) => [p.id, p]) || []);
+          }
+          for (const c of comments || []) {
+            const commenter = cpMap.get(c.user_id);
+            const ann = announcementMap.get(c.announcement_id);
+            items.push({
+              id: `c-${c.id}`,
+              type: "comment",
+              title: `Hozzászólás: ${ann?.subject || "Közlemény"}`,
+              desc: `${commenter?.display_name || commenter?.username || "Valaki"}: ${c.message.slice(0, 80)}`,
+              date: new Date(c.created_at).toLocaleDateString("hu-HU"),
+            });
+          }
         }
       }
 
-      // Sort by date desc (already ordered from DB, but mix them)
       items.sort((a, b) => {
         const da = new Date(a.date.split(".").reverse().join("-")).getTime();
         const db = new Date(b.date.split(".").reverse().join("-")).getTime();
@@ -84,7 +100,7 @@ const Notifications = () => {
       setLoading(false);
     };
     fetchNotifications();
-  }, [user]);
+  }, [user, isTeacher]);
 
   const iconMap = {
     announcement: Megaphone,
