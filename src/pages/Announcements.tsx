@@ -44,6 +44,50 @@ type Profile = {
   role: string;
 };
 
+// Render formatted text: **bold**, *italic*, __underline__, • bullets, newlines
+const renderFormattedText = (text: string) => {
+  const lines = text.split("\n");
+  return lines.map((line, i) => {
+    const isBullet = line.startsWith("• ");
+    const content = isBullet ? line.slice(2) : line;
+    
+    // Parse inline formatting
+    const parts: React.ReactNode[] = [];
+    let remaining = content;
+    let key = 0;
+    
+    const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|__(.+?)__)/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+      if (match[2]) {
+        parts.push(<strong key={key++}>{match[2]}</strong>);
+      } else if (match[3]) {
+        parts.push(<em key={key++}>{match[3]}</em>);
+      } else if (match[4]) {
+        parts.push(<u key={key++}>{match[4]}</u>);
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+    if (parts.length === 0) parts.push("");
+
+    return (
+      <span key={i} className={isBullet ? "flex items-start gap-1.5" : ""}>
+        {isBullet && <span className="text-primary mt-0.5">•</span>}
+        <span>{parts}</span>
+        {i < lines.length - 1 && <br />}
+      </span>
+    );
+  });
+};
+
 const Announcements = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
