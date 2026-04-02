@@ -358,8 +358,26 @@ const Announcements = () => {
                 </div>
                 <div>
                   <Label>Üzenet</Label>
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Írj egy közleményt..." className="mt-1.5 rounded-xl min-h-[100px]" />
+                  <div className="mt-1.5 border border-input rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring">
+                    <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30">
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("**", "**")} title="Félkövér">
+                        <Bold className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("*", "*")} title="Dőlt">
+                        <Italic className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("__", "__")} title="Aláhúzott">
+                        <Underline className="w-3.5 h-3.5" />
+                      </Button>
+                      <div className="w-px h-4 bg-border mx-1" />
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={insertBullet} title="Jegyzetpont">
+                        <List className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <Textarea ref={textareaRef} value={message} onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Írj egy közleményt..." className="border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px]" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">**félkövér** · *dőlt* · __aláhúzott__ · • jegyzetpont</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
