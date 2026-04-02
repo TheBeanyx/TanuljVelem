@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight, Lock, Globe, Search, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight, Lock, Globe, Search, MessageCircle, Bold, Italic, Underline, List } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
