@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight, Lock, Globe, Search, MessageCircle } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { ArrowLeft, Megaphone, Send, ImagePlus, Star, Weight, Lock, Globe, Search, MessageCircle, Bold, Italic, Underline, List } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,50 @@ type Profile = {
   role: string;
 };
 
+// Render formatted text: **bold**, *italic*, __underline__, • bullets, newlines
+const renderFormattedText = (text: string) => {
+  const lines = text.split("\n");
+  return lines.map((line, i) => {
+    const isBullet = line.startsWith("• ");
+    const content = isBullet ? line.slice(2) : line;
+    
+    // Parse inline formatting
+    const parts: React.ReactNode[] = [];
+    let remaining = content;
+    let key = 0;
+    
+    const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|__(.+?)__)/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = regex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(content.slice(lastIndex, match.index));
+      }
+      if (match[2]) {
+        parts.push(<strong key={key++}>{match[2]}</strong>);
+      } else if (match[3]) {
+        parts.push(<em key={key++}>{match[3]}</em>);
+      } else if (match[4]) {
+        parts.push(<u key={key++}>{match[4]}</u>);
+      }
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < content.length) {
+      parts.push(content.slice(lastIndex));
+    }
+    if (parts.length === 0) parts.push("");
+
+    return (
+      <span key={i} className={isBullet ? "flex items-start gap-1.5" : ""}>
+        {isBullet && <span className="text-primary mt-0.5">•</span>}
+        <span>{parts}</span>
+        {i < lines.length - 1 && <br />}
+      </span>
+    );
+  });
+};
+
 const Announcements = () => {
   const { user, profile } = useAuth();
   const { toast } = useToast();
@@ -61,6 +105,37 @@ const Announcements = () => {
   const [sending, setSending] = useState(false);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertFormatting = useCallback((prefix: string, suffix: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = message.slice(start, end);
+    const newText = message.slice(0, start) + prefix + selected + suffix + message.slice(end);
+    setMessage(newText);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = start + prefix.length;
+      ta.selectionEnd = end + prefix.length;
+    }, 0);
+  }, [message]);
+
+  const insertBullet = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const before = message.slice(0, pos);
+    const after = message.slice(pos);
+    const needsNewline = before.length > 0 && !before.endsWith("\n");
+    const bullet = (needsNewline ? "\n" : "") + "• ";
+    setMessage(before + bullet + after);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = pos + bullet.length;
+    }, 0);
+  }, [message]);
 
   useEffect(() => {
     fetchAnnouncements();
@@ -283,8 +358,26 @@ const Announcements = () => {
                 </div>
                 <div>
                   <Label>Üzenet</Label>
-                  <Textarea value={message} onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Írj egy közleményt..." className="mt-1.5 rounded-xl min-h-[100px]" />
+                  <div className="mt-1.5 border border-input rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-ring">
+                    <div className="flex items-center gap-1 px-2 py-1.5 border-b border-border bg-muted/30">
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("**", "**")} title="Félkövér">
+                        <Bold className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("*", "*")} title="Dőlt">
+                        <Italic className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => insertFormatting("__", "__")} title="Aláhúzott">
+                        <Underline className="w-3.5 h-3.5" />
+                      </Button>
+                      <div className="w-px h-4 bg-border mx-1" />
+                      <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={insertBullet} title="Jegyzetpont">
+                        <List className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                    <Textarea ref={textareaRef} value={message} onChange={(e) => setMessage(e.target.value)}
+                      placeholder="Írj egy közleményt..." className="border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[100px]" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-1">**félkövér** · *dőlt* · __aláhúzott__ · • jegyzetpont</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -369,7 +462,7 @@ const Announcements = () => {
                   </div>
                 </div>
                 {a.subject && <Badge variant="outline" className="mb-2">{a.subject}</Badge>}
-                <p className="text-sm">{a.message}</p>
+                <div className="text-sm">{renderFormattedText(a.message)}</div>
                 {a.weight && <p className="text-xs text-muted-foreground mt-2">Súlyozás: {a.weight}%</p>}
                 {a.image_url && <img src={a.image_url} alt="Csatolmány" className="mt-3 rounded-xl max-h-48 object-cover" />}
 
