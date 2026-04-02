@@ -105,6 +105,37 @@ const Announcements = () => {
   const [sending, setSending] = useState(false);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertFormatting = useCallback((prefix: string, suffix: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = message.slice(start, end);
+    const newText = message.slice(0, start) + prefix + selected + suffix + message.slice(end);
+    setMessage(newText);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = start + prefix.length;
+      ta.selectionEnd = end + prefix.length;
+    }, 0);
+  }, [message]);
+
+  const insertBullet = useCallback(() => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = ta.selectionStart;
+    const before = message.slice(0, pos);
+    const after = message.slice(pos);
+    const needsNewline = before.length > 0 && !before.endsWith("\n");
+    const bullet = (needsNewline ? "\n" : "") + "• ";
+    setMessage(before + bullet + after);
+    setTimeout(() => {
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = pos + bullet.length;
+    }, 0);
+  }, [message]);
 
   useEffect(() => {
     fetchAnnouncements();
