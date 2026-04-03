@@ -124,9 +124,112 @@ export type Database = {
         }
         Relationships: []
       }
+      class_members: {
+        Row: {
+          class_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_members_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_messages: {
+        Row: {
+          class_id: string
+          created_at: string
+          homework_id: string | null
+          id: string
+          message_type: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          homework_id?: string | null
+          id?: string
+          message_type?: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          homework_id?: string | null
+          id?: string
+          message_type?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_messages_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_messages_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "homeworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classes: {
+        Row: {
+          code: string
+          created_at: string
+          grade: number
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          grade?: number
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          grade?: number
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: []
+      }
       homeworks: {
         Row: {
+          class_id: string | null
           created_at: string
+          creator_id: string | null
           deadline: string | null
           description: string | null
           id: string
@@ -135,7 +238,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          class_id?: string | null
           created_at?: string
+          creator_id?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
@@ -144,7 +249,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          class_id?: string | null
           created_at?: string
+          creator_id?: string | null
           deadline?: string | null
           description?: string | null
           id?: string
@@ -152,7 +259,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "homeworks_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
