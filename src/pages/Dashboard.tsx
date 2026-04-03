@@ -1,15 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X } from "lucide-react";
+import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +36,13 @@ type Homework = {
   description: string | null;
   deadline: string | null;
   created_at: string;
+  class_id: string | null;
+  creator_id: string | null;
+};
+
+type ClassItem = {
+  id: string;
+  name: string;
 };
 
 const demoTests = [
@@ -67,8 +76,42 @@ const Dashboard = () => {
   const [formTitle, setFormTitle] = useState("");
   const [formDesc, setFormDesc] = useState("");
   const [formDeadline, setFormDeadline] = useState("");
+  const [shareToClass, setShareToClass] = useState(false);
+  const [selectedClassId, setSelectedClassId] = useState<string>("");
+  const [myClasses, setMyClasses] = useState<ClassItem[]>([]);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
   const { toast } = useToast();
+  const { user, profile } = useAuth();
+  const isTeacher = profile?.role === "teacher";
+
+  const fetchMyClasses = async () => {
+    if (!user) return;
+    // Get classes I own (teacher) or am member of
+    const { data: owned } = await supabase
+      .from("classes")
+      .select("id, name")
+      .eq("owner_id", user.id);
+
+    const { data: memberships } = await supabase
+      .from("class_members")
+      .select("class_id")
+      .eq("user_id", user.id);
+
+    let memberClasses: ClassItem[] = [];
+    if (memberships && memberships.length > 0) {
+      const classIds = memberships.map((m: any) => m.class_id);
+      const { data } = await supabase
+        .from("classes")
+        .select("id, name")
+        .in("id", classIds);
+      memberClasses = (data || []) as ClassItem[];
+    }
+
+    const all = [...(owned || []), ...memberClasses];
+    // Deduplicate
+    const unique = Array.from(new Map(all.map((c) => [c.id, c])).values());
+    setMyClasses(unique);
+  };
 
   const fetchHomeworks = async () => {
     setLoading(true);
@@ -83,7 +126,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Check auto-delete setting
     const { data: settings } = await supabase
       .from("user_settings")
       .select("setting_value")
@@ -104,19 +146,20 @@ const Dashboard = () => {
       });
       if (expired.length > 0) {
         await supabase.from("homeworks").delete().in("id", expired.map((h) => h.id));
-        setHomeworks(data.filter((hw) => !expired.find((e) => e.id === hw.id)));
+        setHomeworks(data.filter((hw) => !expired.find((e) => e.id === hw.id)) as Homework[]);
       } else {
-        setHomeworks(data);
+        setHomeworks((data || []) as Homework[]);
       }
     } else {
-      setHomeworks(data || []);
+      setHomeworks((data || []) as Homework[]);
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchHomeworks();
-  }, []);
+    fetchMyClasses();
+  }, [user]);
 
   const openAddDialog = () => {
     setEditingHw(null);
@@ -124,6 +167,8 @@ const Dashboard = () => {
     setFormTitle("");
     setFormDesc("");
     setFormDeadline("");
+    setShareToClass(false);
+    setSelectedClassId("");
     setDialogOpen(true);
   };
 
@@ -133,6 +178,8 @@ const Dashboard = () => {
     setFormTitle(hw.title);
     setFormDesc(hw.description || "");
     setFormDeadline(hw.deadline || "");
+    setShareToClass(false);
+    setSelectedClassId("");
     setDialogOpen(true);
   };
 
@@ -142,7 +189,7 @@ const Dashboard = () => {
       return;
     }
 
-    const payload = {
+    const payload: any = {
       subject: formSubject,
       title: formTitle.trim(),
       description: formDesc.trim() || null,
@@ -157,11 +204,29 @@ const Dashboard = () => {
       }
       toast({ title: "Házi feladat frissítve!" });
     } else {
-      const { error } = await supabase.from("homeworks").insert(payload);
+      if (shareToClass && selectedClassId) {
+        payload.class_id = selectedClassId;
+      }
+      payload.creator_id = user?.id || null;
+
+      const { data: inserted, error } = await supabase.from("homeworks").insert(payload).select().single();
       if (error) {
         toast({ title: "Hiba a hozzáadásnál", variant: "destructive" });
         return;
       }
+
+      // If shared to class, post a message in the class chat
+      if (shareToClass && selectedClassId && inserted) {
+        const displayName = profile?.display_name || profile?.username || "Valaki";
+        await supabase.from("class_messages").insert({
+          class_id: selectedClassId,
+          user_id: user!.id,
+          text: `📚 ${displayName} új házit írt fel ${formSubject} tantárgyból: "${formTitle.trim()}"`,
+          message_type: "homework",
+          homework_id: inserted.id,
+        });
+      }
+
       toast({ title: "Házi feladat hozzáadva!" });
     }
 
@@ -231,9 +296,16 @@ const Dashboard = () => {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <Badge className={`${subjectColors[hw.subject] || "bg-muted text-muted-foreground"} font-semibold mb-3`}>
-                            {hw.subject}
-                          </Badge>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className={`${subjectColors[hw.subject] || "bg-muted text-muted-foreground"} font-semibold`}>
+                              {hw.subject}
+                            </Badge>
+                            {hw.class_id && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <Share2 className="w-3 h-3" /> Osztály
+                              </Badge>
+                            )}
+                          </div>
                           <h3 className="font-bold text-lg">{hw.title}</h3>
                           {hw.description && <p className="text-muted-foreground text-sm mt-1">{hw.description}</p>}
                           <Badge variant="outline" className={`mt-3 ${dl.color} border-0`}>
@@ -291,6 +363,9 @@ const Dashboard = () => {
         <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>{editingHw ? "Házi feladat szerkesztése" : "Új házi feladat"}</DialogTitle>
+            <DialogDescription>
+              {editingHw ? "Módosítsd a házi feladat adatait." : "Add meg az új házi feladat részleteit."}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
@@ -318,6 +393,34 @@ const Dashboard = () => {
               <Label className="font-semibold">Határidő</Label>
               <Input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} className="mt-1.5 rounded-xl" />
             </div>
+
+            {/* Share to class option */}
+            {!editingHw && myClasses.length > 0 && (
+              <div className="border border-border rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="shareToClass"
+                    checked={shareToClass}
+                    onCheckedChange={(v) => setShareToClass(v === true)}
+                  />
+                  <Label htmlFor="shareToClass" className="font-semibold flex items-center gap-2 cursor-pointer">
+                    <Share2 className="w-4 h-4" /> Felírás az osztálycsoportba
+                  </Label>
+                </div>
+                {shareToClass && (
+                  <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Válassz osztályt..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {myClasses.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">Mégse</Button>
@@ -333,8 +436,9 @@ const Dashboard = () => {
         <DialogContent className="rounded-2xl">
           <DialogHeader>
             <DialogTitle>Házi feladat törlése</DialogTitle>
+            <DialogDescription>Ez a művelet nem vonható vissza.</DialogDescription>
           </DialogHeader>
-          <p className="text-muted-foreground">Biztosan törölni szeretnéd a(z) „{deletingHw?.title}" házi feladatot? Ez a művelet nem vonható vissza.</p>
+          <p className="text-muted-foreground">Biztosan törölni szeretnéd a(z) „{deletingHw?.title}" házi feladatot?</p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="rounded-xl">Mégse</Button>
             <Button variant="destructive" onClick={handleDelete} className="rounded-xl">Törlés</Button>
