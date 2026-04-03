@@ -135,6 +135,11 @@ const Games = () => {
           <Gamepad2 className="w-12 h-12 text-primary-foreground/50 mx-auto mb-3" />
           <h1 className="text-4xl font-black text-primary-foreground">Tanulós Játékok</h1>
           <p className="text-primary-foreground/70 mt-2">Válassz a kedvenc játékaid közül!</p>
+          <Button onClick={() => setCreateOpen(true)} className="mt-4 rounded-full gap-2 bg-card text-foreground hover:bg-card/90 shadow-lg">
+            <GraduationCap className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 text-chart-4" />
+            CREATE
+          </Button>
         </div>
       </section>
 
