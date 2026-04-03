@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Globe, Box, Brain, Play, X, Gamepad2, Sparkles, Loader2, Trash2, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,14 @@ const Games = () => {
   const [aiGames, setAiGames] = useState<any[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("create") === "true") {
+      setCreateOpen(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchAiGames();
