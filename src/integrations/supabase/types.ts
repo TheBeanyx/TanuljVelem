@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_games: {
+        Row: {
+          created_at: string
+          creator_id: string
+          description: string
+          difficulty: string
+          grade: number
+          html_code: string
+          id: string
+          subject: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          creator_id: string
+          description: string
+          difficulty?: string
+          grade?: number
+          html_code: string
+          id?: string
+          subject?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          creator_id?: string
+          description?: string
+          difficulty?: string
+          grade?: number
+          html_code?: string
+          id?: string
+          subject?: string
+          title?: string
+        }
+        Relationships: []
+      }
       announcement_comments: {
         Row: {
           announcement_id: string
