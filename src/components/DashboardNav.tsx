@@ -43,6 +43,34 @@ const DashboardNav = () => {
         <nav className="flex items-center gap-1">
           {navItems.map((item) => {
             const active = location.pathname === item.to;
+
+            if (item.to === "/games") {
+              return (
+                <DropdownMenu key={item.to}>
+                  <DropdownMenuTrigger asChild>
+                    <Link to={item.to}>
+                      <Button
+                        variant={active ? "default" : "ghost"}
+                        size="sm"
+                        className={`rounded-full gap-1.5 text-sm ${active ? "bg-primary text-primary-foreground" : ""}`}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span className="hidden md:inline">{item.label}</span>
+                      </Button>
+                    </Link>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="center" className="min-w-[160px]">
+                    <DropdownMenuItem onClick={() => navigate("/games")}>
+                      <Gamepad2 className="w-4 h-4 mr-2" /> Játékok böngészése
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate("/games?create=true")}>
+                      <Sparkles className="w-4 h-4 mr-2 text-chart-4" /> AI CREATE
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              );
+            }
+
             return (
               <Link key={item.to} to={item.to}>
                 <Button
