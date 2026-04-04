@@ -203,7 +203,7 @@ const Games = () => {
                   <h3 className="font-bold text-lg">{game.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{game.desc}</p>
                   <div className="flex gap-2 mt-4">
-                    <Button className="flex-1 rounded-full gap-2 bg-primary hover:bg-primary/90" onClick={() => openPlayer(game.html, game.title)}>
+                    <Button className="flex-1 rounded-full gap-2 bg-primary hover:bg-primary/90" onClick={() => openPlayer(game.id)}>
                       <Play className="w-4 h-4" /> Játék
                     </Button>
                     {user?.id === game.creatorId && (
