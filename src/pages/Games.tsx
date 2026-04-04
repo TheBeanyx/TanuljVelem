@@ -26,9 +26,6 @@ const Games = () => {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [playerOpen, setPlayerOpen] = useState(false);
-  const [playerHtml, setPlayerHtml] = useState("");
-  const [playerTitle, setPlayerTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [aiSubject, setAiSubject] = useState("Matematika");
   const [aiGrade, setAiGrade] = useState("5");
