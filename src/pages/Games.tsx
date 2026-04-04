@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Globe, Box, Brain, Play, X, Gamepad2, Sparkles, Loader2, Trash2, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,7 @@ const Games = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (searchParams.get("create") === "true") {
@@ -94,13 +95,8 @@ const Games = () => {
     toast({ title: "Törölve" });
   };
 
-  const openPlayer = (html: string, title: string) => {
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.title = title;
-      win.document.close();
-    }
+  const openPlayer = (gameId: string) => {
+    navigate(`/games/${gameId}`);
   };
 
   const allGames = aiGames.map((g) => ({
@@ -208,7 +204,7 @@ const Games = () => {
                   <h3 className="font-bold text-lg">{game.title}</h3>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{game.desc}</p>
                   <div className="flex gap-2 mt-4">
-                    <Button className="flex-1 rounded-full gap-2 bg-primary hover:bg-primary/90" onClick={() => openPlayer(game.html, game.title)}>
+                    <Button className="flex-1 rounded-full gap-2 bg-primary hover:bg-primary/90" onClick={() => openPlayer(game.id)}>
                       <Play className="w-4 h-4" /> Játék
                     </Button>
                     {user?.id === game.creatorId && (
