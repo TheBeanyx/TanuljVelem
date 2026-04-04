@@ -98,9 +98,12 @@ const Games = () => {
   };
 
   const openPlayer = (html: string, title: string) => {
-    setPlayerHtml(html);
-    setPlayerTitle(title);
-    setPlayerOpen(true);
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.title = title;
+      win.document.close();
+    }
   };
 
   const allGames = aiGames.map((g) => ({
