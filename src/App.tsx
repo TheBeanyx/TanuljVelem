@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Games from "./pages/Games";
+import GamePlayer from "./pages/GamePlayer";
 import Tests from "./pages/Tests";
 import Classes from "./pages/Classes";
 import Friends from "./pages/Friends";
