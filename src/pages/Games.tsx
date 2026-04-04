@@ -279,23 +279,6 @@ const Games = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Game Player Dialog */}
-      <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
-        <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>{playerTitle}</DialogTitle>
-            <DialogDescription>Játssz és tanulj!</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 p-4 pt-2 h-full">
-            <iframe
-              srcDoc={playerHtml}
-              title={playerTitle}
-              className="w-full h-[calc(80vh-80px)] rounded-lg border border-border"
-              sandbox="allow-scripts"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

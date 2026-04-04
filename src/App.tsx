@@ -43,6 +43,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AiAssistant />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
