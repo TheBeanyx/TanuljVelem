@@ -17,6 +17,7 @@ import Announcements from "./pages/Announcements";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AiAssistant from "./components/AiAssistant";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <AiAssistant />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

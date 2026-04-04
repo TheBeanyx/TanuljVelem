@@ -26,9 +26,6 @@ const Games = () => {
   const [subjectFilter, setSubjectFilter] = useState("all");
   const [gradeFilter, setGradeFilter] = useState("all");
   const [createOpen, setCreateOpen] = useState(false);
-  const [playerOpen, setPlayerOpen] = useState(false);
-  const [playerHtml, setPlayerHtml] = useState("");
-  const [playerTitle, setPlayerTitle] = useState("");
   const [prompt, setPrompt] = useState("");
   const [aiSubject, setAiSubject] = useState("Matematika");
   const [aiGrade, setAiGrade] = useState("5");
@@ -98,9 +95,12 @@ const Games = () => {
   };
 
   const openPlayer = (html: string, title: string) => {
-    setPlayerHtml(html);
-    setPlayerTitle(title);
-    setPlayerOpen(true);
+    const win = window.open("", "_blank");
+    if (win) {
+      win.document.write(html);
+      win.document.title = title;
+      win.document.close();
+    }
   };
 
   const allGames = aiGames.map((g) => ({
@@ -276,23 +276,6 @@ const Games = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Game Player Dialog */}
-      <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
-        <DialogContent className="max-w-4xl h-[80vh] p-0 overflow-hidden">
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>{playerTitle}</DialogTitle>
-            <DialogDescription>Játssz és tanulj!</DialogDescription>
-          </DialogHeader>
-          <div className="flex-1 p-4 pt-2 h-full">
-            <iframe
-              srcDoc={playerHtml}
-              title={playerTitle}
-              className="w-full h-[calc(80vh-80px)] rounded-lg border border-border"
-              sandbox="allow-scripts"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
