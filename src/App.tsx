@@ -17,6 +17,7 @@ import Announcements from "./pages/Announcements";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AiAssistant from "./components/AiAssistant";
 
 const queryClient = new QueryClient();
 
