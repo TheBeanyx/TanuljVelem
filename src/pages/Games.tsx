@@ -94,13 +94,8 @@ const Games = () => {
     toast({ title: "Törölve" });
   };
 
-  const openPlayer = (html: string, title: string) => {
-    const win = window.open("", "_blank");
-    if (win) {
-      win.document.write(html);
-      win.document.title = title;
-      win.document.close();
-    }
+  const openPlayer = (gameId: string) => {
+    navigate(`/games/${gameId}`);
   };
 
   const allGames = aiGames.map((g) => ({
