@@ -35,8 +35,8 @@ const Games = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  useEffect(() => {
     if (searchParams.get("create") === "true") {
       setCreateOpen(true);
       setSearchParams({}, { replace: true });
