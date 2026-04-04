@@ -37,6 +37,7 @@ const Games = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
+  useEffect(() => {
     if (searchParams.get("create") === "true") {
       setCreateOpen(true);
       setSearchParams({}, { replace: true });
