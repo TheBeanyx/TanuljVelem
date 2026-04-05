@@ -70,7 +70,8 @@ const Tests = () => {
   const [tests, setTests] = useState<Test[]>([]);
   const [results, setResults] = useState<(TestResult & { test_title?: string; test_subject?: string })[]>([]);
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem("user") || '{"role":"student","username":"Demo"}');
+  const { profile } = useAuth();
+  const userRole = profile?.role || "student";
   const { toast } = useToast();
 
   const [takingTest, setTakingTest] = useState<Test | null>(null);
