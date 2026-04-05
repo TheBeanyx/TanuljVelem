@@ -105,6 +105,7 @@ const Announcements = () => {
   const [sending, setSending] = useState(false);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [teacherClasses, setTeacherClasses] = useState<{id: string; name: string; grade: number}[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertFormatting = useCallback((prefix: string, suffix: string) => {
