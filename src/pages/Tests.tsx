@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, Plus, Clock, User, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, X, ToggleLeft, PenLine, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
