@@ -355,9 +355,19 @@ const Announcements = () => {
                   </div>
                 ) : (
                   <div>
-                    <Label className="font-semibold">Osztály neve</Label>
-                    <Input value={className} onChange={(e) => setClassName(e.target.value)}
-                      placeholder="pl. 9.A" className="mt-1.5 rounded-xl" />
+                    <Label className="font-semibold">Osztály kiválasztása</Label>
+                    {teacherClasses.length > 0 ? (
+                      <Select value={className} onValueChange={setClassName}>
+                        <SelectTrigger className="mt-1.5 rounded-xl"><SelectValue placeholder="Válassz osztályt" /></SelectTrigger>
+                        <SelectContent>
+                          {teacherClasses.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name} ({c.grade}. évfolyam)</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-1.5">Még nincs osztályod. Hozz létre egyet az Osztályok fülön!</p>
+                    )}
                   </div>
                 )}
 
