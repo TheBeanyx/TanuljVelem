@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Users, UserPlus, Plus, Copy, Crown, MessageSquare, Send, Trash2, BookOpen } from "lucide-react";
+import { ArrowLeft, Users, UserPlus, Plus, Copy, Crown, MessageSquare, Send, Trash2, BookOpen, AtSign } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
 import { supabase } from "@/integrations/supabase/client";
 
-type ClassData = { id: string; name: string; grade: number; code: string; owner_id: string; created_at: string };
-type Member = { user_id: string; display_name: string; role: string; isOwner: boolean };
+type ClassData = { id: string; name: string; grade: number; code: string; owner_id: string; created_at: string; head_teacher_id?: string | null };
+type Member = { user_id: string; display_name: string; role: string; isOwner: boolean; isHeadTeacher?: boolean };
 type ChatMessage = { id: string; user_id: string; text: string; message_type: string; homework_id: string | null; created_at: string; sender_name?: string };
 
 const Classes = () => {
@@ -28,11 +29,16 @@ const Classes = () => {
   const [newClassGrade, setNewClassGrade] = useState(8);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const [showMentionMenu, setShowMentionMenu] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState("");
+  const [mentionType, setMentionType] = useState<"teacher" | "all" | null>(null);
+  const [mentionOptions, setMentionOptions] = useState<{ id: string; name: string; role: string }[]>([]);
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const isTeacher = profile?.role === "teacher";
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchClasses = async () => {
     if (!user) return;
@@ -63,6 +69,7 @@ const Classes = () => {
       display_name: p.display_name || p.username,
       role: p.role,
       isOwner: cls?.owner_id === p.id,
+      isHeadTeacher: (cls as any)?.head_teacher_id === p.id,
     }));
     setMembers(memberList);
   };
@@ -127,20 +134,109 @@ const Classes = () => {
     setSelectedClass(cls as ClassData);
   };
 
+  // Mention handling
+  const handleMessageChange = (value: string) => {
+    setMessage(value);
+    const cursorPos = inputRef.current?.selectionStart || value.length;
+    const textUpToCursor = value.slice(0, cursorPos);
+    const mentionMatch = textUpToCursor.match(/@(\S*)$/);
+
+    if (mentionMatch) {
+      const query = mentionMatch[1].toLowerCase();
+      if (query === "osztályfőnök" || query.startsWith("osztályfőnök")) {
+        // Auto-insert head teacher name
+        const headTeacher = members.find((m) => m.isHeadTeacher);
+        if (headTeacher) {
+          const before = value.slice(0, cursorPos - mentionMatch[0].length);
+          const after = value.slice(cursorPos);
+          setMessage(`${before}@${headTeacher.display_name} ${after}`);
+          setShowMentionMenu(false);
+          return;
+        }
+      }
+      if (query === "tanár" || query.startsWith("tanár")) {
+        const teachers = members.filter((m) => m.role === "teacher");
+        setMentionOptions(teachers.map((t) => ({ id: t.user_id, name: t.display_name, role: "Tanár" })));
+        setMentionType("teacher");
+        setShowMentionMenu(true);
+        return;
+      }
+      // General @ mention - show all members
+      const filtered = members.filter((m) =>
+        m.display_name.toLowerCase().includes(query)
+      );
+      setMentionOptions(filtered.map((m) => ({ id: m.user_id, name: m.display_name, role: m.role === "teacher" ? "Tanár" : "Diák" })));
+      setMentionType("all");
+      setMentionFilter(query);
+      setShowMentionMenu(filtered.length > 0);
+    } else {
+      setShowMentionMenu(false);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    const cursorPos = inputRef.current?.selectionStart || message.length;
+    const textUpToCursor = message.slice(0, cursorPos);
+    const mentionMatch = textUpToCursor.match(/@(\S*)$/);
+    if (mentionMatch) {
+      const before = message.slice(0, cursorPos - mentionMatch[0].length);
+      const after = message.slice(cursorPos);
+      setMessage(`${before}@${name} ${after}`);
+    }
+    setShowMentionMenu(false);
+    inputRef.current?.focus();
+  };
+
+  const insertAllTeachers = () => {
+    const teachers = members.filter((m) => m.role === "teacher");
+    const names = teachers.map((t) => `@${t.display_name}`).join(" ");
+    const cursorPos = inputRef.current?.selectionStart || message.length;
+    const textUpToCursor = message.slice(0, cursorPos);
+    const mentionMatch = textUpToCursor.match(/@(\S*)$/);
+    if (mentionMatch) {
+      const before = message.slice(0, cursorPos - mentionMatch[0].length);
+      const after = message.slice(cursorPos);
+      setMessage(`${before}${names} ${after}`);
+    }
+    setShowMentionMenu(false);
+    inputRef.current?.focus();
+  };
+
   const handleSendMessage = async () => {
     if (!message.trim() || !selectedClass || !user) return;
-    await supabase.from("class_messages").insert({
+    const { data: msgData } = await supabase.from("class_messages").insert({
       class_id: selectedClass.id,
       user_id: user.id,
       text: message.trim(),
       message_type: "chat",
-    });
+    }).select().single();
+
+    // Find mentioned users and create mention records
+    if (msgData) {
+      const mentionRegex = /@([^\s@]+(?:\s[^\s@]+)?)/g;
+      let match;
+      const mentionedNames: string[] = [];
+      while ((match = mentionRegex.exec(message)) !== null) {
+        mentionedNames.push(match[1].trim());
+      }
+      for (const name of mentionedNames) {
+        const member = members.find((m) => m.display_name === name);
+        if (member && member.user_id !== user.id) {
+          await supabase.from("mentions").insert({
+            class_id: selectedClass.id,
+            message_id: msgData.id,
+            mentioned_user_id: member.user_id,
+            mentioner_user_id: user.id,
+          });
+        }
+      }
+    }
+
     setMessage("");
     fetchMessages(selectedClass.id);
   };
 
   const handleHomeworkClick = async (homeworkId: string) => {
-    // Navigate to dashboard where homework is shown
     navigate("/dashboard");
   };
 
@@ -150,6 +246,34 @@ const Classes = () => {
     toast({ title: "Osztály törölve!" });
     setSelectedClass(null);
     fetchClasses();
+  };
+
+  const handleSetHeadTeacher = async (teacherId: string) => {
+    if (!selectedClass) return;
+    await supabase.from("classes").update({ head_teacher_id: teacherId } as any).eq("id", selectedClass.id);
+    toast({ title: "Osztályfőnök beállítva!" });
+    const updated = { ...selectedClass, head_teacher_id: teacherId };
+    setSelectedClass(updated);
+    setClasses((prev) => prev.map((c) => c.id === updated.id ? updated : c));
+    fetchMembers(selectedClass.id);
+  };
+
+  const teacherMembers = members.filter((m) => m.role === "teacher");
+  const headTeacher = members.find((m) => m.isHeadTeacher);
+
+  // Render mention-highlighted text
+  const renderMessageText = (text: string) => {
+    const parts = text.split(/(@[^\s@]+(?:\s[^\s@]+)?)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("@")) {
+        const name = part.slice(1);
+        const isMember = members.some((m) => m.display_name === name);
+        if (isMember) {
+          return <span key={i} className="text-primary font-semibold">{part}</span>;
+        }
+      }
+      return <span key={i}>{part}</span>;
+    });
   };
 
   return (
@@ -233,7 +357,10 @@ const Classes = () => {
               <div className="p-5 border-b border-border flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold">{selectedClass.name}</h2>
-                  <p className="text-sm text-muted-foreground">{members.length} tag · {selectedClass.grade}. évfolyam</p>
+                  <p className="text-sm text-muted-foreground">
+                    {members.length} tag · {selectedClass.grade}. évfolyam
+                    {headTeacher && <span> · Osztályfőnök: <span className="text-primary font-medium">{headTeacher.display_name}</span></span>}
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="outline" className="gap-1 cursor-pointer" onClick={() => { navigator.clipboard.writeText(selectedClass.code); toast({ title: "Kód másolva!" }); }}>
@@ -251,6 +378,9 @@ const Classes = () => {
                 <TabsList className="w-full justify-start rounded-none border-b border-border bg-transparent px-5 pt-2">
                   <TabsTrigger value="chat" className="rounded-t-lg">Chat</TabsTrigger>
                   <TabsTrigger value="members" className="rounded-t-lg">Tagok ({members.length})</TabsTrigger>
+                  {selectedClass.owner_id === user?.id && (
+                    <TabsTrigger value="settings" className="rounded-t-lg">Beállítások</TabsTrigger>
+                  )}
                 </TabsList>
 
                 <TabsContent value="chat" className="p-0">
@@ -260,6 +390,7 @@ const Classes = () => {
                         <div className="text-center text-muted-foreground py-8">
                           <MessageSquare className="w-10 h-10 mx-auto mb-2 opacity-30" />
                           <p className="text-sm">Még nincsenek üzenetek</p>
+                          <p className="text-xs mt-1 opacity-60">Tipp: Írd be @osztályfőnök vagy @tanár az említéshez</p>
                         </div>
                       )}
                       {messages.map((m) => {
@@ -277,7 +408,7 @@ const Classes = () => {
                             >
                               {!isOwn && <p className="text-xs font-semibold mb-1 opacity-70">{m.sender_name}</p>}
                               {isHomework && <BookOpen className="w-4 h-4 inline mr-1 text-primary" />}
-                              <p className="text-sm inline">{m.text}</p>
+                              <p className="text-sm inline">{renderMessageText(m.text)}</p>
                               <p className={`text-[10px] mt-1 ${isOwn && !isHomework ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                                 {new Date(m.created_at).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })}
                               </p>
@@ -287,12 +418,44 @@ const Classes = () => {
                       })}
                       <div ref={chatEndRef} />
                     </div>
-                    <div className="p-4 border-t border-border flex gap-2">
+                    <div className="relative p-4 border-t border-border flex gap-2">
+                      {showMentionMenu && mentionOptions.length > 0 && (
+                        <div className="absolute bottom-full left-4 right-4 mb-1 bg-popover border border-border rounded-xl shadow-lg max-h-48 overflow-y-auto z-50">
+                          {mentionType === "teacher" && (
+                            <button
+                              onClick={insertAllTeachers}
+                              className="w-full text-left px-4 py-2.5 hover:bg-muted/50 transition-colors border-b border-border flex items-center gap-2"
+                            >
+                              <AtSign className="w-4 h-4 text-primary" />
+                              <span className="font-semibold text-sm">Összes tanár említése</span>
+                            </button>
+                          )}
+                          {mentionOptions.map((opt) => (
+                            <button
+                              key={opt.id}
+                              onClick={() => insertMention(opt.name)}
+                              className="w-full text-left px-4 py-2.5 hover:bg-muted/50 transition-colors flex items-center gap-3"
+                            >
+                              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                                {opt.name.charAt(0)}
+                              </div>
+                              <div>
+                                <p className="font-semibold text-sm">{opt.name}</p>
+                                <p className="text-xs text-muted-foreground">{opt.role}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                       <Input
+                        ref={inputRef}
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                        placeholder="Üzenet írása..."
+                        onChange={(e) => handleMessageChange(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !showMentionMenu) handleSendMessage();
+                          if (e.key === "Escape") setShowMentionMenu(false);
+                        }}
+                        placeholder="Üzenet írása... (@osztályfőnök, @tanár)"
                         className="rounded-full"
                       />
                       <Button size="icon" className="rounded-full bg-primary shrink-0" onClick={handleSendMessage}>
@@ -312,13 +475,41 @@ const Classes = () => {
                           </div>
                           <div>
                             <p className="font-semibold text-sm flex items-center gap-1.5">
-                              {m.display_name} {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
+                              {m.display_name}
+                              {m.isOwner && <Crown className="w-3.5 h-3.5 text-warning" />}
+                              {m.isHeadTeacher && <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-1">Osztályfőnök</Badge>}
                             </p>
                             <p className="text-xs text-muted-foreground">{m.role === "teacher" ? "Tanár" : "Diák"}</p>
                           </div>
                         </div>
                       </div>
                     ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="settings" className="p-5">
+                  <div className="space-y-6">
+                    <div>
+                      <Label className="text-sm font-bold">Osztályfőnök kiválasztása</Label>
+                      <p className="text-xs text-muted-foreground mb-2">A diákok @osztályfőnök-kel említhetik a chatben.</p>
+                      {teacherMembers.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nincs tanár tag az osztályban.</p>
+                      ) : (
+                        <Select
+                          value={(selectedClass as any)?.head_teacher_id || ""}
+                          onValueChange={handleSetHeadTeacher}
+                        >
+                          <SelectTrigger className="rounded-xl">
+                            <SelectValue placeholder="Válassz osztályfőnököt..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {teacherMembers.map((t) => (
+                              <SelectItem key={t.user_id} value={t.user_id}>{t.display_name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>

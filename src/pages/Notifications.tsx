@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Megaphone, MessageCircle } from "lucide-react";
+import { Bell, Megaphone, MessageCircle, AtSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,18 +7,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 type NotificationItem = {
   id: string;
-  type: "announcement" | "comment";
+  type: "announcement" | "comment" | "mention";
   title: string;
   desc: string;
   date: string;
 };
 
 const Notifications = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const { profile } = useAuth();
   const isTeacher = profile?.role === "teacher";
 
   useEffect(() => {
@@ -27,7 +25,6 @@ const Notifications = () => {
       const items: NotificationItem[] = [];
 
       if (!isTeacher) {
-        // Student: show announcements sent to them (private) or public
         const { data: announcements } = await supabase
           .from("announcements")
           .select("*")
@@ -53,7 +50,6 @@ const Notifications = () => {
           });
         }
       } else {
-        // Teacher: show comments on their own announcements
         const { data: myAnnouncements } = await supabase
           .from("announcements")
           .select("id, subject")
@@ -90,6 +86,39 @@ const Notifications = () => {
         }
       }
 
+      // Fetch mentions for all users
+      const { data: mentions } = await supabase
+        .from("mentions")
+        .select("*")
+        .eq("mentioned_user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (mentions && mentions.length > 0) {
+        const mentionerIds = [...new Set(mentions.map((m: any) => m.mentioner_user_id))];
+        const classIds = [...new Set(mentions.map((m: any) => m.class_id))];
+        
+        const [{ data: mentionerProfiles }, { data: classesData }] = await Promise.all([
+          supabase.from("profiles").select("id, display_name, username").in("id", mentionerIds),
+          supabase.from("classes").select("id, name").in("id", classIds),
+        ]);
+
+        const mentionerMap = new Map((mentionerProfiles || []).map((p: any) => [p.id, p]));
+        const classNameMap = new Map((classesData || []).map((c: any) => [c.id, c.name]));
+
+        for (const m of mentions) {
+          const mentioner = mentionerMap.get(m.mentioner_user_id);
+          const className = classNameMap.get(m.class_id) || "Osztály";
+          items.push({
+            id: `m-${m.id}`,
+            type: "mention",
+            title: `Említés: ${className}`,
+            desc: `${mentioner?.display_name || mentioner?.username || "Valaki"} megemlített téged a csoportban.`,
+            date: new Date(m.created_at).toLocaleDateString("hu-HU"),
+          });
+        }
+      }
+
       items.sort((a, b) => {
         const da = new Date(a.date.split(".").reverse().join("-")).getTime();
         const db = new Date(b.date.split(".").reverse().join("-")).getTime();
@@ -102,9 +131,10 @@ const Notifications = () => {
     fetchNotifications();
   }, [user, isTeacher]);
 
-  const iconMap = {
+  const iconMap: Record<string, any> = {
     announcement: Megaphone,
     comment: MessageCircle,
+    mention: AtSign,
   };
 
   return (
@@ -120,7 +150,7 @@ const Notifications = () => {
           <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
             <Bell className="w-12 h-12 mx-auto mb-3 opacity-30" />
             <p className="font-semibold">Nincsenek értesítések</p>
-            <p className="text-sm mt-1">Új közlemények és hozzászólások itt jelennek meg.</p>
+            <p className="text-sm mt-1">Új közlemények, hozzászólások és említések itt jelennek meg.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -128,8 +158,10 @@ const Notifications = () => {
               const Icon = iconMap[n.type] || Bell;
               return (
                 <div key={n.id} className="bg-card rounded-2xl border border-border p-4 flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <Icon className="w-5 h-5 text-primary" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                    n.type === "mention" ? "bg-accent/20" : "bg-primary/10"
+                  }`}>
+                    <Icon className={`w-5 h-5 ${n.type === "mention" ? "text-accent-foreground" : "text-primary"}`} />
                   </div>
                   <div className="flex-1">
                     <p className="font-bold text-sm">{n.title}</p>

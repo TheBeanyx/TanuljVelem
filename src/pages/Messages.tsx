@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, MessageSquare, Send, Search, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardNav from "@/components/DashboardNav";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+
+type UserProfile = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  role: string;
+};
 
 type Conversation = {
-  id: number;
+  id: string;
   name: string;
   lastMsg: string;
   unread: boolean;
+  recipientId: string;
 };
 
 type ChatMessage = {
@@ -25,6 +35,22 @@ const Messages = () => {
   const [chatMessages] = useState<ChatMessage[]>([]);
   const [message, setMessage] = useState("");
   const [userSearch, setUserSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const { user } = useAuth();
+
+  const handleSearch = async (query: string) => {
+    setUserSearch(query);
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, role")
+      .or(`username.ilike.%${query.trim()}%,display_name.ilike.%${query.trim()}%`)
+      .limit(10);
+    setSearchResults((data || []).filter((p: any) => p.id !== user?.id) as UserProfile[]);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,14 +75,47 @@ const Messages = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   value={userSearch}
-                  onChange={(e) => setUserSearch(e.target.value)}
+                  onChange={(e) => handleSearch(e.target.value)}
                   placeholder="Felhasználó keresése..."
                   className="rounded-full pl-9"
                 />
               </div>
             </div>
+
+            {/* Search results dropdown */}
+            {searchResults.length > 0 && (
+              <div className="border-b border-border">
+                <p className="px-3 pt-2 text-xs font-semibold text-muted-foreground">Találatok</p>
+                {searchResults.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => {
+                      setSelectedConversation({
+                        id: u.id,
+                        name: u.display_name || u.username,
+                        lastMsg: "",
+                        unread: false,
+                        recipientId: u.id,
+                      });
+                      setUserSearch("");
+                      setSearchResults([]);
+                    }}
+                    className="w-full text-left p-3 flex items-center gap-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                      {(u.display_name || u.username).charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{u.display_name || u.username}</p>
+                      <p className="text-xs text-muted-foreground">@{u.username} · {u.role === "teacher" ? "Tanár" : "Diák"}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="flex-1 overflow-y-auto">
-              {conversations.length === 0 ? (
+              {conversations.length === 0 && searchResults.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-6 text-center text-muted-foreground">
                   <Users className="w-10 h-10 mb-3 opacity-30" />
                   <p className="font-semibold text-sm">Nincs beszélgetésed</p>
