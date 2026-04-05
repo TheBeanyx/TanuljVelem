@@ -627,7 +627,7 @@ const Tests = () => {
           <TabsList className="rounded-full bg-muted p-1 mb-6">
             <TabsTrigger value="available" className="rounded-full">Elérhető Tesztek ({tests.length})</TabsTrigger>
             <TabsTrigger value="results" className="rounded-full">Eredményeim ({results.length})</TabsTrigger>
-            {user.role === "teacher" && <TabsTrigger value="own" className="rounded-full">Saját Tesztjeim</TabsTrigger>}
+            {userRole === "teacher" && <TabsTrigger value="own" className="rounded-full">Saját Tesztjeim</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="available">
