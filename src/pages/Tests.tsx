@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import { BookOpen, Plus, Clock, User, CheckCircle, XCircle, ArrowLeft, ArrowRight, Trophy, X, ToggleLeft, PenLine, ListOrdered } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -69,7 +70,8 @@ const Tests = () => {
   const [tests, setTests] = useState<Test[]>([]);
   const [results, setResults] = useState<(TestResult & { test_title?: string; test_subject?: string })[]>([]);
   const [loading, setLoading] = useState(true);
-  const user = JSON.parse(localStorage.getItem("user") || '{"role":"student","username":"Demo"}');
+  const { profile } = useAuth();
+  const userRole = profile?.role || "student";
   const { toast } = useToast();
 
   const [takingTest, setTakingTest] = useState<Test | null>(null);
@@ -181,7 +183,7 @@ const Tests = () => {
 
     const { data: test, error } = await supabase.from("tests").insert({
       subject: newTestSubject, title: newTestTitle.trim(), grade: parseInt(newTestGrade),
-      time_limit_minutes: parseInt(newTestTime), creator_name: user.displayName || user.username, is_system: false,
+      time_limit_minutes: parseInt(newTestTime), creator_name: profile?.display_name || profile?.username || "Tanár", is_system: false,
     }).select().single();
 
     if (error || !test) { toast({ title: "Hiba a teszt létrehozásánál", variant: "destructive" }); return; }
@@ -612,7 +614,7 @@ const Tests = () => {
             <h1 className="text-4xl font-black text-success-foreground">Gyakorló Tesztek</h1>
             <p className="text-success-foreground/70 mt-2">Készülj a dolgozatokra!</p>
           </div>
-          {user.role === "teacher" && (
+          {userRole === "teacher" && (
             <Button onClick={() => setCreateOpen(true)} className="bg-card text-foreground hover:bg-card/90 rounded-full gap-2 font-bold">
               <Plus className="w-4 h-4" /> Új Teszt
             </Button>
@@ -625,7 +627,7 @@ const Tests = () => {
           <TabsList className="rounded-full bg-muted p-1 mb-6">
             <TabsTrigger value="available" className="rounded-full">Elérhető Tesztek ({tests.length})</TabsTrigger>
             <TabsTrigger value="results" className="rounded-full">Eredményeim ({results.length})</TabsTrigger>
-            {user.role === "teacher" && <TabsTrigger value="own" className="rounded-full">Saját Tesztjeim</TabsTrigger>}
+            {userRole === "teacher" && <TabsTrigger value="own" className="rounded-full">Saját Tesztjeim</TabsTrigger>}
           </TabsList>
 
           <TabsContent value="available">
@@ -690,7 +692,7 @@ const Tests = () => {
             )}
           </TabsContent>
 
-          {user.role === "teacher" && (
+          {userRole === "teacher" && (
             <TabsContent value="own">
               {tests.filter((t) => !t.is_system).length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
