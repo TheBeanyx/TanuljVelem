@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Users, Search, UserPlus, MessageSquare, X, Check, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -7,18 +7,85 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardNav from "@/components/DashboardNav";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
-const demoFriends: { id: number; name: string; username: string; role: string; classmate: boolean }[] = [];
-
-const demoRequests = {
-  incoming: [] as { id: number; name: string; username: string; role: string }[],
-  outgoing: [] as { id: number; name: string; username: string; role: string }[],
+type UserProfile = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  role: string;
 };
-
-const demoClassmates: { id: number; name: string; className: string; isFriend: boolean }[] = [];
 
 const Friends = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [classmates, setClassmates] = useState<{ id: string; name: string; className: string }[]>([]);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    fetchClassmates();
+  }, [user]);
+
+  const fetchClassmates = async () => {
+    if (!user) return;
+    // Get user's classes
+    const { data: memberships } = await supabase.from("class_members").select("class_id").eq("user_id", user.id);
+    const { data: ownedClasses } = await supabase.from("classes").select("id, name").eq("owner_id", user.id);
+    
+    const classIds = [
+      ...(memberships || []).map((m: any) => m.class_id),
+      ...(ownedClasses || []).map((c: any) => c.id),
+    ];
+    if (classIds.length === 0) return;
+
+    const uniqueClassIds = [...new Set(classIds)];
+    const { data: allClasses } = await supabase.from("classes").select("id, name").in("id", uniqueClassIds);
+    const classMap = new Map((allClasses || []).map((c: any) => [c.id, c.name]));
+
+    const { data: allMembers } = await supabase.from("class_members").select("user_id, class_id").in("class_id", uniqueClassIds);
+    const otherUserIds = [...new Set((allMembers || []).map((m: any) => m.user_id).filter((id: string) => id !== user.id))];
+    
+    if (otherUserIds.length === 0) return;
+    const { data: profiles } = await supabase.from("profiles").select("id, display_name, username").in("id", otherUserIds);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+
+    const result: { id: string; name: string; className: string }[] = [];
+    const seen = new Set<string>();
+    for (const m of allMembers || []) {
+      if (m.user_id === user.id || seen.has(m.user_id)) continue;
+      seen.add(m.user_id);
+      const p = profileMap.get(m.user_id);
+      if (p) {
+        result.push({
+          id: p.id,
+          name: p.display_name || p.username,
+          className: classMap.get(m.class_id) || "",
+        });
+      }
+    }
+    setClassmates(result);
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      // Show all users
+      const { data } = await supabase.from("profiles").select("id, username, display_name, role").limit(50);
+      setAllUsers((data || []).filter((p: any) => p.id !== user?.id) as UserProfile[]);
+      setSearchResults([]);
+      return;
+    }
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, username, display_name, role")
+      .or(`username.ilike.%${searchQuery.trim()}%,display_name.ilike.%${searchQuery.trim()}%`)
+      .limit(20);
+    setSearchResults((data || []).filter((p: any) => p.id !== user?.id) as UserProfile[]);
+  };
+
+  const displayedUsers = searchResults.length > 0 ? searchResults : allUsers;
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,102 +98,53 @@ const Friends = () => {
 
         {/* Search */}
         <div className="bg-card rounded-2xl border border-border p-5 mb-6">
-          <h3 className="font-bold mb-3">Barát keresése</h3>
+          <h3 className="font-bold mb-3">Felhasználó keresése</h3>
           <div className="flex gap-2">
-            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Felhasználónév keresése..." className="rounded-full" />
-            <Button className="rounded-full gap-2 bg-primary"><Search className="w-4 h-4" /> Keresés</Button>
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="Felhasználónév keresése..."
+              className="rounded-full"
+            />
+            <Button onClick={handleSearch} className="rounded-full gap-2 bg-primary"><Search className="w-4 h-4" /> Keresés</Button>
           </div>
         </div>
 
-        <Tabs defaultValue="friends">
+        {/* Search results */}
+        {displayedUsers.length > 0 && (
+          <div className="bg-card rounded-2xl border border-border p-5 mb-6">
+            <h3 className="font-bold mb-3">Találatok ({displayedUsers.length})</h3>
+            <div className="space-y-2">
+              {displayedUsers.map((u) => (
+                <div key={u.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                      {(u.display_name || u.username).charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{u.display_name || u.username}</p>
+                      <p className="text-xs text-muted-foreground">@{u.username} · {u.role === "teacher" ? "Tanár" : "Diák"}</p>
+                    </div>
+                  </div>
+                  <Link to="/messages">
+                    <Button variant="ghost" size="icon" className="rounded-full">
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <Tabs defaultValue="classmates">
           <TabsList className="rounded-full bg-muted p-1 mb-6">
-            <TabsTrigger value="friends" className="rounded-full">Barátaim ({demoFriends.length})</TabsTrigger>
-            <TabsTrigger value="requests" className="rounded-full">Kérések</TabsTrigger>
-            <TabsTrigger value="classmates" className="rounded-full">Osztálytársak ({demoClassmates.length})</TabsTrigger>
+            <TabsTrigger value="classmates" className="rounded-full">Osztálytársak ({classmates.length})</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="friends">
-            {demoFriends.length === 0 ? (
-              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-semibold">Még nincsenek barátaid</p>
-                <p className="text-sm mt-1">Keress rá ismerőseidre a kereső mezővel!</p>
-              </div>
-            ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {demoFriends.map((f, i) => (
-                  <motion.div key={f.id} initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                    className="bg-card rounded-2xl border border-border p-4 hover:shadow-lg transition-shadow group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                        {f.name.charAt(0)}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-bold">{f.name}</p>
-                        <p className="text-xs text-muted-foreground">@{f.username} · {f.role}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between mt-3">
-                      {f.classmate && <Badge variant="outline" className="text-xs bg-primary/5">Osztálytárs</Badge>}
-                      <div className="flex gap-1 ml-auto">
-                        <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full w-8 h-8"><MessageSquare className="w-4 h-4" /></Button></Link>
-                        <Button variant="ghost" size="icon" className="rounded-full w-8 h-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="requests">
-            {demoRequests.incoming.length === 0 && demoRequests.outgoing.length === 0 ? (
-              <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
-                <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="font-semibold">Nincs függő kérés</p>
-                <p className="text-sm mt-1">Jelenleg nincsenek beérkezett vagy elküldött barátkéréseid.</p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="font-bold mb-3">Beérkezett kérések</h3>
-                  {demoRequests.incoming.map((r) => (
-                    <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center text-success font-bold">{r.name.charAt(0)}</div>
-                        <div>
-                          <p className="font-semibold">{r.name}</p>
-                          <p className="text-xs text-muted-foreground">@{r.username}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" className="rounded-full bg-success hover:bg-success/90 text-success-foreground gap-1"><Check className="w-3 h-3" /> Elfogad</Button>
-                        <Button size="sm" variant="ghost" className="rounded-full text-destructive"><X className="w-4 h-4" /></Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <h3 className="font-bold mb-3">Elküldött kérések</h3>
-                  {demoRequests.outgoing.map((r) => (
-                    <div key={r.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center text-warning font-bold">{r.name.charAt(0)}</div>
-                        <div>
-                          <p className="font-semibold">{r.name}</p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Várakozik...</p>
-                        </div>
-                      </div>
-                      <Button size="sm" variant="outline" className="rounded-full">Visszavon</Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
           <TabsContent value="classmates">
-            {demoClassmates.length === 0 ? (
+            {classmates.length === 0 ? (
               <div className="bg-card rounded-2xl border border-border p-10 text-center text-muted-foreground">
                 <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
                 <p className="font-semibold">Nincs osztálytárs</p>
@@ -134,7 +152,7 @@ const Friends = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {demoClassmates.map((c) => (
+                {classmates.map((c) => (
                   <div key={c.id} className="bg-card rounded-2xl border border-border p-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{c.name.charAt(0)}</div>
@@ -143,10 +161,11 @@ const Friends = () => {
                         <p className="text-xs text-muted-foreground">{c.className}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Link to="/messages"><Button variant="ghost" size="icon" className="rounded-full"><MessageSquare className="w-4 h-4" /></Button></Link>
-                      {c.isFriend ? <Badge className="bg-success/10 text-success">Barát</Badge> : <Button size="sm" className="rounded-full gap-1 bg-primary"><UserPlus className="w-3 h-3" /> Hozzáadás</Button>}
-                    </div>
+                    <Link to="/messages">
+                      <Button variant="ghost" size="icon" className="rounded-full">
+                        <MessageSquare className="w-4 h-4" />
+                      </Button>
+                    </Link>
                   </div>
                 ))}
               </div>
