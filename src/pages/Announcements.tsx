@@ -105,6 +105,7 @@ const Announcements = () => {
   const [sending, setSending] = useState(false);
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
   const [openComments, setOpenComments] = useState<Record<string, boolean>>({});
+  const [teacherClasses, setTeacherClasses] = useState<{id: string; name: string; grade: number}[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const insertFormatting = useCallback((prefix: string, suffix: string) => {
@@ -140,7 +141,16 @@ const Announcements = () => {
   useEffect(() => {
     fetchAnnouncements();
     fetchStudents();
-  }, [user]);
+    if (profile?.role === "teacher" && user) {
+      fetchTeacherClasses();
+    }
+  }, [user, profile]);
+
+  const fetchTeacherClasses = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classes").select("id, name, grade").eq("owner_id", user.id);
+    if (data) setTeacherClasses(data);
+  };
 
   const fetchAnnouncements = async () => {
     if (!user) return;
@@ -345,9 +355,19 @@ const Announcements = () => {
                   </div>
                 ) : (
                   <div>
-                    <Label className="font-semibold">Osztály neve</Label>
-                    <Input value={className} onChange={(e) => setClassName(e.target.value)}
-                      placeholder="pl. 9.A" className="mt-1.5 rounded-xl" />
+                    <Label className="font-semibold">Osztály kiválasztása</Label>
+                    {teacherClasses.length > 0 ? (
+                      <Select value={className} onValueChange={setClassName}>
+                        <SelectTrigger className="mt-1.5 rounded-xl"><SelectValue placeholder="Válassz osztályt" /></SelectTrigger>
+                        <SelectContent>
+                          {teacherClasses.map((c) => (
+                            <SelectItem key={c.id} value={c.name}>{c.name} ({c.grade}. évfolyam)</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mt-1.5">Még nincs osztályod. Hozz létre egyet az Osztályok fülön!</p>
+                    )}
                   </div>
                 )}
 
