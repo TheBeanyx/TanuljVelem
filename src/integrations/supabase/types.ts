@@ -203,6 +203,7 @@ export type Database = {
           code: string
           created_at: string
           grade: number
+          head_teacher_id: string | null
           id: string
           name: string
           owner_id: string
@@ -211,6 +212,7 @@ export type Database = {
           code?: string
           created_at?: string
           grade?: number
+          head_teacher_id?: string | null
           id?: string
           name: string
           owner_id: string
@@ -219,6 +221,7 @@ export type Database = {
           code?: string
           created_at?: string
           grade?: number
+          head_teacher_id?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -268,6 +271,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mentions: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+          mentioner_user_id: string
+          message_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+          mentioner_user_id: string
+          message_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+          mentioner_user_id?: string
+          message_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
