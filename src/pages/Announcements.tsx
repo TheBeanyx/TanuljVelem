@@ -141,7 +141,16 @@ const Announcements = () => {
   useEffect(() => {
     fetchAnnouncements();
     fetchStudents();
-  }, [user]);
+    if (profile?.role === "teacher" && user) {
+      fetchTeacherClasses();
+    }
+  }, [user, profile]);
+
+  const fetchTeacherClasses = async () => {
+    if (!user) return;
+    const { data } = await supabase.from("classes").select("id, name, grade").eq("owner_id", user.id);
+    if (data) setTeacherClasses(data);
+  };
 
   const fetchAnnouncements = async () => {
     if (!user) return;
