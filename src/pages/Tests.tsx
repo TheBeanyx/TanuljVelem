@@ -614,7 +614,7 @@ const Tests = () => {
             <h1 className="text-4xl font-black text-success-foreground">Gyakorló Tesztek</h1>
             <p className="text-success-foreground/70 mt-2">Készülj a dolgozatokra!</p>
           </div>
-          {user.role === "teacher" && (
+          {userRole === "teacher" && (
             <Button onClick={() => setCreateOpen(true)} className="bg-card text-foreground hover:bg-card/90 rounded-full gap-2 font-bold">
               <Plus className="w-4 h-4" /> Új Teszt
             </Button>
