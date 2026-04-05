@@ -692,7 +692,7 @@ const Tests = () => {
             )}
           </TabsContent>
 
-          {user.role === "teacher" && (
+          {userRole === "teacher" && (
             <TabsContent value="own">
               {tests.filter((t) => !t.is_system).length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
