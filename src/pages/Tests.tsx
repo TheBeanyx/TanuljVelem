@@ -183,7 +183,7 @@ const Tests = () => {
 
     const { data: test, error } = await supabase.from("tests").insert({
       subject: newTestSubject, title: newTestTitle.trim(), grade: parseInt(newTestGrade),
-      time_limit_minutes: parseInt(newTestTime), creator_name: user.displayName || user.username, is_system: false,
+      time_limit_minutes: parseInt(newTestTime), creator_name: profile?.display_name || profile?.username || "Tanár", is_system: false,
     }).select().single();
 
     if (error || !test) { toast({ title: "Hiba a teszt létrehozásánál", variant: "destructive" }); return; }
