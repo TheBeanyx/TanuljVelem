@@ -261,22 +261,15 @@ const Classes = () => {
   const teacherMembers = members.filter((m) => m.role === "teacher");
   const headTeacher = members.find((m) => m.isHeadTeacher);
 
-  // Render mention-highlighted text with color coding
+  // Render mention-highlighted text - all mentions green
   const renderMessageText = (text: string) => {
     const parts = text.split(/(@[^\s@]+(?:\s[^\s@]+)?)/g);
     return parts.map((part, i) => {
       if (part.startsWith("@")) {
         const name = part.slice(1);
-        const member = members.find((m) => m.display_name === name);
-        if (member) {
-          const isHeadTeacher = member.isHeadTeacher;
-          const isTeacherMember = member.role === "teacher";
-          const colorClass = isHeadTeacher
-            ? "text-destructive font-bold"
-            : isTeacherMember
-            ? "text-green-500 font-semibold"
-            : "text-primary font-semibold";
-          return <span key={i} className={colorClass}>{part}</span>;
+        const isMember = members.some((m) => m.display_name === name);
+        if (isMember) {
+          return <span key={i} className="text-green-500 font-semibold">{part}</span>;
         }
       }
       return <span key={i}>{part}</span>;

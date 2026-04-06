@@ -358,6 +358,30 @@ export type Database = {
         }
         Relationships: []
       }
+      read_status: {
+        Row: {
+          channel_id: string
+          channel_type: string
+          id: string
+          last_read_at: string
+          user_id: string
+        }
+        Insert: {
+          channel_id: string
+          channel_type: string
+          id?: string
+          last_read_at?: string
+          user_id: string
+        }
+        Update: {
+          channel_id?: string
+          channel_type?: string
+          id?: string
+          last_read_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_questions: {
         Row: {
           correct_answer: string
