@@ -43,7 +43,7 @@ const Messages = () => {
   const [userSearch, setUserSearch] = useState("");
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
-  const { user } = useAuth();
+  const { markRead } = useUnreadCounts();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
