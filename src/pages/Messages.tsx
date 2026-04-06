@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { supabase } from "@/integrations/supabase/client";
 
 type UserProfile = {
