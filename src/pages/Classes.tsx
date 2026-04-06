@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { supabase } from "@/integrations/supabase/client";
 
 type ClassData = { id: string; name: string; grade: number; code: string; owner_id: string; created_at: string; head_teacher_id?: string | null };
