@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { supabase } from "@/integrations/supabase/client";
 
 type ClassData = { id: string; name: string; grade: number; code: string; owner_id: string; created_at: string; head_teacher_id?: string | null };
@@ -37,6 +38,7 @@ const Classes = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const isTeacher = profile?.role === "teacher";
+  const { markRead } = useUnreadCounts();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -95,6 +97,7 @@ const Classes = () => {
     if (selectedClass) {
       fetchMembers(selectedClass.id);
       fetchMessages(selectedClass.id);
+      markRead("class", selectedClass.id);
     }
   }, [selectedClass?.id]);
 
@@ -261,22 +264,15 @@ const Classes = () => {
   const teacherMembers = members.filter((m) => m.role === "teacher");
   const headTeacher = members.find((m) => m.isHeadTeacher);
 
-  // Render mention-highlighted text with color coding
+  // Render mention-highlighted text - all mentions green
   const renderMessageText = (text: string) => {
     const parts = text.split(/(@[^\s@]+(?:\s[^\s@]+)?)/g);
     return parts.map((part, i) => {
       if (part.startsWith("@")) {
         const name = part.slice(1);
-        const member = members.find((m) => m.display_name === name);
-        if (member) {
-          const isHeadTeacher = member.isHeadTeacher;
-          const isTeacherMember = member.role === "teacher";
-          const colorClass = isHeadTeacher
-            ? "text-destructive font-bold"
-            : isTeacherMember
-            ? "text-green-500 font-semibold"
-            : "text-primary font-semibold";
-          return <span key={i} className={colorClass}>{part}</span>;
+        const isMember = members.some((m) => m.display_name === name);
+        if (isMember) {
+          return <span key={i} className="text-green-500 font-semibold">{part}</span>;
         }
       }
       return <span key={i}>{part}</span>;

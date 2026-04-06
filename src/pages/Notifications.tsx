@@ -3,6 +3,7 @@ import { Bell, Megaphone, MessageCircle, AtSign } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { supabase } from "@/integrations/supabase/client";
 
 type NotificationItem = {
@@ -15,9 +16,15 @@ type NotificationItem = {
 
 const Notifications = () => {
   const { user, profile } = useAuth();
+  const { markRead } = useUnreadCounts();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const isTeacher = profile?.role === "teacher";
+
+  // Mark notifications as read on mount
+  useEffect(() => {
+    if (user) markRead("notif", "all");
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;

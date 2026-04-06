@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { supabase } from "@/integrations/supabase/client";
 
 type UserProfile = {
@@ -43,6 +44,7 @@ const Messages = () => {
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const { user } = useAuth();
+  const { markRead } = useUnreadCounts();
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
@@ -123,7 +125,10 @@ const Messages = () => {
   useEffect(() => { fetchConversations(); }, [user]);
 
   useEffect(() => {
-    if (selectedConversation) fetchChatMessages(selectedConversation.recipientId);
+    if (selectedConversation) {
+      fetchChatMessages(selectedConversation.recipientId);
+      markRead("dm", selectedConversation.recipientId);
+    }
   }, [selectedConversation?.recipientId]);
 
   useEffect(() => {
