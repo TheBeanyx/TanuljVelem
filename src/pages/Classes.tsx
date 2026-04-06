@@ -97,6 +97,7 @@ const Classes = () => {
     if (selectedClass) {
       fetchMembers(selectedClass.id);
       fetchMessages(selectedClass.id);
+      markRead("class", selectedClass.id);
     }
   }, [selectedClass?.id]);
 
