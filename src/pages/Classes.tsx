@@ -38,6 +38,7 @@ const Classes = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const isTeacher = profile?.role === "teacher";
+  const { markRead } = useUnreadCounts();
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
