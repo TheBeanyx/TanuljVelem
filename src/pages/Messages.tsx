@@ -125,7 +125,10 @@ const Messages = () => {
   useEffect(() => { fetchConversations(); }, [user]);
 
   useEffect(() => {
-    if (selectedConversation) fetchChatMessages(selectedConversation.recipientId);
+    if (selectedConversation) {
+      fetchChatMessages(selectedConversation.recipientId);
+      markRead("dm", selectedConversation.recipientId);
+    }
   }, [selectedConversation?.recipientId]);
 
   useEffect(() => {
