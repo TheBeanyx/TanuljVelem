@@ -16,9 +16,15 @@ type NotificationItem = {
 
 const Notifications = () => {
   const { user, profile } = useAuth();
+  const { markRead } = useUnreadCounts();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const isTeacher = profile?.role === "teacher";
+
+  // Mark notifications as read on mount
+  useEffect(() => {
+    if (user) markRead("notif", "all");
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
