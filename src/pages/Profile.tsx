@@ -193,7 +193,30 @@ const Profile = () => {
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-6">
-              <h2 className="font-bold text-lg mb-4">Értesítési beállítások</h2>
+              <h2 className="font-bold text-lg mb-4">Megjelenés</h2>
+              <div className="flex gap-3">
+                {([
+                  { value: "light" as const, icon: Sun, label: "Világos" },
+                  { value: "dark" as const, icon: Moon, label: "Sötét" },
+                  { value: "system" as const, icon: Monitor, label: "Automatikus" },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      theme === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                    }`}
+                  >
+                    <opt.icon className="w-5 h-5" />
+                    <span className="text-xs font-semibold">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+
               <div className="space-y-4">
                 {[
                   { label: "Házi feladat határidők", value: notifHomework, set: setNotifHomework },
