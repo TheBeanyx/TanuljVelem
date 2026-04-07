@@ -216,8 +216,10 @@ const Profile = () => {
               </div>
             </div>
 
-
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h2 className="font-bold text-lg mb-4">Értesítési beállítások</h2>
               <div className="space-y-4">
+
                 {[
                   { label: "Házi feladat határidők", value: notifHomework, set: setNotifHomework },
                   { label: "Dolgozatok és tesztek", value: notifTests, set: setNotifTests },
