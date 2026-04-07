@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2 } from "lucide-react";
+import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +25,7 @@ const Profile = () => {
   const [notifGames, setNotifGames] = useState(false);
   const [notifResults, setNotifResults] = useState(true);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   // Support chat state
@@ -191,8 +193,33 @@ const Profile = () => {
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-6">
+              <h2 className="font-bold text-lg mb-4">Megjelenés</h2>
+              <div className="flex gap-3">
+                {([
+                  { value: "light" as const, icon: Sun, label: "Világos" },
+                  { value: "dark" as const, icon: Moon, label: "Sötét" },
+                  { value: "system" as const, icon: Monitor, label: "Automatikus" },
+                ]).map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTheme(opt.value)}
+                    className={`flex-1 flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                      theme === opt.value
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card text-muted-foreground hover:border-primary/30"
+                    }`}
+                  >
+                    <opt.icon className="w-5 h-5" />
+                    <span className="text-xs font-semibold">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-6">
               <h2 className="font-bold text-lg mb-4">Értesítési beállítások</h2>
               <div className="space-y-4">
+
                 {[
                   { label: "Házi feladat határidők", value: notifHomework, set: setNotifHomework },
                   { label: "Dolgozatok és tesztek", value: notifTests, set: setNotifTests },
