@@ -25,6 +25,7 @@ const Profile = () => {
   const [notifGames, setNotifGames] = useState(false);
   const [notifResults, setNotifResults] = useState(true);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
+  const { theme, setTheme } = useTheme();
   const { toast } = useToast();
 
   // Support chat state
