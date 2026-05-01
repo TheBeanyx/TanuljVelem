@@ -21,10 +21,36 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+        toast({
+          title: "Email nincs megerősítve 📧",
+          description: "Kattints a regisztrációkor küldött emailben lévő linkre, hogy aktiváld a fiókod.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      }
     } else {
       toast({ title: "Sikeres bejelentkezés!" });
       navigate("/dashboard");
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast({ title: "Add meg az email címed", description: "Először írd be az email címedet.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Megerősítő email újraküldve! 📧", description: "Nézd meg a postaládád." });
     }
   };
 
