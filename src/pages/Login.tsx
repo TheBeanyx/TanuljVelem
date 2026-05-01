@@ -21,10 +21,36 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
-      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      const msg = error.message.toLowerCase();
+      if (msg.includes("email not confirmed") || msg.includes("not confirmed")) {
+        toast({
+          title: "Email nincs megerősítve 📧",
+          description: "Kattints a regisztrációkor küldött emailben lévő linkre, hogy aktiváld a fiókod.",
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: "Hiba", description: error.message, variant: "destructive" });
+      }
     } else {
       toast({ title: "Sikeres bejelentkezés!" });
       navigate("/dashboard");
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      toast({ title: "Add meg az email címed", description: "Először írd be az email címedet.", variant: "destructive" });
+      return;
+    }
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/dashboard` },
+    });
+    if (error) {
+      toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Megerősítő email újraküldve! 📧", description: "Nézd meg a postaládád." });
     }
   };
 
@@ -72,10 +98,22 @@ const Login = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <div className="flex justify-end mt-2">
+              <Link to="/forgot-password" className="text-sm text-primary font-semibold hover:underline">
+                Elfelejtett jelszó?
+              </Link>
+            </div>
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
             {loading ? "Bejelentkezés..." : "Bejelentkezés"}
           </Button>
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            className="w-full text-center text-sm text-muted-foreground hover:text-primary hover:underline"
+          >
+            Nem kaptál megerősítő emailt? Kattints ide az újraküldéshez
+          </button>
           <p className="text-center text-sm text-muted-foreground">
             Még nincs fiókod? <Link to="/register" className="text-primary font-semibold hover:underline">Regisztrálj itt</Link>
           </p>

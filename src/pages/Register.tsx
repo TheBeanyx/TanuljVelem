@@ -34,6 +34,7 @@ const Register = () => {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/dashboard`,
         data: {
           username,
           display_name: displayName || username,
@@ -45,8 +46,11 @@ const Register = () => {
     if (error) {
       toast({ title: "Hiba", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Sikeres regisztráció!" });
-      navigate("/dashboard");
+      toast({
+        title: "Erősítsd meg az email címed! 📧",
+        description: "Küldtünk egy megerősítő linket az email címedre. Kattints rá, hogy aktiváld a fiókod.",
+      });
+      navigate("/login");
     }
   };
 
