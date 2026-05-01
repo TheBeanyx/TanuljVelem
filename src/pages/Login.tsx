@@ -98,10 +98,22 @@ const Login = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+            <div className="flex justify-end mt-2">
+              <Link to="/forgot-password" className="text-sm text-primary font-semibold hover:underline">
+                Elfelejtett jelszó?
+              </Link>
+            </div>
           </div>
           <Button type="submit" disabled={loading} className="w-full rounded-xl bg-primary hover:bg-primary/90 font-bold text-lg py-5">
             {loading ? "Bejelentkezés..." : "Bejelentkezés"}
           </Button>
+          <button
+            type="button"
+            onClick={handleResendVerification}
+            className="w-full text-center text-sm text-muted-foreground hover:text-primary hover:underline"
+          >
+            Nem kaptál megerősítő emailt? Kattints ide az újraküldéshez
+          </button>
           <p className="text-center text-sm text-muted-foreground">
             Még nincs fiókod? <Link to="/register" className="text-primary font-semibold hover:underline">Regisztrálj itt</Link>
           </p>
