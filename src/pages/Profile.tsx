@@ -228,12 +228,15 @@ const Profile = () => {
           <TabsContent value="settings" className="space-y-6">
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                  {(displayName || user.username).charAt(0).toUpperCase()}
-                </div>
+                <Avatar className="w-16 h-16 ring-2 ring-primary/20">
+                  <AvatarImage src={resolveAvatarUrl(avatarUrl) ?? undefined} alt={profile?.username || "profil"} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                    {(displayName || profile?.username || "?").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <p className="font-bold text-lg">{user.username}</p>
-                  <p className="text-sm text-muted-foreground">{user.role === "teacher" ? "Tanár" : "Diák"}</p>
+                  <p className="font-bold text-lg">{profile?.username || "..."}</p>
+                  <p className="text-sm text-muted-foreground">{profile?.role === "teacher" ? "Tanár" : "Diák"}</p>
                 </div>
               </div>
 
@@ -242,7 +245,7 @@ const Profile = () => {
                   <Label className="font-semibold">Megjelenített név</Label>
                   <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-1.5 rounded-xl" />
                 </div>
-                {user.role === "student" && (
+                {profile?.role === "student" && (
                   <div>
                     <Label className="font-semibold">Évfolyam</Label>
                     <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full mt-1.5 rounded-xl border border-border bg-card px-3 py-2 text-sm">
@@ -251,6 +254,52 @@ const Profile = () => {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Avatar választó */}
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h2 className="font-bold text-lg mb-1">Profilkép</h2>
+              <p className="text-sm text-muted-foreground mb-4">Válassz egyet az alapokból, vagy tölts fel sajátot.</p>
+              <div className="grid grid-cols-5 gap-3 mb-4">
+                {PRESET_AVATARS.map((a) => {
+                  const selected = avatarUrl === a.id;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => selectPresetAvatar(a.id)}
+                      className={`relative aspect-square rounded-2xl border-2 p-1 transition-all hover:scale-105 ${
+                        selected ? "border-primary bg-primary/10" : "border-border bg-muted/40 hover:border-primary/30"
+                      }`}
+                      aria-label={`${a.label} avatar`}
+                    >
+                      <img src={a.src} alt={a.label} className="w-full h-full object-contain" loading="lazy" />
+                      {selected && (
+                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                          <Check className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="w-full rounded-xl gap-2"
+              >
+                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingAvatar ? "Feltöltés..." : "Saját kép feltöltése (max 2MB)"}
+              </Button>
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-6">
