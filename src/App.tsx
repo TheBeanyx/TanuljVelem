@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard";
 import Games from "./pages/Games";
 import GamePlayer from "./pages/GamePlayer";
 import Tests from "./pages/Tests";
+import Learn from "./pages/Learn";
 import Classes from "./pages/Classes";
 import Friends from "./pages/Friends";
 import Messages from "./pages/Messages";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/games" element={<Games />} />
             <Route path="/games/:id" element={<GamePlayer />} />
             <Route path="/tests" element={<Tests />} />
+            <Route path="/learn" element={<Learn />} />
             <Route path="/classes" element={<Classes />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/messages" element={<Messages />} />
