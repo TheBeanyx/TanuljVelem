@@ -22,7 +22,7 @@ const Learn = () => {
   const { toast } = useToast();
   const [topic, setTopic] = useState("");
   const [view, setView] = useState<View>("input");
-  const [loading, setLoading] = useState<null | "cards" | "notes" | "practice">(null);
+  const [loading, setLoading] = useState<null | "flashcards" | "notes" | "practice">(null);
 
   const [topicTitle, setTopicTitle] = useState("");
   const [cards, setCards] = useState<Flashcard[]>([]);
