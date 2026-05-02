@@ -7,6 +7,7 @@ type Profile = {
   username: string;
   display_name: string | null;
   role: string;
+  avatar_url: string | null;
 };
 
 type AuthContextType = {
@@ -14,6 +15,7 @@ type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -21,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
