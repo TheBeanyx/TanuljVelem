@@ -1,9 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone, Sparkles } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { resolveAvatarUrl } from "@/lib/avatars";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +15,7 @@ import {
 
 const navItems = [
   { to: "/dashboard", label: "Házi Feladat", icon: BookOpen, badgeKey: null },
+  { to: "/learn", label: "Tanulás", icon: Brain, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
   { to: "/classes", label: "Osztályok", icon: Users, badgeKey: "classes" as const },
