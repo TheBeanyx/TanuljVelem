@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -17,8 +20,11 @@ type Msg = { role: "user" | "assistant"; content: string };
 const SUPPORT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/support-chat`;
 
 const Profile = () => {
-  const user = JSON.parse(localStorage.getItem("user") || '{"username":"Demo","displayName":"Demo","role":"student"}');
-  const [displayName, setDisplayName] = useState(user.displayName || "");
+  const { user, profile, refreshProfile } = useAuth();
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [grade, setGrade] = useState("8");
   const [notifHomework, setNotifHomework] = useState(true);
   const [notifTests, setNotifTests] = useState(true);
