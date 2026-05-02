@@ -44,6 +44,14 @@ const Profile = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // sync local state from profile
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || profile.username || "");
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
+
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase
@@ -56,8 +64,65 @@ const Profile = () => {
     fetchSettings();
   }, []);
 
+  const selectPresetAvatar = async (presetId: string) => {
+    if (!user) return;
+    setAvatarUrl(presetId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: presetId })
+      .eq("id", user.id);
+    if (error) {
+      toast({ title: "Nem sikerült beállítani az avatart", variant: "destructive" });
+      return;
+    }
+    await refreshProfile();
+    toast({ title: "Profilkép frissítve! ✨" });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Túl nagy a kép (max 2MB)", variant: "destructive" });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const newUrl = pub.publicUrl;
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: newUrl })
+        .eq("id", user.id);
+      if (dbErr) throw dbErr;
+      setAvatarUrl(newUrl);
+      await refreshProfile();
+      toast({ title: "Profilkép feltöltve! 🎉" });
+    } catch (err: any) {
+      toast({ title: "Feltöltési hiba", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
-    localStorage.setItem("user", JSON.stringify({ ...user, displayName }));
+    if (!user) return;
+    const { error: profErr } = await supabase
+      .from("profiles")
+      .update({ display_name: displayName })
+      .eq("id", user.id);
+    if (profErr) {
+      toast({ title: "Hiba a név mentésénél", variant: "destructive" });
+      return;
+    }
 
     const { error } = await supabase
       .from("user_settings")
@@ -68,6 +133,7 @@ const Profile = () => {
       toast({ title: "Hiba a mentésnél", variant: "destructive" });
       return;
     }
+    await refreshProfile();
     toast({ title: "Beállítások mentve!" });
   };
 
