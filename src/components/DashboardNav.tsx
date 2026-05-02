@@ -1,9 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone, Sparkles } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
+import { resolveAvatarUrl } from "@/lib/avatars";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +15,7 @@ import {
 
 const navItems = [
   { to: "/dashboard", label: "Házi Feladat", icon: BookOpen, badgeKey: null },
+  { to: "/learn", label: "Tanulás", icon: Brain, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
   { to: "/classes", label: "Osztályok", icon: Users, badgeKey: "classes" as const },
@@ -106,10 +109,13 @@ const DashboardNav = () => {
               {renderBadge(counts.notifications)}
             </Button>
           </Link>
-          <Link to="/profile">
-            <Button variant="ghost" size="icon" className="rounded-full">
-              <Settings className="w-5 h-5" />
-            </Button>
+          <Link to="/profile" aria-label="Profil beállítások">
+            <Avatar className="w-9 h-9 ring-2 ring-transparent hover:ring-primary/40 transition-all">
+              <AvatarImage src={resolveAvatarUrl(profile?.avatar_url) ?? undefined} alt={profile?.display_name || profile?.username || "profil"} />
+              <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                {(profile?.display_name || profile?.username || "?").charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
           </Link>
           <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-border ml-2">
             <span className="text-sm font-semibold">{profile?.display_name || profile?.username || "..."}</span>

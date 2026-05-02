@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor } from "lucide-react";
+import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
@@ -17,8 +20,11 @@ type Msg = { role: "user" | "assistant"; content: string };
 const SUPPORT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/support-chat`;
 
 const Profile = () => {
-  const user = JSON.parse(localStorage.getItem("user") || '{"username":"Demo","displayName":"Demo","role":"student"}');
-  const [displayName, setDisplayName] = useState(user.displayName || "");
+  const { user, profile, refreshProfile } = useAuth();
+  const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [grade, setGrade] = useState("8");
   const [notifHomework, setNotifHomework] = useState(true);
   const [notifTests, setNotifTests] = useState(true);
@@ -38,6 +44,14 @@ const Profile = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // sync local state from profile
+  useEffect(() => {
+    if (profile) {
+      setDisplayName(profile.display_name || profile.username || "");
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
+
   useEffect(() => {
     const fetchSettings = async () => {
       const { data } = await supabase
@@ -50,8 +64,65 @@ const Profile = () => {
     fetchSettings();
   }, []);
 
+  const selectPresetAvatar = async (presetId: string) => {
+    if (!user) return;
+    setAvatarUrl(presetId);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ avatar_url: presetId })
+      .eq("id", user.id);
+    if (error) {
+      toast({ title: "Nem sikerült beállítani az avatart", variant: "destructive" });
+      return;
+    }
+    await refreshProfile();
+    toast({ title: "Profilkép frissítve! ✨" });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Túl nagy a kép (max 2MB)", variant: "destructive" });
+      return;
+    }
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+      const newUrl = pub.publicUrl;
+      const { error: dbErr } = await supabase
+        .from("profiles")
+        .update({ avatar_url: newUrl })
+        .eq("id", user.id);
+      if (dbErr) throw dbErr;
+      setAvatarUrl(newUrl);
+      await refreshProfile();
+      toast({ title: "Profilkép feltöltve! 🎉" });
+    } catch (err: any) {
+      toast({ title: "Feltöltési hiba", description: err.message, variant: "destructive" });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
-    localStorage.setItem("user", JSON.stringify({ ...user, displayName }));
+    if (!user) return;
+    const { error: profErr } = await supabase
+      .from("profiles")
+      .update({ display_name: displayName })
+      .eq("id", user.id);
+    if (profErr) {
+      toast({ title: "Hiba a név mentésénél", variant: "destructive" });
+      return;
+    }
 
     const { error } = await supabase
       .from("user_settings")
@@ -62,6 +133,7 @@ const Profile = () => {
       toast({ title: "Hiba a mentésnél", variant: "destructive" });
       return;
     }
+    await refreshProfile();
     toast({ title: "Beállítások mentve!" });
   };
 
@@ -156,12 +228,15 @@ const Profile = () => {
           <TabsContent value="settings" className="space-y-6">
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-                  {(displayName || user.username).charAt(0).toUpperCase()}
-                </div>
+                <Avatar className="w-16 h-16 ring-2 ring-primary/20">
+                  <AvatarImage src={resolveAvatarUrl(avatarUrl) ?? undefined} alt={profile?.username || "profil"} />
+                  <AvatarFallback className="bg-primary/10 text-primary font-bold text-2xl">
+                    {(displayName || profile?.username || "?").charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div>
-                  <p className="font-bold text-lg">{user.username}</p>
-                  <p className="text-sm text-muted-foreground">{user.role === "teacher" ? "Tanár" : "Diák"}</p>
+                  <p className="font-bold text-lg">{profile?.username || "..."}</p>
+                  <p className="text-sm text-muted-foreground">{profile?.role === "teacher" ? "Tanár" : "Diák"}</p>
                 </div>
               </div>
 
@@ -170,7 +245,7 @@ const Profile = () => {
                   <Label className="font-semibold">Megjelenített név</Label>
                   <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} className="mt-1.5 rounded-xl" />
                 </div>
-                {user.role === "student" && (
+                {profile?.role === "student" && (
                   <div>
                     <Label className="font-semibold">Évfolyam</Label>
                     <select value={grade} onChange={(e) => setGrade(e.target.value)} className="w-full mt-1.5 rounded-xl border border-border bg-card px-3 py-2 text-sm">
@@ -179,6 +254,52 @@ const Profile = () => {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Avatar választó */}
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h2 className="font-bold text-lg mb-1">Profilkép</h2>
+              <p className="text-sm text-muted-foreground mb-4">Válassz egyet az alapokból, vagy tölts fel sajátot.</p>
+              <div className="grid grid-cols-5 gap-3 mb-4">
+                {PRESET_AVATARS.map((a) => {
+                  const selected = avatarUrl === a.id;
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => selectPresetAvatar(a.id)}
+                      className={`relative aspect-square rounded-2xl border-2 p-1 transition-all hover:scale-105 ${
+                        selected ? "border-primary bg-primary/10" : "border-border bg-muted/40 hover:border-primary/30"
+                      }`}
+                      aria-label={`${a.label} avatar`}
+                    >
+                      <img src={a.src} alt={a.label} className="w-full h-full object-contain" loading="lazy" />
+                      {selected && (
+                        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                          <Check className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="w-full rounded-xl gap-2"
+              >
+                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingAvatar ? "Feltöltés..." : "Saját kép feltöltése (max 2MB)"}
+              </Button>
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-6">
