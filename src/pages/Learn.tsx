@@ -162,8 +162,8 @@ const Learn = () => {
               disabled={loading !== null}
               className="w-full mt-5 rounded-xl gradient-primary text-primary-foreground font-bold text-base py-6 gap-2"
             >
-              {loading === "cards" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
-              {loading === "cards" ? "Flashcardok generálása..." : "Flashcardok készítése"}
+              {loading === "flashcards" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+              {loading === "flashcards" ? "Flashcardok generálása..." : "Flashcardok készítése"}
             </Button>
           </div>
         )}
