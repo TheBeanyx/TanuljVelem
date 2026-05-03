@@ -263,6 +263,86 @@ export type Database = {
           },
         ]
       }
+      flashcard_items: {
+        Row: {
+          back: string
+          created_at: string
+          emoji: string | null
+          front: string
+          id: string
+          set_id: string
+          sort_order: number
+        }
+        Insert: {
+          back: string
+          created_at?: string
+          emoji?: string | null
+          front: string
+          id?: string
+          set_id: string
+          sort_order?: number
+        }
+        Update: {
+          back?: string
+          created_at?: string
+          emoji?: string | null
+          front?: string
+          id?: string
+          set_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcard_items_set_id_fkey"
+            columns: ["set_id"]
+            isOneToOne: false
+            referencedRelation: "flashcard_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flashcard_sets: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          difficulty: string
+          id: string
+          length: string
+          owner_id: string
+          source: string
+          title: string
+          topic: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          length?: string
+          owner_id: string
+          source?: string
+          title: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          length?: string
+          owner_id?: string
+          source?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
+      }
       homeworks: {
         Row: {
           class_id: string | null
@@ -306,6 +386,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      learn_notes: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          difficulty: string
+          id: string
+          length: string
+          markdown: string
+          owner_id: string
+          source: string
+          title: string
+          topic: string | null
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          length?: string
+          markdown: string
+          owner_id: string
+          source?: string
+          title: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          difficulty?: string
+          id?: string
+          length?: string
+          markdown?: string
+          owner_id?: string
+          source?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: []
       }
       mentions: {
         Row: {
