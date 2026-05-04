@@ -731,7 +731,48 @@ const Learn = () => {
               onKeyDown={(e) => { if (e.key === "Enter") generateCards(); }}
               placeholder="pl. Fotoszintézis, Pitagorasz-tétel..."
               className="mt-2 rounded-xl text-base h-12" />
-            <p className="text-xs text-muted-foreground mt-2">Az AI 8-10 db 3D flashcardot készít. Aztán kérhetsz jegyzetet vagy gyakorlótesztet.</p>
+
+            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+              <div>
+                <Label className="text-xs font-semibold">Évfolyam</Label>
+                <Select value={aiSettings.grade} onValueChange={(v) => setAiSettings({ ...aiSettings, grade: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évfolyam</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Nehézség</Label>
+                <Select value={aiSettings.difficulty} onValueChange={(v) => setAiSettings({ ...aiSettings, difficulty: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTY.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Hossz</Label>
+                <Select value={aiSettings.length} onValueChange={(v) => setAiSettings({ ...aiSettings, length: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LENGTH.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Láthatóság</Label>
+                <Select value={aiSettings.visibility} onValueChange={(v) => setAiSettings({ ...aiSettings, visibility: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">🔒 Privát</SelectItem>
+                    <SelectItem value="public">🌍 Publikus</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">Az AI a beállítások alapján készít flashcardokat, és automatikusan elmenti a könyvtáradba. Utána kérhetsz jegyzetet vagy gyakorlótesztet ugyanezekkel a beállításokkal.</p>
             <Button onClick={generateCards} disabled={loading !== null}
               className="w-full mt-5 rounded-xl gradient-primary text-primary-foreground font-bold text-base py-6 gap-2">
               {loading === "flashcards" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
