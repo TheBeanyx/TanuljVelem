@@ -306,6 +306,7 @@ export type Database = {
           class_id: string | null
           created_at: string
           difficulty: string
+          grade: number | null
           id: string
           length: string
           owner_id: string
@@ -319,6 +320,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           difficulty?: string
+          grade?: number | null
           id?: string
           length?: string
           owner_id: string
@@ -332,6 +334,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           difficulty?: string
+          grade?: number | null
           id?: string
           length?: string
           owner_id?: string
@@ -392,6 +395,7 @@ export type Database = {
           class_id: string | null
           created_at: string
           difficulty: string
+          grade: number | null
           id: string
           length: string
           markdown: string
@@ -406,6 +410,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           difficulty?: string
+          grade?: number | null
           id?: string
           length?: string
           markdown: string
@@ -420,6 +425,7 @@ export type Database = {
           class_id?: string | null
           created_at?: string
           difficulty?: string
+          grade?: number | null
           id?: string
           length?: string
           markdown?: string

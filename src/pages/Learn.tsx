@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Brain, Sparkles, Loader2, ChevronLeft, ChevronRight, RotateCcw,
-  NotebookPen, ClipboardList, ArrowLeft, Check, X, Plus, Search, Library, FileText, Trash2, Globe, Lock, Users, Layers,
+  NotebookPen, ClipboardList, ArrowLeft, Check, X, Plus, Search, Library, FileText, Trash2, Globe, Lock, GraduationCap, Layers,
 } from "lucide-react";
 import DashboardNav from "@/components/DashboardNav";
 import { Button } from "@/components/ui/button";
@@ -35,14 +35,13 @@ type View =
   | "view-set"
   | "view-note";
 
-type ClassRow = { id: string; name: string };
 type SetRow = {
   id: string; title: string; topic: string | null; owner_id: string;
-  visibility: string; difficulty: string; length: string; class_id: string | null;
+  visibility: string; difficulty: string; length: string; grade: number | null;
 };
 type NoteRow = {
   id: string; title: string; markdown: string; topic: string | null; owner_id: string;
-  visibility: string; difficulty: string; length: string; class_id: string | null;
+  visibility: string; difficulty: string; length: string; grade: number | null;
 };
 
 const DIFFICULTY = [
@@ -56,6 +55,8 @@ const LENGTH = [
   { value: "long", label: "Hosszú" },
 ];
 
+const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+
 const Learn = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -63,14 +64,20 @@ const Learn = () => {
   const [view, setView] = useState<View>("hub");
   const [tab, setTab] = useState<"flashcards" | "notes">("flashcards");
   const [search, setSearch] = useState("");
+  const [filterGrade, setFilterGrade] = useState<string>("all");
 
-  const [classes, setClasses] = useState<ClassRow[]>([]);
   const [sets, setSets] = useState<SetRow[]>([]);
   const [notesList, setNotesList] = useState<NoteRow[]>([]);
   const [listLoading, setListLoading] = useState(false);
 
   // ===== AI flow state =====
   const [topic, setTopic] = useState("");
+  const [aiSettings, setAiSettings] = useState({
+    grade: "8",
+    difficulty: "medium",
+    length: "medium",
+    visibility: "private",
+  });
   const [loading, setLoading] = useState<null | "flashcards" | "notes" | "practice">(null);
   const [topicTitle, setTopicTitle] = useState("");
   const [cards, setCards] = useState<Flashcard[]>([]);
@@ -81,12 +88,14 @@ const Learn = () => {
   const [practiceTitle, setPracticeTitle] = useState("");
   const [answers, setAnswers] = useState<Record<number, "A" | "B" | "C" | "D">>({});
   const [showResults, setShowResults] = useState(false);
+  const [savedSetId, setSavedSetId] = useState<string | null>(null);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
 
   // ===== Create state =====
   const [form, setForm] = useState({
     title: "",
     topic: "",
-    classId: "none",
+    grade: "8",
     visibility: "private",
     length: "medium",
     difficulty: "medium",
@@ -101,25 +110,6 @@ const Learn = () => {
   const [activeSet, setActiveSet] = useState<SetRow | null>(null);
   const [activeSetCards, setActiveSetCards] = useState<Flashcard[]>([]);
   const [activeNote, setActiveNote] = useState<NoteRow | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    // Load classes the user is part of or owns
-    (async () => {
-      const [{ data: owned }, { data: memberOf }] = await Promise.all([
-        supabase.from("classes").select("id, name").eq("owner_id", user.id),
-        supabase.from("class_members").select("class_id, classes(id, name)").eq("user_id", user.id),
-      ]);
-      const all: ClassRow[] = [];
-      owned?.forEach((c: any) => all.push({ id: c.id, name: c.name }));
-      memberOf?.forEach((m: any) => {
-        if (m.classes && !all.find((x) => x.id === m.classes.id)) {
-          all.push({ id: m.classes.id, name: m.classes.name });
-        }
-      });
-      setClasses(all);
-    })();
-  }, [user]);
 
   const loadLists = async () => {
     setListLoading(true);
@@ -149,7 +139,14 @@ const Learn = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ mode, topic, context }),
+        body: JSON.stringify({
+          mode,
+          topic,
+          context,
+          grade: parseInt(aiSettings.grade, 10),
+          difficulty: aiSettings.difficulty,
+          length: aiSettings.length,
+        }),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
@@ -172,16 +169,65 @@ const Learn = () => {
     }
     const data = await callAI("flashcards");
     if (!data) return;
-    setTopicTitle(data.topic_title || topic);
+    const title = data.topic_title || topic;
+    setTopicTitle(title);
     setCards(data.cards || []);
     setCardIdx(0); setFlipped(false);
     setView("cards");
+
+    // Auto-save the generated set
+    if (user && data.cards?.length) {
+      const { data: setRow } = await supabase
+        .from("flashcard_sets")
+        .insert({
+          owner_id: user.id,
+          title,
+          topic: topic.trim(),
+          grade: parseInt(aiSettings.grade, 10),
+          visibility: aiSettings.visibility,
+          length: aiSettings.length,
+          difficulty: aiSettings.difficulty,
+          source: "ai",
+        })
+        .select()
+        .single();
+      if (setRow) {
+        setSavedSetId(setRow.id);
+        const items = data.cards.map((c: Flashcard, i: number) => ({
+          set_id: setRow.id,
+          front: c.front,
+          back: c.back,
+          emoji: c.emoji || "📘",
+          sort_order: i,
+        }));
+        await supabase.from("flashcard_items").insert(items);
+        toast({ title: "Flashcardok elmentve a könyvtáradba 🎉" });
+      }
+    }
   };
 
   const generateNotes = async () => {
     const data = await callAI("notes");
     if (!data) return;
     setAiNotes(data); setView("notes");
+
+    if (user && data.markdown) {
+      const { data: noteRow } = await supabase.from("learn_notes").insert({
+        owner_id: user.id,
+        title: data.title,
+        markdown: data.markdown,
+        topic: topic.trim(),
+        grade: parseInt(aiSettings.grade, 10),
+        visibility: aiSettings.visibility,
+        length: aiSettings.length,
+        difficulty: aiSettings.difficulty,
+        source: "ai",
+      }).select().single();
+      if (noteRow) {
+        setSavedNoteId(noteRow.id);
+        toast({ title: "Jegyzet elmentve a könyvtáradba 📝" });
+      }
+    }
   };
 
   const generatePractice = async () => {
@@ -196,13 +242,14 @@ const Learn = () => {
   const resetAI = () => {
     setTopic(""); setCards([]); setCardIdx(0); setFlipped(false);
     setAiNotes(null); setQuestions([]); setAnswers({}); setShowResults(false);
+    setSavedSetId(null); setSavedNoteId(null);
   };
 
   const score = questions.reduce((s, q, i) => (answers[i] === q.correct_answer ? s + 1 : s), 0);
 
   // ============ Save ============
   const resetForm = () => {
-    setForm({ title: "", topic: "", classId: "none", visibility: "private", length: "medium", difficulty: "medium", markdown: "" });
+    setForm({ title: "", topic: "", grade: "8", visibility: "private", length: "medium", difficulty: "medium", markdown: "" });
     setDraftCards([{ front: "", back: "", emoji: "📘" }]);
   };
 
@@ -224,7 +271,7 @@ const Learn = () => {
         owner_id: user.id,
         title: form.title.trim(),
         topic: form.topic.trim() || null,
-        class_id: form.classId === "none" ? null : form.classId,
+        grade: parseInt(form.grade, 10),
         visibility: form.visibility,
         length: form.length,
         difficulty: form.difficulty,
@@ -267,7 +314,7 @@ const Learn = () => {
       title: form.title.trim(),
       markdown: form.markdown,
       topic: form.topic.trim() || null,
-      class_id: form.classId === "none" ? null : form.classId,
+      grade: parseInt(form.grade, 10),
       visibility: form.visibility,
       length: form.length,
       difficulty: form.difficulty,
@@ -312,29 +359,32 @@ const Learn = () => {
   };
 
   const filteredSets = useMemo(() =>
-    sets.filter((s) =>
-      !search.trim() ||
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      (s.topic || "").toLowerCase().includes(search.toLowerCase()),
-    ), [sets, search]);
+    sets.filter((s) => {
+      const q = !search.trim() ||
+        s.title.toLowerCase().includes(search.toLowerCase()) ||
+        (s.topic || "").toLowerCase().includes(search.toLowerCase());
+      const g = filterGrade === "all" || String(s.grade) === filterGrade;
+      return q && g;
+    }), [sets, search, filterGrade]);
 
   const filteredNotes = useMemo(() =>
-    notesList.filter((n) =>
-      !search.trim() ||
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      (n.topic || "").toLowerCase().includes(search.toLowerCase()),
-    ), [notesList, search]);
+    notesList.filter((n) => {
+      const q = !search.trim() ||
+        n.title.toLowerCase().includes(search.toLowerCase()) ||
+        (n.topic || "").toLowerCase().includes(search.toLowerCase());
+      const g = filterGrade === "all" || String(n.grade) === filterGrade;
+      return q && g;
+    }), [notesList, search, filterGrade]);
 
   // Settings form (shared)
   const SettingsFields = (
     <div className="grid sm:grid-cols-2 gap-3">
       <div>
-        <Label className="text-xs font-semibold">Osztály</Label>
-        <Select value={form.classId} onValueChange={(v) => setForm({ ...form, classId: v })}>
+        <Label className="text-xs font-semibold">Évfolyam</Label>
+        <Select value={form.grade} onValueChange={(v) => setForm({ ...form, grade: v })}>
           <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Nincs (személyes)</SelectItem>
-            {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évfolyam</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
@@ -419,12 +469,21 @@ const Learn = () => {
               </Button>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Keresés cím vagy téma alapján..."
-                className="pl-9 rounded-xl" />
+            {/* Search & filter */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Keresés cím vagy téma alapján..."
+                  className="pl-9 rounded-xl" />
+              </div>
+              <Select value={filterGrade} onValueChange={setFilterGrade}>
+                <SelectTrigger className="rounded-xl w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Minden évf.</SelectItem>
+                  {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évf.</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Tabs */}
@@ -466,7 +525,7 @@ const Learn = () => {
                           <VisibilityBadge v={s.visibility} />
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(DIFFICULTY, s.difficulty)}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(LENGTH, s.length)}</span>
-                          {s.class_id && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><Users className="w-3 h-3" />Osztály</span>}
+                          {s.grade && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><GraduationCap className="w-3 h-3" />{s.grade}. évf.</span>}
                         </div>
                       </button>
                     ))}
@@ -502,7 +561,7 @@ const Learn = () => {
                           <VisibilityBadge v={n.visibility} />
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(DIFFICULTY, n.difficulty)}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(LENGTH, n.length)}</span>
-                          {n.class_id && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><Users className="w-3 h-3" />Osztály</span>}
+                          {n.grade && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><GraduationCap className="w-3 h-3" />{n.grade}. évf.</span>}
                         </div>
                       </button>
                     ))}
@@ -685,7 +744,48 @@ const Learn = () => {
               onKeyDown={(e) => { if (e.key === "Enter") generateCards(); }}
               placeholder="pl. Fotoszintézis, Pitagorasz-tétel..."
               className="mt-2 rounded-xl text-base h-12" />
-            <p className="text-xs text-muted-foreground mt-2">Az AI 8-10 db 3D flashcardot készít. Aztán kérhetsz jegyzetet vagy gyakorlótesztet.</p>
+
+            <div className="grid sm:grid-cols-2 gap-3 mt-4">
+              <div>
+                <Label className="text-xs font-semibold">Évfolyam</Label>
+                <Select value={aiSettings.grade} onValueChange={(v) => setAiSettings({ ...aiSettings, grade: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évfolyam</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Nehézség</Label>
+                <Select value={aiSettings.difficulty} onValueChange={(v) => setAiSettings({ ...aiSettings, difficulty: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DIFFICULTY.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Hossz</Label>
+                <Select value={aiSettings.length} onValueChange={(v) => setAiSettings({ ...aiSettings, length: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {LENGTH.map((l) => <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold">Láthatóság</Label>
+                <Select value={aiSettings.visibility} onValueChange={(v) => setAiSettings({ ...aiSettings, visibility: v })}>
+                  <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="private">🔒 Privát</SelectItem>
+                    <SelectItem value="public">🌍 Publikus</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground mt-3">Az AI a beállítások alapján készít flashcardokat, és automatikusan elmenti a könyvtáradba. Utána kérhetsz jegyzetet vagy gyakorlótesztet ugyanezekkel a beállításokkal.</p>
             <Button onClick={generateCards} disabled={loading !== null}
               className="w-full mt-5 rounded-xl gradient-primary text-primary-foreground font-bold text-base py-6 gap-2">
               {loading === "flashcards" ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
