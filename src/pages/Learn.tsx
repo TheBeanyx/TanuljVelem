@@ -512,7 +512,7 @@ const Learn = () => {
                           <VisibilityBadge v={s.visibility} />
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(DIFFICULTY, s.difficulty)}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(LENGTH, s.length)}</span>
-                          {s.class_id && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><Users className="w-3 h-3" />Osztály</span>}
+                          {s.grade && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><GraduationCap className="w-3 h-3" />{s.grade}. évf.</span>}
                         </div>
                       </button>
                     ))}
@@ -548,7 +548,7 @@ const Learn = () => {
                           <VisibilityBadge v={n.visibility} />
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(DIFFICULTY, n.difficulty)}</span>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{labelOf(LENGTH, n.length)}</span>
-                          {n.class_id && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><Users className="w-3 h-3" />Osztály</span>}
+                          {n.grade && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary inline-flex items-center gap-1"><GraduationCap className="w-3 h-3" />{n.grade}. évf.</span>}
                         </div>
                       </button>
                     ))}
