@@ -7,30 +7,46 @@ const corsHeaders = {
 };
 
 type Mode = "flashcards" | "notes" | "practice";
+type Difficulty = "easy" | "medium" | "hard";
+type Length = "short" | "medium" | "long";
 
 const SYSTEM_PROMPT = `Te egy magyar nyelvű, lelkes és pontos AI tanár vagy a TanuljVelem platformon.
 Mindig magyarul válaszolj. Tartsd a tartalmat tényszerűnek, korosztálynak megfelelőnek és érthetőnek.`;
 
-function buildToolForMode(mode: Mode) {
+const cardCountFor = (length: Length) =>
+  length === "short" ? { min: 5, max: 6 } : length === "long" ? { min: 12, max: 15 } : { min: 8, max: 10 };
+
+const questionCountFor = (length: Length) =>
+  length === "short" ? { min: 4, max: 5 } : length === "long" ? { min: 8, max: 10 } : { min: 5, max: 8 };
+
+const difficultyLabel = (d: Difficulty) =>
+  d === "easy" ? "könnyű (alapszintű, egyszerű magyarázatok)" :
+  d === "hard" ? "nehéz (részletes, kihívó, mélyebb összefüggésekkel)" :
+  "közepes (átfogó, érthető szintű)";
+
+const lengthLabelNote = (l: Length) =>
+  l === "short" ? "rövid (1-2 fő szakasz, lényegre törő)" :
+  l === "long" ? "hosszú (részletes, több fejezettel és példákkal)" :
+  "közepes (átfogó, de tömör)";
+
+function buildToolForMode(mode: Mode, length: Length) {
   if (mode === "flashcards") {
+    const { min, max } = cardCountFor(length);
     return {
       name: "create_flashcards",
-      description:
-        "Készíts 8-10 flashcardot a megadott témából. Minden kártyán egy fogalom (front) és annak tömör magyarázata (back).",
+      description: `Készíts ${min}-${max} flashcardot a megadott témából.`,
       parameters: {
         type: "object",
         properties: {
-          topic_title: { type: "string", description: "A téma rövid címe" },
+          topic_title: { type: "string" },
           cards: {
-            type: "array",
-            minItems: 6,
-            maxItems: 10,
+            type: "array", minItems: min, maxItems: max,
             items: {
               type: "object",
               properties: {
-                front: { type: "string", description: "Fogalom vagy kérdés" },
-                back: { type: "string", description: "Tömör magyarázat (1-3 mondat)" },
-                emoji: { type: "string", description: "Egy releváns emoji" },
+                front: { type: "string" },
+                back: { type: "string" },
+                emoji: { type: "string" },
               },
               required: ["front", "back", "emoji"],
               additionalProperties: false,
@@ -45,36 +61,28 @@ function buildToolForMode(mode: Mode) {
   if (mode === "notes") {
     return {
       name: "create_notes",
-      description:
-        "Készíts strukturált tanulási jegyzetet a megadott témából. A jegyzet markdown formátumú legyen.",
+      description: "Készíts strukturált tanulási jegyzetet markdown formátumban.",
       parameters: {
         type: "object",
         properties: {
           title: { type: "string" },
-          markdown: {
-            type: "string",
-            description:
-              "Teljes markdown jegyzet: H2 címek, bekezdések, listák, példák. Magyar nyelven.",
-          },
+          markdown: { type: "string" },
         },
         required: ["title", "markdown"],
         additionalProperties: false,
       },
     };
   }
-  // practice test
+  const { min, max } = questionCountFor(length);
   return {
     name: "create_practice_test",
-    description:
-      "Készíts 5-8 feleletválasztós kérdést a megadott témából, A-D válaszlehetőségekkel és magyarázattal.",
+    description: `Készíts ${min}-${max} feleletválasztós kérdést.`,
     parameters: {
       type: "object",
       properties: {
         title: { type: "string" },
         questions: {
-          type: "array",
-          minItems: 5,
-          maxItems: 8,
+          type: "array", minItems: min, maxItems: max,
           items: {
             type: "object",
             properties: {
@@ -86,15 +94,7 @@ function buildToolForMode(mode: Mode) {
               correct_answer: { type: "string", enum: ["A", "B", "C", "D"] },
               explanation: { type: "string" },
             },
-            required: [
-              "question",
-              "option_a",
-              "option_b",
-              "option_c",
-              "option_d",
-              "correct_answer",
-              "explanation",
-            ],
+            required: ["question","option_a","option_b","option_c","option_d","correct_answer","explanation"],
             additionalProperties: false,
           },
         },
@@ -105,54 +105,53 @@ function buildToolForMode(mode: Mode) {
   };
 }
 
-function userPromptForMode(mode: Mode, topic: string, context?: string) {
+function userPrompt(mode: Mode, topic: string, grade: number, difficulty: Difficulty, length: Length, context?: string) {
+  const meta = `Évfolyam: ${grade}. osztály\nNehézség: ${difficultyLabel(difficulty)}\nHossz: ${lengthLabelNote(length)}`;
   if (mode === "flashcards") {
-    return `Téma: "${topic}"\n\nKészíts 8-10 jól megválasztott flashcardot. A 'front' tartalmazzon egy fogalmat vagy rövid kérdést, a 'back' pedig 1-3 mondatos pontos magyarázatot. Válassz kifejező emojit minden kártyához.`;
+    const { min, max } = cardCountFor(length);
+    return `${meta}\n\nTéma: "${topic}"\n\nKészíts ${min}-${max} jól megválasztott flashcardot, az évfolyamhoz igazítva. A 'front' egy fogalom vagy rövid kérdés, a 'back' 1-3 mondatos magyarázat. Minden kártyához válassz kifejező emojit.`;
   }
   if (mode === "notes") {
-    return `A diák épp az alábbi témát tanulta flashcardokkal:\n"${topic}"\n\n${
-      context ? `A flashcardok tartalma:\n${context}\n\n` : ""
-    }Készíts ebből egy átfogó, jól strukturált tanulási jegyzetet markdown formátumban.`;
+    return `${meta}\n\nTéma: "${topic}"\n\n${context ? `Kapcsolódó fogalmak:\n${context}\n\n` : ""}Készíts a ${grade}. évfolyamnak megfelelő, ${lengthLabelNote(length)} tanulási jegyzetet markdown formátumban (H2 címek, listák, példák).`;
   }
-  return `A diák az alábbi témát tanulta:\n"${topic}"\n\n${
-    context ? `A flashcardok tartalma:\n${context}\n\n` : ""
-  }Készíts egy 5-8 kérdéses gyakorlódolgozatot, mindegyik kérdésnél 4 válaszlehetőséggel és rövid magyarázattal.`;
+  const { min, max } = questionCountFor(length);
+  return `${meta}\n\nTéma: "${topic}"\n\n${context ? `Kapcsolódó fogalmak:\n${context}\n\n` : ""}Készíts ${min}-${max} kérdéses gyakorlódolgozatot a ${grade}. évfolyam szintjén, 4 válaszlehetőséggel és rövid magyarázattal.`;
 }
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { mode, topic, context } = await req.json();
+    const body = await req.json();
+    const { mode, topic, context } = body;
+    const grade = Number.isFinite(body.grade) ? Math.min(12, Math.max(1, Number(body.grade))) : 8;
+    const difficulty: Difficulty = ["easy","medium","hard"].includes(body.difficulty) ? body.difficulty : "medium";
+    const length: Length = ["short","medium","long"].includes(body.length) ? body.length : "medium";
+
     if (!mode || !topic || typeof topic !== "string" || topic.trim().length < 2) {
       return new Response(JSON.stringify({ error: "Hiányzó vagy érvénytelen paraméter." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     if (!["flashcards", "notes", "practice"].includes(mode)) {
       return new Response(JSON.stringify({ error: "Érvénytelen mode." }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    const tool = buildToolForMode(mode as Mode);
+    const tool = buildToolForMode(mode as Mode, length);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: userPromptForMode(mode as Mode, topic, context) },
+          { role: "user", content: userPrompt(mode as Mode, topic, grade, difficulty, length, context) },
         ],
         tools: [{ type: "function", function: tool }],
         tool_choice: { type: "function", function: { name: tool.name } },
@@ -162,43 +161,36 @@ serve(async (req) => {
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: "Túl sok kérés, várj egy kicsit." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       if (response.status === 402) {
         return new Response(JSON.stringify({ error: "Nincs elég kredit." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
       const t = await response.text();
       console.error("AI gateway error:", response.status, t);
       return new Response(JSON.stringify({ error: "AI hiba történt." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const data = await response.json();
-    const args =
-      data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+    const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
     if (!args) {
       console.error("No tool call returned:", JSON.stringify(data));
       return new Response(JSON.stringify({ error: "Nem sikerült tartalmat generálni." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     let parsed: unknown;
-    try {
-      parsed = JSON.parse(args);
-    } catch (e) {
+    try { parsed = JSON.parse(args); }
+    catch (e) {
       console.error("Parse error:", e, args);
       return new Response(JSON.stringify({ error: "Hibás AI válasz." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
