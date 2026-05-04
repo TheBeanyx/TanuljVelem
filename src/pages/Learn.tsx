@@ -469,12 +469,21 @@ const Learn = () => {
               </Button>
             </div>
 
-            {/* Search */}
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="Keresés cím vagy téma alapján..."
-                className="pl-9 rounded-xl" />
+            {/* Search & filter */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Keresés cím vagy téma alapján..."
+                  className="pl-9 rounded-xl" />
+              </div>
+              <Select value={filterGrade} onValueChange={setFilterGrade}>
+                <SelectTrigger className="rounded-xl w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Minden évf.</SelectItem>
+                  {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évf.</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Tabs */}
