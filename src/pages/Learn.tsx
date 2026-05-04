@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Brain, Sparkles, Loader2, ChevronLeft, ChevronRight, RotateCcw,
-  NotebookPen, ClipboardList, ArrowLeft, Check, X, Plus, Search, Library, FileText, Trash2, Globe, Lock, Users, Layers,
+  NotebookPen, ClipboardList, ArrowLeft, Check, X, Plus, Search, Library, FileText, Trash2, Globe, Lock, GraduationCap, Layers,
 } from "lucide-react";
 import DashboardNav from "@/components/DashboardNav";
 import { Button } from "@/components/ui/button";
