@@ -271,7 +271,7 @@ const Learn = () => {
         owner_id: user.id,
         title: form.title.trim(),
         topic: form.topic.trim() || null,
-        class_id: form.classId === "none" ? null : form.classId,
+        grade: parseInt(form.grade, 10),
         visibility: form.visibility,
         length: form.length,
         difficulty: form.difficulty,
@@ -314,7 +314,7 @@ const Learn = () => {
       title: form.title.trim(),
       markdown: form.markdown,
       topic: form.topic.trim() || null,
-      class_id: form.classId === "none" ? null : form.classId,
+      grade: parseInt(form.grade, 10),
       visibility: form.visibility,
       length: form.length,
       difficulty: form.difficulty,
@@ -376,12 +376,11 @@ const Learn = () => {
   const SettingsFields = (
     <div className="grid sm:grid-cols-2 gap-3">
       <div>
-        <Label className="text-xs font-semibold">Osztály</Label>
-        <Select value={form.classId} onValueChange={(v) => setForm({ ...form, classId: v })}>
+        <Label className="text-xs font-semibold">Évfolyam</Label>
+        <Select value={form.grade} onValueChange={(v) => setForm({ ...form, grade: v })}>
           <SelectTrigger className="rounded-xl mt-1"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">Nincs (személyes)</SelectItem>
-            {classes.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+            {GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évfolyam</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
