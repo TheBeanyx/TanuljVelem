@@ -359,18 +359,22 @@ const Learn = () => {
   };
 
   const filteredSets = useMemo(() =>
-    sets.filter((s) =>
-      !search.trim() ||
-      s.title.toLowerCase().includes(search.toLowerCase()) ||
-      (s.topic || "").toLowerCase().includes(search.toLowerCase()),
-    ), [sets, search]);
+    sets.filter((s) => {
+      const q = !search.trim() ||
+        s.title.toLowerCase().includes(search.toLowerCase()) ||
+        (s.topic || "").toLowerCase().includes(search.toLowerCase());
+      const g = filterGrade === "all" || String(s.grade) === filterGrade;
+      return q && g;
+    }), [sets, search, filterGrade]);
 
   const filteredNotes = useMemo(() =>
-    notesList.filter((n) =>
-      !search.trim() ||
-      n.title.toLowerCase().includes(search.toLowerCase()) ||
-      (n.topic || "").toLowerCase().includes(search.toLowerCase()),
-    ), [notesList, search]);
+    notesList.filter((n) => {
+      const q = !search.trim() ||
+        n.title.toLowerCase().includes(search.toLowerCase()) ||
+        (n.topic || "").toLowerCase().includes(search.toLowerCase());
+      const g = filterGrade === "all" || String(n.grade) === filterGrade;
+      return q && g;
+    }), [notesList, search, filterGrade]);
 
   // Settings form (shared)
   const SettingsFields = (
