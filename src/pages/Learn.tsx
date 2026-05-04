@@ -55,6 +55,8 @@ const LENGTH = [
   { value: "long", label: "Hosszú" },
 ];
 
+const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+
 const Learn = () => {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -62,14 +64,20 @@ const Learn = () => {
   const [view, setView] = useState<View>("hub");
   const [tab, setTab] = useState<"flashcards" | "notes">("flashcards");
   const [search, setSearch] = useState("");
+  const [filterGrade, setFilterGrade] = useState<string>("all");
 
-  const [classes, setClasses] = useState<ClassRow[]>([]);
   const [sets, setSets] = useState<SetRow[]>([]);
   const [notesList, setNotesList] = useState<NoteRow[]>([]);
   const [listLoading, setListLoading] = useState(false);
 
   // ===== AI flow state =====
   const [topic, setTopic] = useState("");
+  const [aiSettings, setAiSettings] = useState({
+    grade: "8",
+    difficulty: "medium",
+    length: "medium",
+    visibility: "private",
+  });
   const [loading, setLoading] = useState<null | "flashcards" | "notes" | "practice">(null);
   const [topicTitle, setTopicTitle] = useState("");
   const [cards, setCards] = useState<Flashcard[]>([]);
@@ -80,12 +88,14 @@ const Learn = () => {
   const [practiceTitle, setPracticeTitle] = useState("");
   const [answers, setAnswers] = useState<Record<number, "A" | "B" | "C" | "D">>({});
   const [showResults, setShowResults] = useState(false);
+  const [savedSetId, setSavedSetId] = useState<string | null>(null);
+  const [savedNoteId, setSavedNoteId] = useState<string | null>(null);
 
   // ===== Create state =====
   const [form, setForm] = useState({
     title: "",
     topic: "",
-    classId: "none",
+    grade: "8",
     visibility: "private",
     length: "medium",
     difficulty: "medium",
@@ -100,25 +110,6 @@ const Learn = () => {
   const [activeSet, setActiveSet] = useState<SetRow | null>(null);
   const [activeSetCards, setActiveSetCards] = useState<Flashcard[]>([]);
   const [activeNote, setActiveNote] = useState<NoteRow | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-    // Load classes the user is part of or owns
-    (async () => {
-      const [{ data: owned }, { data: memberOf }] = await Promise.all([
-        supabase.from("classes").select("id, name").eq("owner_id", user.id),
-        supabase.from("class_members").select("class_id, classes(id, name)").eq("user_id", user.id),
-      ]);
-      const all: ClassRow[] = [];
-      owned?.forEach((c: any) => all.push({ id: c.id, name: c.name }));
-      memberOf?.forEach((m: any) => {
-        if (m.classes && !all.find((x) => x.id === m.classes.id)) {
-          all.push({ id: m.classes.id, name: m.classes.name });
-        }
-      });
-      setClasses(all);
-    })();
-  }, [user]);
 
   const loadLists = async () => {
     setListLoading(true);
