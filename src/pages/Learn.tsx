@@ -35,14 +35,13 @@ type View =
   | "view-set"
   | "view-note";
 
-type ClassRow = { id: string; name: string };
 type SetRow = {
   id: string; title: string; topic: string | null; owner_id: string;
-  visibility: string; difficulty: string; length: string; class_id: string | null;
+  visibility: string; difficulty: string; length: string; grade: number | null;
 };
 type NoteRow = {
   id: string; title: string; markdown: string; topic: string | null; owner_id: string;
-  visibility: string; difficulty: string; length: string; class_id: string | null;
+  visibility: string; difficulty: string; length: string; grade: number | null;
 };
 
 const DIFFICULTY = [
