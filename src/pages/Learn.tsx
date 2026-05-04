@@ -139,7 +139,14 @@ const Learn = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ mode, topic, context }),
+        body: JSON.stringify({
+          mode,
+          topic,
+          context,
+          grade: parseInt(aiSettings.grade, 10),
+          difficulty: aiSettings.difficulty,
+          length: aiSettings.length,
+        }),
       });
       if (!resp.ok) {
         const err = await resp.json().catch(() => ({}));
@@ -162,16 +169,65 @@ const Learn = () => {
     }
     const data = await callAI("flashcards");
     if (!data) return;
-    setTopicTitle(data.topic_title || topic);
+    const title = data.topic_title || topic;
+    setTopicTitle(title);
     setCards(data.cards || []);
     setCardIdx(0); setFlipped(false);
     setView("cards");
+
+    // Auto-save the generated set
+    if (user && data.cards?.length) {
+      const { data: setRow } = await supabase
+        .from("flashcard_sets")
+        .insert({
+          owner_id: user.id,
+          title,
+          topic: topic.trim(),
+          grade: parseInt(aiSettings.grade, 10),
+          visibility: aiSettings.visibility,
+          length: aiSettings.length,
+          difficulty: aiSettings.difficulty,
+          source: "ai",
+        })
+        .select()
+        .single();
+      if (setRow) {
+        setSavedSetId(setRow.id);
+        const items = data.cards.map((c: Flashcard, i: number) => ({
+          set_id: setRow.id,
+          front: c.front,
+          back: c.back,
+          emoji: c.emoji || "📘",
+          sort_order: i,
+        }));
+        await supabase.from("flashcard_items").insert(items);
+        toast({ title: "Flashcardok elmentve a könyvtáradba 🎉" });
+      }
+    }
   };
 
   const generateNotes = async () => {
     const data = await callAI("notes");
     if (!data) return;
     setAiNotes(data); setView("notes");
+
+    if (user && data.markdown) {
+      const { data: noteRow } = await supabase.from("learn_notes").insert({
+        owner_id: user.id,
+        title: data.title,
+        markdown: data.markdown,
+        topic: topic.trim(),
+        grade: parseInt(aiSettings.grade, 10),
+        visibility: aiSettings.visibility,
+        length: aiSettings.length,
+        difficulty: aiSettings.difficulty,
+        source: "ai",
+      }).select().single();
+      if (noteRow) {
+        setSavedNoteId(noteRow.id);
+        toast({ title: "Jegyzet elmentve a könyvtáradba 📝" });
+      }
+    }
   };
 
   const generatePractice = async () => {
@@ -186,13 +242,14 @@ const Learn = () => {
   const resetAI = () => {
     setTopic(""); setCards([]); setCardIdx(0); setFlipped(false);
     setAiNotes(null); setQuestions([]); setAnswers({}); setShowResults(false);
+    setSavedSetId(null); setSavedNoteId(null);
   };
 
   const score = questions.reduce((s, q, i) => (answers[i] === q.correct_answer ? s + 1 : s), 0);
 
   // ============ Save ============
   const resetForm = () => {
-    setForm({ title: "", topic: "", classId: "none", visibility: "private", length: "medium", difficulty: "medium", markdown: "" });
+    setForm({ title: "", topic: "", grade: "8", visibility: "private", length: "medium", difficulty: "medium", markdown: "" });
     setDraftCards([{ front: "", back: "", emoji: "📘" }]);
   };
 
