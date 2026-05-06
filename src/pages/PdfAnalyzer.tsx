@@ -14,9 +14,8 @@ import { useGamification } from "@/hooks/useGamification";
 
 async function extractPdfText(file: File): Promise<string> {
   const pdfjs = await import("pdfjs-dist");
-  // @ts-expect-error - worker setup
   const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
-  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  pdfjs.GlobalWorkerOptions.workerSrc = (worker as { default: string }).default;
 
   const buf = await file.arrayBuffer();
   const pdf = await pdfjs.getDocument({ data: buf }).promise;
@@ -25,7 +24,7 @@ async function extractPdfText(file: File): Promise<string> {
   for (let i = 1; i <= max; i++) {
     const page = await pdf.getPage(i);
     const tc = await page.getTextContent();
-    parts.push(tc.items.map((it: { str?: string }) => it.str ?? "").join(" "));
+    parts.push(tc.items.map((it) => ("str" in it ? it.str : "")).join(" "));
   }
   return parts.join("\n\n").slice(0, 18000);
 }
