@@ -1,11 +1,12 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, Settings, LogOut, MessageSquare, Megaphone, Sparkles, Brain } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadCounts } from "@/hooks/useUnreadCounts";
 import { resolveAvatarUrl } from "@/lib/avatars";
+import StreakIndicator from "@/components/StreakIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +17,7 @@ import {
 const navItems = [
   { to: "/dashboard", label: "Házi Feladat", icon: BookOpen, badgeKey: null },
   { to: "/learn", label: "Tanulás", icon: Brain, badgeKey: null },
+  { to: "/pdf-analyzer", label: "PDF", icon: FileText, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
   { to: "/classes", label: "Osztályok", icon: Users, badgeKey: "classes" as const },
@@ -103,6 +105,12 @@ const DashboardNav = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          <StreakIndicator />
+          <Link to="/achievements" aria-label="Eredmények">
+            <Button variant="ghost" size="icon" className="rounded-full text-amber-500">
+              <Trophy className="w-5 h-5" />
+            </Button>
+          </Link>
           <Link to="/notifications">
             <Button variant="ghost" size="icon" className="relative rounded-full">
               <Bell className="w-5 h-5" />
