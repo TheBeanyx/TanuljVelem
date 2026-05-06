@@ -465,6 +465,33 @@ export type Database = {
         }
         Relationships: []
       }
+      point_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          points: number
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points: number
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          points?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -637,6 +664,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          earned_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          earned_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          earned_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           id: string
@@ -655,6 +703,36 @@ export type Database = {
           setting_key?: string
           setting_value?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_stats: {
+        Row: {
+          created_at: string
+          current_streak: number
+          last_activity_date: string | null
+          longest_streak: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          last_activity_date?: string | null
+          longest_streak?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
