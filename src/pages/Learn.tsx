@@ -446,12 +446,18 @@ const Learn = () => {
         {view === "hub" && (
           <div className="animate-fade-in space-y-6">
             {/* Quick actions */}
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
               <Button onClick={() => { resetAI(); setView("ai-input"); }}
                 className="rounded-2xl py-6 h-auto flex-col gap-2 gradient-primary text-primary-foreground">
                 <Sparkles className="w-6 h-6" />
-                <span className="font-bold text-sm">AI Tanulás</span>
+                <span className="font-bold text-sm">AI Generálás</span>
               </Button>
+              <Link to="/ai-tutor">
+                <Button className="w-full rounded-2xl py-6 h-auto flex-col gap-2 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                  <Brain className="w-6 h-6" />
+                  <span className="font-bold text-sm">AI Tanár</span>
+                </Button>
+              </Link>
               <Button onClick={() => { resetForm(); setView("create-set"); }}
                 variant="outline" className="rounded-2xl py-6 h-auto flex-col gap-2 border-2 hover:border-primary/40">
                 <Layers className="w-6 h-6 text-primary" />
