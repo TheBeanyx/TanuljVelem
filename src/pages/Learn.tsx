@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Brain, Sparkles, Loader2, ChevronLeft, ChevronRight, RotateCcw,
   NotebookPen, ClipboardList, ArrowLeft, Check, X, Plus, Search, Library, FileText, Trash2, Globe, Lock, GraduationCap, Layers,
