@@ -20,7 +20,10 @@ interface LeaderRow {
 
 const Achievements = () => {
   const { stats, badges } = useGamification();
+  const { user } = useAuth();
   const [leaders, setLeaders] = useState<LeaderRow[]>([]);
+  const [actionCounts, setActionCounts] = useState<Record<string, number>>({});
+  const [selected, setSelected] = useState<BadgeId | null>(null);
 
   useEffect(() => {
     (async () => {
