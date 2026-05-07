@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
-import { Flame, Star, Trophy, TrendingUp, Award } from "lucide-react";
+import { Flame, Star, Trophy, TrendingUp, Award, Target } from "lucide-react";
 import DashboardNav from "@/components/DashboardNav";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useGamification } from "@/hooks/useGamification";
-import { BADGES, BadgeId } from "@/lib/gamification";
+import { BADGES, BadgeId, POINTS, PointAction } from "@/lib/gamification";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LeaderRow {
   user_id: string;
