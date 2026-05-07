@@ -105,7 +105,19 @@ const DashboardNav = () => {
               );
             }
 
-            return (
+            if ("dropdown" in item && item.dropdown) {
+              return (
+                <HoverNavDropdown
+                  key={item.to}
+                  to={item.to}
+                  label={item.label}
+                  icon={item.icon}
+                  items={item.dropdown}
+                  badge={renderBadge(badgeCount)}
+                />
+              );
+            }
+
               <Link key={item.to} to={item.to}>
                 <Button
                   variant={active ? "default" : "ghost"}
