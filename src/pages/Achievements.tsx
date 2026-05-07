@@ -72,19 +72,39 @@ const Achievements = () => {
   const progressOf = (id: BadgeId): { current: number; target: number; label: string; task: string } => {
     const points = stats?.total_points ?? 0;
     const streak = stats?.current_streak ?? 0;
+    const longest = stats?.longest_streak ?? 0;
+    const has = (b: BadgeId) => owned.has(b);
     switch (id) {
       case "first_steps": return { current: Math.min(points, 1), target: 1, label: "pont", task: "Szerezz meg legalább 1 pontot bármilyen tevékenységgel." };
       case "points_100": return { current: points, target: 100, label: "pont", task: "Gyűjts össze 100 pontot — pl. tesztek, házik, AI használat." };
       case "points_500": return { current: points, target: 500, label: "pont", task: "Gyűjts össze 500 pontot a platformon." };
       case "points_1000": return { current: points, target: 1000, label: "pont", task: "Érd el az 1000 pontos elit szintet." };
-      case "streak_3": return { current: streak, target: 3, label: "nap", task: "Lépj be 3 napon át egymás után." };
-      case "streak_7": return { current: streak, target: 7, label: "nap", task: "Egy teljes hét megszakítás nélküli tanulás." };
-      case "streak_30": return { current: streak, target: 30, label: "nap", task: "30 napos folyamatos sorozat — a legendák klubja." };
-      case "test_master": return { current: owned.has("test_master") ? 1 : 0, target: 1, label: "tökéletes", task: "Érj el 100%-ot egy teljes teszten." };
+      case "points_5000": return { current: points, target: 5000, label: "pont", task: "Hihetetlen! Gyűjts össze 5000 pontot." };
+      case "streak_3": return { current: Math.max(streak, has("streak_3") ? 3 : 0), target: 3, label: "nap", task: "Lépj be 3 napon át egymás után." };
+      case "streak_7": return { current: Math.max(streak, has("streak_7") ? 7 : 0), target: 7, label: "nap", task: "Egy teljes hét megszakítás nélküli tanulás." };
+      case "streak_14": return { current: Math.max(streak, has("streak_14") ? 14 : 0), target: 14, label: "nap", task: "14 napos sorozat — komoly elhivatottság." };
+      case "streak_30": return { current: Math.max(streak, has("streak_30") ? 30 : 0), target: 30, label: "nap", task: "30 napos folyamatos sorozat — a legendák klubja." };
+      case "streak_100": return { current: Math.max(longest, has("streak_100") ? 100 : 0), target: 100, label: "nap", task: "100 nap egymás után — őrület!" };
+      case "test_master": return { current: has("test_master") ? 1 : 0, target: 1, label: "tökéletes", task: "Érj el 100%-ot egy teljes teszten." };
+      case "test_marathon": return { current: (actionCounts["complete_test"] || 0) + (actionCounts["perfect_test"] || 0), target: 10, label: "teszt", task: "Teljesíts 10 tesztet." };
       case "homework_hero": return { current: actionCounts["create_homework"] || 0, target: 10, label: "házi", task: "Rögzíts 10 házi feladatot." };
+      case "homework_legend": return { current: actionCounts["create_homework"] || 0, target: 50, label: "házi", task: "Rögzíts 50 házi feladatot." };
       case "flashcard_fan": return { current: actionCounts["create_flashcard_set"] || 0, target: 5, label: "csomag", task: "Hozz létre 5 flashcard csomagot." };
-      case "pdf_explorer": return { current: actionCounts["pdf_analyzed"] || 0, target: 1, label: "PDF", task: "Elemezz egy PDF-et az AI-val a /pdf-analyzer oldalon." };
+      case "flashcard_master": return { current: actionCounts["create_flashcard_set"] || 0, target: 20, label: "csomag", task: "Hozz létre 20 flashcard csomagot." };
+      case "note_taker": return { current: actionCounts["create_note"] || 0, target: 5, label: "jegyzet", task: "Írj 5 jegyzetet." };
+      case "note_scholar": return { current: actionCounts["create_note"] || 0, target: 20, label: "jegyzet", task: "Írj 20 jegyzetet." };
+      case "pdf_explorer": return { current: actionCounts["pdf_analyzed"] || 0, target: 1, label: "PDF", task: "Elemezz egy PDF-et az AI-val a PDF elemzőben." };
+      case "pdf_pro": return { current: actionCounts["pdf_analyzed"] || 0, target: 10, label: "PDF", task: "Elemezz 10 PDF dokumentumot." };
       case "social_butterfly": return { current: actionCounts["join_class"] || 0, target: 1, label: "osztály", task: "Csatlakozz az első osztályodhoz." };
+      case "class_collector": return { current: actionCounts["join_class"] || 0, target: 5, label: "osztály", task: "Légy 5 osztály tagja." };
+      case "ai_apprentice": return { current: actionCounts["ai_generation"] || 0, target: 1, label: "generálás", task: "Használd először az AI generálást a Tanulás oldalon." };
+      case "ai_expert": return { current: actionCounts["ai_generation"] || 0, target: 25, label: "generálás", task: "Használd 25-ször az AI generálást." };
+      case "tutor_chat": return { current: actionCounts["tutor_message"] || 0, target: 1, label: "üzenet", task: "Beszélgess először az AI tanárral." };
+      case "chatterbox": return { current: actionCounts["tutor_message"] || 0, target: 100, label: "üzenet", task: "Küldj 100 üzenetet az AI tanárnak." };
+      case "early_bird": return { current: has("early_bird") ? 1 : 0, target: 1, label: "", task: "Tanulj reggel 7 óra előtt." };
+      case "night_owl": return { current: has("night_owl") ? 1 : 0, target: 1, label: "", task: "Tanulj este 10 óra után." };
+      case "weekend_warrior": return { current: has("weekend_warrior") ? 1 : 0, target: 1, label: "", task: "Tanulj szombaton ÉS vasárnap is ugyanazon a hétvégén." };
+      case "comeback_kid": return { current: has("comeback_kid") ? 1 : 0, target: 1, label: "", task: "Térj vissza legalább 7 napos szünet után." };
       default: return { current: 0, target: 1, label: "", task: "" };
     }
   };
