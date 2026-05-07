@@ -119,26 +119,76 @@ const Achievements = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {allBadges.map((b, idx) => {
               const earned = owned.has(b.id as BadgeId);
+              const p = progressOf(b.id as BadgeId);
+              const pct = Math.min(100, Math.round((p.current / p.target) * 100));
               return (
-                <motion.div
+                <motion.button
+                  type="button"
+                  onClick={() => setSelected(b.id as BadgeId)}
                   key={b.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.04 }}
-                  className={`rounded-2xl p-5 text-center border-2 transition-all ${
+                  whileHover={{ scale: 1.03 }}
+                  className={`text-left rounded-2xl p-5 border-2 transition-all cursor-pointer ${
                     earned
                       ? `bg-gradient-to-br ${b.color} text-white border-white/30 shadow-lg`
-                      : "bg-muted/30 border-border opacity-50 grayscale"
+                      : "bg-muted/30 border-border hover:border-primary/40"
                   }`}
                 >
-                  <div className="text-5xl mb-2">{b.emoji}</div>
-                  <div className="font-bold text-sm">{b.name}</div>
-                  <div className={`text-xs mt-1 ${earned ? "text-white/90" : "text-muted-foreground"}`}>{b.description}</div>
-                </motion.div>
+                  <div className={`text-5xl mb-2 text-center ${earned ? "" : "grayscale opacity-60"}`}>{b.emoji}</div>
+                  <div className="font-bold text-sm text-center">{b.name}</div>
+                  <div className={`text-xs mt-1 text-center ${earned ? "text-white/90" : "text-muted-foreground"}`}>{b.description}</div>
+                  {!earned && (
+                    <div className="mt-3 space-y-1">
+                      <Progress value={pct} className="h-1.5" />
+                      <div className="text-[10px] text-muted-foreground text-center font-medium">
+                        {p.current}/{p.target} {p.label}
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
               );
             })}
           </div>
         </section>
+
+        <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+          <DialogContent className="max-w-md">
+            {selectedBadge && selectedProgress && (
+              <>
+                <DialogHeader>
+                  <div className={`mx-auto w-20 h-20 rounded-2xl flex items-center justify-center text-5xl mb-3 bg-gradient-to-br ${selectedBadge.color} ${owned.has(selected!) ? "" : "grayscale opacity-60"}`}>
+                    {selectedBadge.emoji}
+                  </div>
+                  <DialogTitle className="text-center text-2xl">{selectedBadge.name}</DialogTitle>
+                  <DialogDescription className="text-center">{selectedBadge.description}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="rounded-xl bg-muted/40 p-4">
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold">
+                      <Target className="w-4 h-4 text-primary" /> Feladat
+                    </div>
+                    <p className="text-sm text-muted-foreground">{selectedProgress.task}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2 text-sm">
+                      <span className="font-semibold">Haladás</span>
+                      <span className="font-bold text-primary">{selectedProgress.current}/{selectedProgress.target} {selectedProgress.label}</span>
+                    </div>
+                    <Progress value={selectedPct} className="h-3" />
+                    <div className="text-right text-xs text-muted-foreground mt-1">{selectedPct}%</div>
+                  </div>
+                  {owned.has(selected!) && (
+                    <div className="text-center text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      ✓ Megszerezve!
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <section>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
