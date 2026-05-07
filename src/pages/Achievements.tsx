@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
-import { Flame, Star, Trophy, TrendingUp, Award } from "lucide-react";
+import { Flame, Star, Trophy, TrendingUp, Award, Target } from "lucide-react";
 import DashboardNav from "@/components/DashboardNav";
 import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useGamification } from "@/hooks/useGamification";
 import { BADGES, BadgeId } from "@/lib/gamification";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LeaderRow {
   user_id: string;
@@ -17,7 +20,10 @@ interface LeaderRow {
 
 const Achievements = () => {
   const { stats, badges } = useGamification();
+  const { user } = useAuth();
   const [leaders, setLeaders] = useState<LeaderRow[]>([]);
+  const [actionCounts, setActionCounts] = useState<Record<string, number>>({});
+  const [selected, setSelected] = useState<BadgeId | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -43,8 +49,49 @@ const Achievements = () => {
     })();
   }, []);
 
+  // Per-action event counts for progress badges
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("point_events")
+        .select("action")
+        .eq("user_id", user.id);
+      const counts: Record<string, number> = {};
+      (data || []).forEach((r: { action: string }) => {
+        counts[r.action] = (counts[r.action] || 0) + 1;
+      });
+      setActionCounts(counts);
+    })();
+  }, [user]);
+
   const allBadges = Object.values(BADGES);
   const owned = new Set(badges);
+
+  // Returns { current, target, label, task } for a badge.
+  const progressOf = (id: BadgeId): { current: number; target: number; label: string; task: string } => {
+    const points = stats?.total_points ?? 0;
+    const streak = stats?.current_streak ?? 0;
+    switch (id) {
+      case "first_steps": return { current: Math.min(points, 1), target: 1, label: "pont", task: "Szerezz meg legalább 1 pontot bármilyen tevékenységgel." };
+      case "points_100": return { current: points, target: 100, label: "pont", task: "Gyűjts össze 100 pontot — pl. tesztek, házik, AI használat." };
+      case "points_500": return { current: points, target: 500, label: "pont", task: "Gyűjts össze 500 pontot a platformon." };
+      case "points_1000": return { current: points, target: 1000, label: "pont", task: "Érd el az 1000 pontos elit szintet." };
+      case "streak_3": return { current: streak, target: 3, label: "nap", task: "Lépj be 3 napon át egymás után." };
+      case "streak_7": return { current: streak, target: 7, label: "nap", task: "Egy teljes hét megszakítás nélküli tanulás." };
+      case "streak_30": return { current: streak, target: 30, label: "nap", task: "30 napos folyamatos sorozat — a legendák klubja." };
+      case "test_master": return { current: owned.has("test_master") ? 1 : 0, target: 1, label: "tökéletes", task: "Érj el 100%-ot egy teljes teszten." };
+      case "homework_hero": return { current: actionCounts["create_homework"] || 0, target: 10, label: "házi", task: "Rögzíts 10 házi feladatot." };
+      case "flashcard_fan": return { current: actionCounts["create_flashcard_set"] || 0, target: 5, label: "csomag", task: "Hozz létre 5 flashcard csomagot." };
+      case "pdf_explorer": return { current: actionCounts["pdf_analyzed"] || 0, target: 1, label: "PDF", task: "Elemezz egy PDF-et az AI-val a /pdf-analyzer oldalon." };
+      case "social_butterfly": return { current: actionCounts["join_class"] || 0, target: 1, label: "osztály", task: "Csatlakozz az első osztályodhoz." };
+      default: return { current: 0, target: 1, label: "", task: "" };
+    }
+  };
+
+  const selectedBadge = selected ? BADGES[selected] : null;
+  const selectedProgress = selected ? progressOf(selected) : null;
+  const selectedPct = selectedProgress ? Math.min(100, Math.round((selectedProgress.current / selectedProgress.target) * 100)) : 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,26 +119,76 @@ const Achievements = () => {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {allBadges.map((b, idx) => {
               const earned = owned.has(b.id as BadgeId);
+              const p = progressOf(b.id as BadgeId);
+              const pct = Math.min(100, Math.round((p.current / p.target) * 100));
               return (
-                <motion.div
+                <motion.button
+                  type="button"
+                  onClick={() => setSelected(b.id as BadgeId)}
                   key={b.id}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: idx * 0.04 }}
-                  className={`rounded-2xl p-5 text-center border-2 transition-all ${
+                  whileHover={{ scale: 1.03 }}
+                  className={`text-left rounded-2xl p-5 border-2 transition-all cursor-pointer ${
                     earned
                       ? `bg-gradient-to-br ${b.color} text-white border-white/30 shadow-lg`
-                      : "bg-muted/30 border-border opacity-50 grayscale"
+                      : "bg-muted/30 border-border hover:border-primary/40"
                   }`}
                 >
-                  <div className="text-5xl mb-2">{b.emoji}</div>
-                  <div className="font-bold text-sm">{b.name}</div>
-                  <div className={`text-xs mt-1 ${earned ? "text-white/90" : "text-muted-foreground"}`}>{b.description}</div>
-                </motion.div>
+                  <div className={`text-5xl mb-2 text-center ${earned ? "" : "grayscale opacity-60"}`}>{b.emoji}</div>
+                  <div className="font-bold text-sm text-center">{b.name}</div>
+                  <div className={`text-xs mt-1 text-center ${earned ? "text-white/90" : "text-muted-foreground"}`}>{b.description}</div>
+                  {!earned && (
+                    <div className="mt-3 space-y-1">
+                      <Progress value={pct} className="h-1.5" />
+                      <div className="text-[10px] text-muted-foreground text-center font-medium">
+                        {p.current}/{p.target} {p.label}
+                      </div>
+                    </div>
+                  )}
+                </motion.button>
               );
             })}
           </div>
         </section>
+
+        <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
+          <DialogContent className="max-w-md">
+            {selectedBadge && selectedProgress && (
+              <>
+                <DialogHeader>
+                  <div className={`mx-auto w-20 h-20 rounded-2xl flex items-center justify-center text-5xl mb-3 bg-gradient-to-br ${selectedBadge.color} ${owned.has(selected!) ? "" : "grayscale opacity-60"}`}>
+                    {selectedBadge.emoji}
+                  </div>
+                  <DialogTitle className="text-center text-2xl">{selectedBadge.name}</DialogTitle>
+                  <DialogDescription className="text-center">{selectedBadge.description}</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <div className="rounded-xl bg-muted/40 p-4">
+                    <div className="flex items-center gap-2 mb-2 text-sm font-semibold">
+                      <Target className="w-4 h-4 text-primary" /> Feladat
+                    </div>
+                    <p className="text-sm text-muted-foreground">{selectedProgress.task}</p>
+                  </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-2 text-sm">
+                      <span className="font-semibold">Haladás</span>
+                      <span className="font-bold text-primary">{selectedProgress.current}/{selectedProgress.target} {selectedProgress.label}</span>
+                    </div>
+                    <Progress value={selectedPct} className="h-3" />
+                    <div className="text-right text-xs text-muted-foreground mt-1">{selectedPct}%</div>
+                  </div>
+                  {owned.has(selected!) && (
+                    <div className="text-center text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                      ✓ Megszerezve!
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <section>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
