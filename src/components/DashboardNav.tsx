@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -24,6 +24,7 @@ const navItems = [
     badgeKey: null,
     dropdown: [
       { to: "/learn", label: "Jegyzet & Flashcard", icon: NotebookPen },
+      { to: "/ai-tutor", label: "AI Tanár", icon: Bot },
       { to: "/pdf-analyzer", label: "PDF elemző", icon: FileText },
     ],
   },
@@ -37,10 +38,10 @@ const navItems = [
     dropdown: [
       { to: "/messages", label: "Privát üzenetek", icon: MessageSquare },
       { to: "/classes", label: "Osztály", icon: Users },
+      { to: "/announcements", label: "Közlemények", icon: Megaphone },
     ],
   },
   { to: "/friends", label: "Barátok", icon: UserPlus, badgeKey: null },
-  { to: "/announcements", label: "Közlemények", icon: Megaphone, badgeKey: null },
 ];
 
 const DashboardNav = () => {
