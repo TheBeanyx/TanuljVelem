@@ -15,6 +15,7 @@ import GamePlayer from "./pages/GamePlayer";
 import Tests from "./pages/Tests";
 import Learn from "./pages/Learn";
 import PdfAnalyzer from "./pages/PdfAnalyzer";
+import AiTutor from "./pages/AiTutor";
 import Achievements from "./pages/Achievements";
 import Classes from "./pages/Classes";
 import Friends from "./pages/Friends";
