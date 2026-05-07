@@ -118,7 +118,9 @@ const DashboardNav = () => {
               );
             }
 
+            return (
               <Link key={item.to} to={item.to}>
+
                 <Button
                   variant={active ? "default" : "ghost"}
                   size="sm"
