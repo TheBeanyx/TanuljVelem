@@ -162,28 +162,85 @@ export async function awardPoints(userId: string, action: PointAction, metadata:
   tryAdd("points_100", totalPoints >= 100);
   tryAdd("points_500", totalPoints >= 500);
   tryAdd("points_1000", totalPoints >= 1000);
+  tryAdd("points_5000", totalPoints >= 5000);
   tryAdd("streak_3", currentStreak >= 3);
   tryAdd("streak_7", currentStreak >= 7);
+  tryAdd("streak_14", currentStreak >= 14);
   tryAdd("streak_30", currentStreak >= 30);
+  tryAdd("streak_100", currentStreak >= 100);
   if (action === "perfect_test") tryAdd("test_master", true);
   if (action === "pdf_analyzed") tryAdd("pdf_explorer", true);
   if (action === "join_class") tryAdd("social_butterfly", true);
 
-  if (action === "create_homework") {
+  // Time-of-day badges
+  const hour = new Date().getHours();
+  if (hour < 7) tryAdd("early_bird", true);
+  if (hour >= 22) tryAdd("night_owl", true);
+  // Weekend warrior: tracked when activity on Sat (6) AND Sun (0) within current week
+  const dow = new Date().getDay();
+  if (dow === 0 || dow === 6) {
+    const since = new Date(); since.setDate(since.getDate() - 7);
+    const { data: weekendEvents } = await supabase
+      .from("point_events")
+      .select("created_at")
+      .eq("user_id", userId)
+      .gte("created_at", since.toISOString());
+    const days = new Set((weekendEvents ?? []).map((e) => new Date(e.created_at as string).getDay()));
+    if (days.has(0) && days.has(6)) tryAdd("weekend_warrior", true);
+  }
+  // Comeback: gap >= 7 between previous activity and now
+  if (lastDate) {
+    const gap = daysBetween(lastDate, today);
+    if (gap >= 7) tryAdd("comeback_kid", true);
+  }
+
+  // Counted action badges
+  const countAction = async (act: string) => {
     const { count } = await supabase
       .from("point_events")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("action", "create_homework");
-    tryAdd("homework_hero", (count ?? 0) >= 10);
+      .eq("action", act);
+    return count ?? 0;
+  };
+
+  if (action === "create_homework") {
+    const c = await countAction("create_homework");
+    tryAdd("homework_hero", c >= 10);
+    tryAdd("homework_legend", c >= 50);
   }
   if (action === "create_flashcard_set") {
-    const { count } = await supabase
-      .from("point_events")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("action", "create_flashcard_set");
-    tryAdd("flashcard_fan", (count ?? 0) >= 5);
+    const c = await countAction("create_flashcard_set");
+    tryAdd("flashcard_fan", c >= 5);
+    tryAdd("flashcard_master", c >= 20);
+  }
+  if (action === "create_note") {
+    const c = await countAction("create_note");
+    tryAdd("note_taker", c >= 5);
+    tryAdd("note_scholar", c >= 20);
+  }
+  if (action === "complete_test" || action === "perfect_test") {
+    const a = await countAction("complete_test");
+    const b = await countAction("perfect_test");
+    tryAdd("test_marathon", a + b >= 10);
+  }
+  if (action === "pdf_analyzed") {
+    const c = await countAction("pdf_analyzed");
+    tryAdd("pdf_pro", c >= 10);
+  }
+  if (action === "join_class") {
+    const c = await countAction("join_class");
+    tryAdd("class_collector", c >= 5);
+  }
+  if (action === "ai_generation") {
+    const c = await countAction("ai_generation");
+    tryAdd("ai_apprentice", c >= 1);
+    tryAdd("ai_expert", c >= 25);
+  }
+  if (action === "tutor_message") {
+    const c = await countAction("tutor_message");
+    tryAdd("tutor_chat", c >= 1);
+    tryAdd("chatterbox", c >= 100);
   }
 
   if (newBadges.length) {
