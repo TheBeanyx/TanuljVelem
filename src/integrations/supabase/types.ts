@@ -126,37 +126,58 @@ export type Database = {
       }
       challenge_daily_tasks: {
         Row: {
+          awarded_points: number | null
           completed_at: string | null
           created_at: string
+          feedback: string | null
           id: string
+          max_points: number
           percentage: number | null
           score: number | null
+          submission: string | null
           subscription_id: string
           task_date: string
+          task_prompt: string | null
+          task_title: string | null
+          task_type: string | null
           test_id: string | null
           total_questions: number | null
           user_id: string
         }
         Insert: {
+          awarded_points?: number | null
           completed_at?: string | null
           created_at?: string
+          feedback?: string | null
           id?: string
+          max_points?: number
           percentage?: number | null
           score?: number | null
+          submission?: string | null
           subscription_id: string
           task_date?: string
+          task_prompt?: string | null
+          task_title?: string | null
+          task_type?: string | null
           test_id?: string | null
           total_questions?: number | null
           user_id: string
         }
         Update: {
+          awarded_points?: number | null
           completed_at?: string | null
           created_at?: string
+          feedback?: string | null
           id?: string
+          max_points?: number
           percentage?: number | null
           score?: number | null
+          submission?: string | null
           subscription_id?: string
           task_date?: string
+          task_prompt?: string | null
+          task_title?: string | null
+          task_type?: string | null
           test_id?: string | null
           total_questions?: number | null
           user_id?: string
@@ -174,32 +195,38 @@ export type Database = {
       challenge_subscriptions: {
         Row: {
           created_at: string
+          daily_goal_points: number
           end_date: string
           grade: number
           id: string
           start_date: string
           status: string
           subject: string
+          total_goal_points: number
           user_id: string
         }
         Insert: {
           created_at?: string
+          daily_goal_points?: number
           end_date?: string
           grade?: number
           id?: string
           start_date?: string
           status?: string
           subject: string
+          total_goal_points?: number
           user_id: string
         }
         Update: {
           created_at?: string
+          daily_goal_points?: number
           end_date?: string
           grade?: number
           id?: string
           start_date?: string
           status?: string
           subject?: string
+          total_goal_points?: number
           user_id?: string
         }
         Relationships: []
