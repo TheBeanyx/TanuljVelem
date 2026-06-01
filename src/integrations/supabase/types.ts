@@ -124,6 +124,86 @@ export type Database = {
         }
         Relationships: []
       }
+      challenge_daily_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          percentage: number | null
+          score: number | null
+          subscription_id: string
+          task_date: string
+          test_id: string | null
+          total_questions: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          percentage?: number | null
+          score?: number | null
+          subscription_id: string
+          task_date?: string
+          test_id?: string | null
+          total_questions?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          percentage?: number | null
+          score?: number | null
+          subscription_id?: string
+          task_date?: string
+          test_id?: string | null
+          total_questions?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_daily_tasks_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "challenge_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      challenge_subscriptions: {
+        Row: {
+          created_at: string
+          end_date: string
+          grade: number
+          id: string
+          start_date: string
+          status: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          end_date?: string
+          grade?: number
+          id?: string
+          start_date?: string
+          status?: string
+          subject: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          grade?: number
+          id?: string
+          start_date?: string
+          status?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       class_members: {
         Row: {
           class_id: string
