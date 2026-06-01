@@ -17,6 +17,7 @@ import Learn from "./pages/Learn";
 import PdfAnalyzer from "./pages/PdfAnalyzer";
 import AiTutor from "./pages/AiTutor";
 import Achievements from "./pages/Achievements";
+import Challenges from "./pages/Challenges";
 import Classes from "./pages/Classes";
 import Friends from "./pages/Friends";
 import Messages from "./pages/Messages";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/pdf-analyzer" element={<PdfAnalyzer />} />
             <Route path="/ai-tutor" element={<AiTutor />} />
             <Route path="/achievements" element={<Achievements />} />
+            <Route path="/challenges" element={<Challenges />} />
             <Route path="/classes" element={<Classes />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/messages" element={<Messages />} />
