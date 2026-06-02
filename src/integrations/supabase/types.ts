@@ -136,6 +136,7 @@ export type Database = {
           score: number | null
           submission: string | null
           subscription_id: string
+          subtasks: Json
           task_date: string
           task_prompt: string | null
           task_title: string | null
@@ -155,6 +156,7 @@ export type Database = {
           score?: number | null
           submission?: string | null
           subscription_id: string
+          subtasks?: Json
           task_date?: string
           task_prompt?: string | null
           task_title?: string | null
@@ -174,6 +176,7 @@ export type Database = {
           score?: number | null
           submission?: string | null
           subscription_id?: string
+          subtasks?: Json
           task_date?: string
           task_prompt?: string | null
           task_title?: string | null

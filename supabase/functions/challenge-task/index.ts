@@ -7,46 +7,65 @@ const corsHeaders = {
 };
 
 const SYSTEM = `Te egy kreatív magyar tanár vagy a TanuljVelem platformon (1–12. évfolyam).
-Sose adj feleletválasztós kvízt — mindig kreatív, nyitott, gondolkodtató feladatot tervezz.
-Magyarul írj, az évfolyamhoz illő nyelvezettel, lelkesen és barátságosan.`;
+Sose adj feleletválasztós kvízt — mindig kreatív, nyitott, gondolkodtató, GYORS feladatokat tervezz.
+Magyarul írj, az évfolyamhoz illő nyelvezettel, lelkesen és barátságosan.
+A diáknak naponta TÖBB rövid, változatos mini-feladata legyen, NEM egy nagy esszé.`;
 
+// Variety pool — pick different ones for each subtask
 const TASK_TYPES = [
-  "fogalmazás", "rövid esszé", "kreatív történet", "rajzleírás",
-  "gondolatkísérlet", "kutatási mini-projekt", "valós példák gyűjtése",
-  "magyarázat saját szavakkal", "összehasonlítás", "érvelés",
-  "interjú vagy párbeszéd írása", "kísérletterv", "vita-érvek",
-  "fogalomtérkép", "életszerű feladat (real-life problem)",
+  "1 perces ötletbörze", "valós példa", "gyors magyarázat saját szóval",
+  "rajzolj le és írj le 2 mondatot", "találj ki egy rejtvényt",
+  "mi lenne, ha...?", "rövid párbeszéd", "fogalomtérkép 5 szóval",
+  "3 érv és 3 ellenérv", "gyors összehasonlítás", "rövid története",
+  "fordítsd át mindennapi nyelvre", "képzelj el egy kísérletet",
+  "gyors számítás vagy becslés", "kapcsold össze a hétköznapokkal",
+  "találj 3 hibát", "egészítsd ki a mondatot",
+  "döntés szituációban", "mini-projekt ötlet", "kvíz a barátodnak",
 ];
 
 const GEN_TOOL = {
-  name: "create_creative_task",
-  description: "Kreatív, nyitott napi feladat egy diáknak.",
+  name: "create_daily_tasks",
+  description: "Készíts 3-5 rövid, változatos kreatív mini-feladatot egy diáknak a mai napra.",
   parameters: {
     type: "object",
     properties: {
-      title: { type: "string", description: "Rövid, vonzó cím" },
-      task_type: { type: "string", description: "A feladat típusa" },
-      prompt_markdown: {
-        type: "string",
-        description: "Részletes feladatleírás markdown-ban: kontextus, mit kell csinálni, elvárt terjedelem, értékelési szempontok.",
+      day_title: { type: "string", description: "A nap rövid, motiváló címe (pl. 'Kreatív szerda – ötletek és példák')" },
+      tasks: {
+        type: "array",
+        minItems: 3,
+        maxItems: 5,
+        items: {
+          type: "object",
+          properties: {
+            title: { type: "string", description: "Rövid, vonzó cím (max 8 szó)" },
+            task_type: { type: "string", description: "A feladat típusa rövid címkeként" },
+            prompt_markdown: {
+              type: "string",
+              description: "Tömör, konkrét feladatleírás markdownban (2-6 mondat). Mondd meg pontosan mit kell csinálni.",
+            },
+            est_minutes: { type: "integer", minimum: 2, maximum: 20, description: "Becsült idő percben" },
+            max_points: { type: "integer", minimum: 10, maximum: 40, description: "A feladat pontértéke" },
+          },
+          required: ["title", "task_type", "prompt_markdown", "est_minutes", "max_points"],
+          additionalProperties: false,
+        },
       },
-      max_points: { type: "integer", minimum: 50, maximum: 150, description: "A mai elérhető pontszám (kb. 50–150 között, a feladat nehézségétől függően)" },
     },
-    required: ["title", "task_type", "prompt_markdown", "max_points"],
+    required: ["day_title", "tasks"],
     additionalProperties: false,
   },
 };
 
 const EVAL_TOOL = {
   name: "evaluate_submission",
-  description: "Értékeld a diák kreatív megoldását.",
+  description: "Értékeld a diák megoldását egy mini-feladatra.",
   parameters: {
     type: "object",
     properties: {
       awarded_points: { type: "integer", description: "Adott pontszám 0-tól max_points-ig" },
       feedback_markdown: {
         type: "string",
-        description: "Részletes, építő visszajelzés magyarul markdown-ban: erősségek, fejlesztendők, javaslat.",
+        description: "RÖVID (2-4 mondat), építő visszajelzés magyarul markdown-ban: 1 pozitívum + 1 fejlesztési tipp.",
       },
     },
     required: ["awarded_points", "feedback_markdown"],
@@ -64,9 +83,10 @@ serve(async (req) => {
     if (!KEY) throw new Error("LOVABLE_API_KEY missing");
 
     if (mode === "generate") {
-      const { subject = "Általános", grade = 8, day_index = 1, recent_titles = [] } = body;
-      const seed = `${subject}-${grade}-${new Date().toISOString().slice(0,10)}`;
-      const typeHint = TASK_TYPES[Math.floor((day_index + seed.length) % TASK_TYPES.length)];
+      const { subject = "Általános", grade = 8, day_index = 1, recent_titles = [], daily_goal_points = 70 } = body;
+      // Pick 4 distinct type hints for variety
+      const shuffled = [...TASK_TYPES].sort(() => Math.random() - 0.5);
+      const typeHints = shuffled.slice(0, 5);
 
       const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
@@ -76,15 +96,20 @@ serve(async (req) => {
           messages: [
             { role: "system", content: SYSTEM },
             { role: "user", content:
-              `Tervezz egy NAPI KREATÍV feladatot.\n` +
+              `Tervezz 3-5 RÖVID, GYORS, VÁLTOZATOS kreatív mini-feladatot a mai napra.\n` +
               `Tantárgy: ${subject}\nÉvfolyam: ${grade}\nNap a kihívásban: ${day_index}/30\n` +
-              `Ajánlott feladattípus (de szabadon térj el): ${typeHint}\n` +
-              `Kerüld ezeket a korábbi feladatokat: ${recent_titles.slice(0,10).join(", ") || "—"}.\n` +
-              `Fontos: NE feleletválasztós kvíz legyen, hanem kreatív, nyitott, kifejtős feladat.`
+              `A napi pontcél: ~${daily_goal_points} pont (a feladatok össz max_points-ja legyen ehhez közeli, de kicsit fölötte).\n` +
+              `Minden feladat más típusú legyen — meríts ezekből (de variálj): ${typeHints.join(", ")}.\n` +
+              `Kerüld ezeket a korábbi címeket: ${recent_titles.slice(0,15).join(", ") || "—"}.\n` +
+              `Fontos szabályok:\n` +
+              `- NE legyen feleletválasztós kvíz.\n` +
+              `- Minden feladat max 2-15 perc legyen, rövid kifejtéssel.\n` +
+              `- Változatosság: ne legyen mindegyik fogalmazás vagy esszé.\n` +
+              `- Játékos, lendületes, korosztálynak való hangnem.`
             },
           ],
           tools: [{ type: "function", function: GEN_TOOL }],
-          tool_choice: { type: "function", function: { name: "create_creative_task" } },
+          tool_choice: { type: "function", function: { name: "create_daily_tasks" } },
         }),
       });
       if (!r.ok) return upstream(r);
@@ -95,9 +120,52 @@ serve(async (req) => {
       return json(parsed);
     }
 
+    if (mode === "regenerate_one") {
+      const { subject = "Általános", grade = 8, exclude_titles = [], prev_type = "" } = body;
+      const shuffled = [...TASK_TYPES].filter(t => t !== prev_type).sort(() => Math.random() - 0.5);
+      const hint = shuffled[0];
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user", content:
+              `Tervezz EGYETLEN rövid (3-12 perces) kreatív mini-feladatot.\n` +
+              `Tantárgy: ${subject}\nÉvfolyam: ${grade}\nTípus inspiráció: ${hint}\n` +
+              `Kerüld ezeket: ${exclude_titles.join(", ") || "—"}.\nNE feleletválasztós!`
+            },
+          ],
+          tools: [{ type: "function", function: {
+            name: "create_one",
+            description: "Egy mini-feladat.",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                task_type: { type: "string" },
+                prompt_markdown: { type: "string" },
+                est_minutes: { type: "integer", minimum: 2, maximum: 20 },
+                max_points: { type: "integer", minimum: 10, maximum: 40 },
+              },
+              required: ["title","task_type","prompt_markdown","est_minutes","max_points"],
+              additionalProperties: false,
+            },
+          }}],
+          tool_choice: { type: "function", function: { name: "create_one" } },
+        }),
+      });
+      if (!r.ok) return upstream(r);
+      const data = await r.json();
+      const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+      if (!args) return json({ error: "Hiba" }, 500);
+      return json(JSON.parse(args));
+    }
+
     if (mode === "evaluate") {
-      const { subject, grade, task_title, task_prompt, submission, max_points = 100 } = body;
-      if (!submission || typeof submission !== "string" || submission.trim().length < 3) {
+      const { subject, grade, task_title, task_prompt, submission, max_points = 20 } = body;
+      if (!submission || typeof submission !== "string" || submission.trim().length < 2) {
         return json({ error: "Üres megoldás." }, 400);
       }
       const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -106,12 +174,12 @@ serve(async (req) => {
         body: JSON.stringify({
           model: "google/gemini-3-flash-preview",
           messages: [
-            { role: "system", content: SYSTEM + "\nÉrtékelj objektíven, de bátorítóan. A pontszám a feladat teljesítésének minőségét tükrözze." },
+            { role: "system", content: SYSTEM + "\nÉrtékelj objektíven, de bátorítóan. Rövid, mini-feladathoz illő rövid visszajelzést adj." },
             { role: "user", content:
               `Tantárgy: ${subject}\nÉvfolyam: ${grade}\nMaximum pont: ${max_points}\n\n` +
               `### Feladat\n**${task_title}**\n\n${task_prompt}\n\n` +
               `### Diák megoldása\n${submission}\n\n` +
-              `Értékeld 0-${max_points} pont skálán és adj részletes, építő visszajelzést.`
+              `Értékeld 0-${max_points} pont skálán és adj RÖVID, építő visszajelzést (2-4 mondat).`
             },
           ],
           tools: [{ type: "function", function: EVAL_TOOL }],

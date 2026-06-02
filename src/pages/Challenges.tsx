@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Trophy, Plus, Sparkles, Calendar, Target, Loader2, CheckCircle2, Flame, Trash2, ArrowLeft, Send } from "lucide-react";
-import { motion } from "framer-motion";
+import {
+  Trophy, Plus, Sparkles, Calendar, Target, Loader2, CheckCircle2,
+  Flame, Trash2, ArrowLeft, Send, Clock, RefreshCw, ChevronDown, ChevronUp, Zap,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
 import DashboardNav from "@/components/DashboardNav";
 import { Button } from "@/components/ui/button";
@@ -34,21 +37,32 @@ type Subscription = {
   total_goal_points: number;
 };
 
+type SubTask = {
+  id: string;
+  title: string;
+  task_type: string;
+  prompt_markdown: string;
+  est_minutes: number;
+  max_points: number;
+  submission?: string | null;
+  awarded_points?: number | null;
+  feedback?: string | null;
+  completed_at?: string | null;
+};
+
 type DailyTask = {
   id: string;
   subscription_id: string;
   task_date: string;
   task_title: string | null;
-  task_type: string | null;
-  task_prompt: string | null;
   max_points: number;
-  submission: string | null;
   awarded_points: number | null;
-  feedback: string | null;
   completed_at: string | null;
+  subtasks: SubTask[];
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
+const uid = () => Math.random().toString(36).slice(2, 10);
 
 export default function Challenges() {
   const { user } = useAuth();
@@ -67,9 +81,11 @@ export default function Challenges() {
   // Active task view
   const [activeSub, setActiveSub] = useState<Subscription | null>(null);
   const [activeTask, setActiveTask] = useState<DailyTask | null>(null);
-  const [submission, setSubmission] = useState("");
   const [generating, setGenerating] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [openSubtaskId, setOpenSubtaskId] = useState<string | null>(null);
+  const [submissionDraft, setSubmissionDraft] = useState<Record<string, string>>({});
+  const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [regenId, setRegenId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -87,7 +103,7 @@ export default function Challenges() {
         .select("*")
         .in("subscription_id", subList.map((x) => x.id))
         .order("task_date", { ascending: false });
-      setTasks(t || []);
+      setTasks((t || []).map((row: any) => ({ ...row, subtasks: row.subtasks || [] })));
     } else setTasks([]);
     setLoading(false);
   }, [user]);
@@ -121,33 +137,59 @@ export default function Challenges() {
 
   const openTask = async (sub: Subscription) => {
     setActiveSub(sub);
-    setSubmission("");
+    setSubmissionDraft({});
     const existing = tasks.find((t) => t.subscription_id === sub.id && t.task_date === today());
-    if (existing) {
+    if (existing && existing.subtasks?.length) {
       setActiveTask(existing);
-      setSubmission(existing.submission || "");
+      const drafts: Record<string, string> = {};
+      existing.subtasks.forEach((st) => { drafts[st.id] = st.submission || ""; });
+      setSubmissionDraft(drafts);
+      setOpenSubtaskId(existing.subtasks.find((s) => !s.completed_at)?.id || existing.subtasks[0].id);
     } else {
-      // Generate
       setActiveTask(null);
       setGenerating(true);
       try {
-        const recent = tasks.filter((t) => t.subscription_id === sub.id).slice(0, 10).map((t) => t.task_title).filter(Boolean) as string[];
+        const recent = tasks
+          .filter((t) => t.subscription_id === sub.id)
+          .flatMap((t) => (t.subtasks || []).map((s) => s.title))
+          .filter(Boolean) as string[];
         const dayIndex = Math.ceil((Date.now() - new Date(sub.start_date).getTime()) / 86400000) + 1;
         const { data, error } = await supabase.functions.invoke("challenge-task", {
-          body: { mode: "generate", subject: sub.subject, grade: sub.grade, day_index: dayIndex, recent_titles: recent },
+          body: {
+            mode: "generate",
+            subject: sub.subject, grade: sub.grade,
+            day_index: dayIndex, recent_titles: recent,
+            daily_goal_points: sub.daily_goal_points,
+          },
         });
-        if (error || !data?.prompt_markdown) throw error || new Error("Hiba");
+        if (error || !data?.tasks?.length) throw error || new Error("Hiba");
+        const subtasks: SubTask[] = data.tasks.map((t: any) => ({
+          id: uid(),
+          title: t.title,
+          task_type: t.task_type,
+          prompt_markdown: t.prompt_markdown,
+          est_minutes: t.est_minutes || 5,
+          max_points: t.max_points || 20,
+          submission: null, awarded_points: null, feedback: null, completed_at: null,
+        }));
+        const totalMax = subtasks.reduce((s, x) => s + x.max_points, 0);
         const { data: inserted, error: insErr } = await (supabase as any).from("challenge_daily_tasks").insert({
           subscription_id: sub.id,
           user_id: user!.id,
           task_date: today(),
-          task_title: data.title,
-          task_type: data.task_type,
-          task_prompt: data.prompt_markdown,
-          max_points: data.max_points || 100,
+          task_title: data.day_title || `${sub.subject} – nap ${dayIndex}`,
+          task_type: "mixed",
+          task_prompt: data.day_title || null,
+          max_points: totalMax,
+          subtasks,
         }).select().single();
         if (insErr) throw insErr;
-        setActiveTask(inserted);
+        const row: DailyTask = { ...inserted, subtasks };
+        setActiveTask(row);
+        const drafts: Record<string, string> = {};
+        subtasks.forEach((st) => { drafts[st.id] = ""; });
+        setSubmissionDraft(drafts);
+        setOpenSubtaskId(subtasks[0].id);
         await load();
       } catch (e) {
         console.error(e);
@@ -159,51 +201,129 @@ export default function Challenges() {
     }
   };
 
-  const submitAnswer = async () => {
+  const persistTask = async (next: DailyTask) => {
+    const totalAwarded = next.subtasks.reduce((s, x) => s + (x.awarded_points || 0), 0);
+    const allDone = next.subtasks.every((x) => x.completed_at);
+    await (supabase as any).from("challenge_daily_tasks").update({
+      subtasks: next.subtasks,
+      awarded_points: totalAwarded,
+      completed_at: allDone ? new Date().toISOString() : null,
+    }).eq("id", next.id);
+  };
+
+  const submitSubtask = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
-    if (submission.trim().length < 5) { toast.error("Írj egy érdemi megoldást."); return; }
-    setSubmitting(true);
+    const text = (submissionDraft[st.id] || "").trim();
+    if (text.length < 2) { toast.error("Írj valamit."); return; }
+    setSubmittingId(st.id);
     try {
       const { data, error } = await supabase.functions.invoke("challenge-task", {
         body: {
           mode: "evaluate",
-          subject: activeSub.subject,
-          grade: activeSub.grade,
-          task_title: activeTask.task_title,
-          task_prompt: activeTask.task_prompt,
-          submission,
-          max_points: activeTask.max_points,
+          subject: activeSub.subject, grade: activeSub.grade,
+          task_title: st.title, task_prompt: st.prompt_markdown,
+          submission: text, max_points: st.max_points,
         },
       });
       if (error || data?.awarded_points == null) throw error || new Error("Hiba");
-      const upd = {
-        submission,
+      const updatedSt: SubTask = {
+        ...st,
+        submission: text,
         awarded_points: data.awarded_points,
         feedback: data.feedback_markdown,
         completed_at: new Date().toISOString(),
       };
-      await (supabase as any).from("challenge_daily_tasks").update(upd).eq("id", activeTask.id);
-      setActiveTask({ ...activeTask, ...upd });
-      toast.success(`Értékelve: ${data.awarded_points}/${activeTask.max_points} pont`);
+      const next: DailyTask = {
+        ...activeTask,
+        subtasks: activeTask.subtasks.map((x) => x.id === st.id ? updatedSt : x),
+      };
+      await persistTask(next);
+      setActiveTask(next);
+      toast.success(`${data.awarded_points}/${st.max_points} pont 🎯`);
+      // auto open next undone
+      const nextUndone = next.subtasks.find((x) => !x.completed_at);
+      if (nextUndone) setOpenSubtaskId(nextUndone.id);
       await load();
     } catch (e) {
       console.error(e);
       toast.error("Nem sikerült értékelni.");
     } finally {
-      setSubmitting(false);
+      setSubmittingId(null);
+    }
+  };
+
+  const regenerateSubtask = async (st: SubTask) => {
+    if (!activeTask || !activeSub) return;
+    if (st.completed_at) { toast.error("Már beküldött feladatot nem cserélhetsz."); return; }
+    setRegenId(st.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("challenge-task", {
+        body: {
+          mode: "regenerate_one",
+          subject: activeSub.subject, grade: activeSub.grade,
+          exclude_titles: activeTask.subtasks.map((x) => x.title),
+          prev_type: st.task_type,
+        },
+      });
+      if (error || !data?.prompt_markdown) throw error || new Error("Hiba");
+      const replaced: SubTask = {
+        id: st.id,
+        title: data.title, task_type: data.task_type,
+        prompt_markdown: data.prompt_markdown,
+        est_minutes: data.est_minutes || 5,
+        max_points: data.max_points || st.max_points,
+        submission: null, awarded_points: null, feedback: null, completed_at: null,
+      };
+      const next: DailyTask = {
+        ...activeTask,
+        subtasks: activeTask.subtasks.map((x) => x.id === st.id ? replaced : x),
+        max_points: activeTask.subtasks.reduce((s, x) => s + (x.id === st.id ? replaced.max_points : x.max_points), 0),
+      };
+      await (supabase as any).from("challenge_daily_tasks").update({
+        subtasks: next.subtasks, max_points: next.max_points,
+      }).eq("id", next.id);
+      setActiveTask(next);
+      setSubmissionDraft((d) => ({ ...d, [st.id]: "" }));
+      toast.success("Új feladat generálva! ✨");
+    } catch (e) {
+      console.error(e);
+      toast.error("Nem sikerült új feladatot generálni.");
+    } finally {
+      setRegenId(null);
     }
   };
 
   const subStats = (sub: Subscription) => {
     const subTasks = tasks.filter((t) => t.subscription_id === sub.id);
-    const completed = subTasks.filter((t) => t.completed_at);
+    const completedDays = subTasks.filter((t) => t.completed_at);
     const totalDays = Math.ceil((new Date(sub.end_date).getTime() - new Date(sub.start_date).getTime()) / 86400000) + 1;
-    const totalEarned = completed.reduce((s, t) => s + (t.awarded_points || 0), 0);
-    const totalMax = completed.reduce((s, t) => s + (t.max_points || 0), 0) || 1;
+    const totalEarned = subTasks.reduce(
+      (s, t) => s + (t.subtasks || []).reduce((ss, x) => ss + (x.awarded_points || 0), 0), 0,
+    );
+    const totalMax = subTasks.reduce(
+      (s, t) => s + (t.subtasks || []).reduce((ss, x) => ss + (x.completed_at ? x.max_points : 0), 0), 0,
+    ) || 1;
     const avgPct = Math.round((totalEarned / totalMax) * 100);
     const todayTask = subTasks.find((t) => t.task_date === today());
     const isOver = sub.end_date < today();
-    return { totalDays, completed: completed.length, totalEarned, avgPct, todayTask, isOver, subTasks };
+
+    // Streak: consecutive recent days (counting back from today/yesterday) meeting daily goal
+    let streak = 0;
+    const sortedByDate = [...subTasks].sort((a, b) => b.task_date.localeCompare(a.task_date));
+    let cursor = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    // if today not done yet, start from yesterday
+    const todayRow = sortedByDate.find((t) => t.task_date === fmt(cursor));
+    if (!todayRow || !todayRow.completed_at) cursor.setDate(cursor.getDate() - 1);
+    for (let i = 0; i < 60; i++) {
+      const ds = fmt(cursor);
+      const row = sortedByDate.find((t) => t.task_date === ds);
+      const earned = row ? (row.subtasks || []).reduce((s, x) => s + (x.awarded_points || 0), 0) : 0;
+      if (row && earned >= sub.daily_goal_points) { streak++; cursor.setDate(cursor.getDate() - 1); }
+      else break;
+    }
+
+    return { totalDays, completed: completedDays.length, totalEarned, avgPct, todayTask, isOver, subTasks, streak };
   };
 
   if (!user) return (
@@ -214,9 +334,14 @@ export default function Challenges() {
 
   // === TASK VIEW ===
   if (activeSub) {
-    const todayPct = activeTask?.awarded_points != null
-      ? Math.round(((activeTask.awarded_points) / (activeTask.max_points || 1)) * 100) : 0;
-    const meetsDaily = activeTask?.awarded_points != null && activeTask.awarded_points >= activeSub.daily_goal_points;
+    const totalAwarded = activeTask?.subtasks.reduce((s, x) => s + (x.awarded_points || 0), 0) || 0;
+    const totalMax = activeTask?.subtasks.reduce((s, x) => s + x.max_points, 0) || 0;
+    const dayPct = totalMax ? Math.round((totalAwarded / totalMax) * 100) : 0;
+    const goalPct = Math.min(100, Math.round((totalAwarded / activeSub.daily_goal_points) * 100));
+    const meetsDaily = totalAwarded >= activeSub.daily_goal_points;
+    const doneCount = activeTask?.subtasks.filter((x) => x.completed_at).length || 0;
+    const allCount = activeTask?.subtasks.length || 0;
+
     return (
       <div className="min-h-screen bg-background">
         <DashboardNav />
@@ -228,64 +353,144 @@ export default function Challenges() {
           {generating ? (
             <Card className="p-12 text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
-              <p className="font-semibold">Készül a mai kreatív feladatod…</p>
+              <p className="font-semibold">Készülnek a mai mini-feladataid…</p>
+              <p className="text-sm text-muted-foreground mt-1">3-5 rövid, kreatív feladat egy nap alatt</p>
             </Card>
           ) : activeTask ? (
-            <Card className="p-6 sm:p-8">
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge variant="secondary">{activeSub.subject}</Badge>
-                <Badge variant="outline">{activeSub.grade}. évf.</Badge>
-                {activeTask.task_type && <Badge className="bg-primary/10 text-primary border-0">{activeTask.task_type}</Badge>}
-                <Badge className="ml-auto bg-amber-500/15 text-amber-700 dark:text-amber-400 border-0">
-                  Max {activeTask.max_points} pont
-                </Badge>
-              </div>
-              <h2 className="text-2xl font-extrabold mb-4">{activeTask.task_title}</h2>
-
-              <div className="prose prose-sm dark:prose-invert max-w-none mb-6">
-                <ReactMarkdown>{activeTask.task_prompt || ""}</ReactMarkdown>
-              </div>
-
-              <Label className="font-semibold">A te megoldásod</Label>
-              <Textarea
-                value={submission}
-                onChange={(e) => setSubmission(e.target.value)}
-                placeholder="Itt írd a kreatív megoldásodat…"
-                rows={10}
-                disabled={!!activeTask.completed_at}
-                className="mt-2"
-              />
-
-              {activeTask.completed_at ? (
-                <div className="mt-6 space-y-4">
-                  <div className={`p-4 rounded-lg ${meetsDaily ? "bg-emerald-500/10" : "bg-amber-500/10"}`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold flex items-center gap-2">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                        Eredmény: {activeTask.awarded_points} / {activeTask.max_points} pont ({todayPct}%)
-                      </span>
-                      <Badge variant={meetsDaily ? "default" : "outline"}>
-                        Napi cél: {activeSub.daily_goal_points}
-                      </Badge>
-                    </div>
-                    <Progress value={todayPct} />
-                  </div>
-                  {activeTask.feedback && (
-                    <Card className="p-4 bg-muted/40">
-                      <p className="text-sm font-semibold mb-2">💬 AI visszajelzés</p>
-                      <div className="prose prose-sm dark:prose-invert max-w-none">
-                        <ReactMarkdown>{activeTask.feedback}</ReactMarkdown>
-                      </div>
-                    </Card>
-                  )}
+            <>
+              {/* Day header */}
+              <Card className="p-6 mb-4">
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  <Badge variant="secondary">{activeSub.subject}</Badge>
+                  <Badge variant="outline">{activeSub.grade}. évf.</Badge>
+                  <Badge className="ml-auto bg-amber-500/15 text-amber-700 dark:text-amber-400 border-0">
+                    {doneCount}/{allCount} kész
+                  </Badge>
                 </div>
-              ) : (
-                <Button onClick={submitAnswer} disabled={submitting} className="mt-4 gradient-hero text-white gap-2">
-                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  Beküldés és értékelés
-                </Button>
-              )}
-            </Card>
+                <h2 className="text-2xl font-extrabold mb-3">{activeTask.task_title}</h2>
+                <div className="space-y-2">
+                  <div>
+                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                      <span>Napi cél</span>
+                      <span>{totalAwarded} / {activeSub.daily_goal_points} pont</span>
+                    </div>
+                    <Progress value={goalPct} className={meetsDaily ? "[&>div]:bg-emerald-500" : ""} />
+                  </div>
+                </div>
+                {meetsDaily && (
+                  <div className="mt-3 p-3 bg-emerald-500/10 rounded-lg text-sm text-emerald-700 dark:text-emerald-300 font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4" /> Napi célt teljesítetted! 🔥
+                  </div>
+                )}
+              </Card>
+
+              {/* Subtasks list */}
+              <div className="space-y-3">
+                {activeTask.subtasks.map((st, idx) => {
+                  const isOpen = openSubtaskId === st.id;
+                  const done = !!st.completed_at;
+                  const pct = done && st.max_points ? Math.round(((st.awarded_points || 0) / st.max_points) * 100) : 0;
+                  return (
+                    <Card key={st.id} className={`overflow-hidden ${done ? "border-emerald-500/30" : ""}`}>
+                      <button
+                        className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-muted/40 transition-colors"
+                        onClick={() => setOpenSubtaskId(isOpen ? null : st.id)}
+                      >
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                          done ? "bg-emerald-500 text-white" : "bg-primary/10 text-primary"
+                        }`}>
+                          {done ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate">{st.title}</p>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <Badge variant="outline" className="text-[10px] py-0 h-4">{st.task_type}</Badge>
+                            <span className="text-[11px] text-muted-foreground inline-flex items-center gap-0.5">
+                              <Clock className="w-3 h-3" /> {st.est_minutes} perc
+                            </span>
+                            <span className="text-[11px] text-muted-foreground inline-flex items-center gap-0.5">
+                              <Zap className="w-3 h-3" /> {st.max_points} pont
+                            </span>
+                            {done && (
+                              <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                                +{st.awarded_points} ({pct}%)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        {isOpen ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                      </button>
+
+                      <AnimatePresence initial={false}>
+                        {isOpen && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.18 }}
+                          >
+                            <div className="px-5 pb-5 pt-1 border-t border-border">
+                              <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
+                                <ReactMarkdown>{st.prompt_markdown}</ReactMarkdown>
+                              </div>
+
+                              {!done && (
+                                <div className="flex justify-end mb-2">
+                                  <Button
+                                    variant="ghost" size="sm"
+                                    onClick={() => regenerateSubtask(st)}
+                                    disabled={regenId === st.id}
+                                    className="gap-1 text-xs h-7"
+                                  >
+                                    {regenId === st.id
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <RefreshCw className="w-3 h-3" />}
+                                    Másik feladatot kérek
+                                  </Button>
+                                </div>
+                              )}
+
+                              <Label className="text-xs font-semibold">A te megoldásod</Label>
+                              <Textarea
+                                value={submissionDraft[st.id] || ""}
+                                onChange={(e) => setSubmissionDraft((d) => ({ ...d, [st.id]: e.target.value }))}
+                                placeholder="Írd ide röviden a válaszodat…"
+                                rows={4}
+                                disabled={done}
+                                className="mt-1.5"
+                              />
+
+                              {done ? (
+                                st.feedback && (
+                                  <Card className="p-3 mt-3 bg-muted/40">
+                                    <p className="text-xs font-semibold mb-1">💬 AI visszajelzés</p>
+                                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                                      <ReactMarkdown>{st.feedback}</ReactMarkdown>
+                                    </div>
+                                  </Card>
+                                )
+                              ) : (
+                                <Button
+                                  onClick={() => submitSubtask(st)}
+                                  disabled={submittingId === st.id}
+                                  className="mt-3 gradient-hero text-white gap-2"
+                                  size="sm"
+                                >
+                                  {submittingId === st.id
+                                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                                    : <Send className="w-4 h-4" />}
+                                  Beküldés
+                                </Button>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </Card>
+                  );
+                })}
+              </div>
+            </>
           ) : null}
         </main>
       </div>
@@ -304,7 +509,7 @@ export default function Challenges() {
               <Trophy className="w-8 h-8 text-amber-500" /> 30 Napos Kreatív Kihívás
             </h1>
             <p className="text-muted-foreground mt-1">
-              Minden nap egy egyedi, kreatív feladat — saját napi és összesített pontcéllal.
+              Minden nap <strong>több rövid, változatos</strong> kreatív mini-feladat — saját napi és összesített pontcéllal.
             </p>
           </div>
           <Button onClick={() => setOpen(true)} className="gradient-hero text-white gap-2">
@@ -318,7 +523,7 @@ export default function Challenges() {
           <Card className="p-12 text-center">
             <Flame className="w-12 h-12 mx-auto text-amber-500 mb-4" />
             <h3 className="text-xl font-bold mb-2">Még nincs aktív kihívásod</h3>
-            <p className="text-muted-foreground mb-6">Indíts egyet és minden nap új kreatív feladat vár!</p>
+            <p className="text-muted-foreground mb-6">Indíts egyet és minden nap új kreatív mini-feladatok várnak!</p>
             <Button onClick={() => setOpen(true)} size="lg" className="gradient-hero text-white gap-2">
               <Sparkles className="w-4 h-4" /> Feliratkozás
             </Button>
@@ -327,7 +532,10 @@ export default function Challenges() {
           <div className="grid gap-4">
             {subs.map((sub) => {
               const st = subStats(sub);
-              const done = !!st.todayTask?.completed_at;
+              const todayEarned = (st.todayTask?.subtasks || []).reduce((s, x) => s + (x.awarded_points || 0), 0);
+              const todayDone = (st.todayTask?.subtasks || []).filter((x) => x.completed_at).length;
+              const todayAll = (st.todayTask?.subtasks || []).length;
+              const todayComplete = !!st.todayTask?.completed_at;
               const totalPct = Math.min(100, Math.round((st.totalEarned / sub.total_goal_points) * 100));
               return (
                 <motion.div key={sub.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -340,11 +548,16 @@ export default function Challenges() {
                           {st.isOver
                             ? <Badge variant="outline">Befejezve</Badge>
                             : <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-0">Aktív</Badge>}
+                          {st.streak > 0 && (
+                            <Badge className="bg-orange-500/15 text-orange-700 dark:text-orange-400 border-0 gap-1">
+                              <Flame className="w-3 h-3" /> {st.streak} napos sorozat
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-sm text-muted-foreground flex items-center gap-3 flex-wrap mb-4">
                           <span className="inline-flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{sub.start_date} → {sub.end_date}</span>
-                          <span className="inline-flex items-center gap-1"><Target className="w-3.5 h-3.5" />Napi cél: {sub.daily_goal_points} pont</span>
-                          <span className="inline-flex items-center gap-1"><Trophy className="w-3.5 h-3.5" />Havi cél: {sub.total_goal_points} pont</span>
+                          <span className="inline-flex items-center gap-1"><Target className="w-3.5 h-3.5" />Napi: {sub.daily_goal_points}p</span>
+                          <span className="inline-flex items-center gap-1"><Trophy className="w-3.5 h-3.5" />Havi: {sub.total_goal_points}p</span>
                         </div>
 
                         <div className="space-y-3">
@@ -371,14 +584,18 @@ export default function Challenges() {
                             <p className="text-2xl font-extrabold">{st.totalEarned}</p>
                             <p className="text-xs text-muted-foreground">pont · átlag {st.avgPct}%</p>
                           </div>
-                        ) : done ? (
+                        ) : todayComplete ? (
                           <Button onClick={() => openTask(sub)} variant="outline" className="gap-2">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                            Mai kész ({st.todayTask?.awarded_points}/{st.todayTask?.max_points})
+                            Mai kész ({todayEarned}p)
+                          </Button>
+                        ) : st.todayTask ? (
+                          <Button onClick={() => openTask(sub)} className="gradient-hero text-white gap-2">
+                            <Sparkles className="w-4 h-4" /> Folytatás ({todayDone}/{todayAll})
                           </Button>
                         ) : (
                           <Button onClick={() => openTask(sub)} className="gradient-hero text-white gap-2">
-                            <Sparkles className="w-4 h-4" /> Mai feladat
+                            <Sparkles className="w-4 h-4" /> Mai feladatok
                           </Button>
                         )}
                         <Button variant="ghost" size="sm" onClick={() => cancelSub(sub.id)} className="text-muted-foreground hover:text-destructive gap-1">
@@ -389,19 +606,22 @@ export default function Challenges() {
 
                     {st.subTasks.length > 0 && (
                       <div className="mt-4 pt-4 border-t border-border">
-                        <p className="text-xs text-muted-foreground mb-2">Utolsó napi pontok</p>
+                        <p className="text-xs text-muted-foreground mb-2">Utolsó napok</p>
                         <div className="flex flex-wrap gap-1.5">
                           {st.subTasks.slice(0, 14).map((t) => {
-                            const pct = t.completed_at && t.max_points ? Math.round(((t.awarded_points || 0) / t.max_points) * 100) : null;
+                            const earned = (t.subtasks || []).reduce((s, x) => s + (x.awarded_points || 0), 0);
+                            const maxDone = (t.subtasks || []).reduce((s, x) => s + (x.completed_at ? x.max_points : 0), 0);
+                            const pct = maxDone ? Math.round((earned / maxDone) * 100) : null;
+                            const goalMet = earned >= sub.daily_goal_points;
                             return (
-                              <div key={t.id} title={`${t.task_date}: ${t.awarded_points ?? "–"}/${t.max_points}`}
-                                className={`min-w-[44px] h-9 px-2 rounded text-[11px] font-bold flex items-center justify-center ${
+                              <div key={t.id} title={`${t.task_date}: ${earned}p${pct != null ? ` (${pct}%)` : ""}`}
+                                className={`min-w-[48px] h-9 px-2 rounded text-[11px] font-bold flex items-center justify-center ${
                                   pct == null ? "bg-muted text-muted-foreground"
-                                  : pct >= 80 ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                                  : goalMet ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
                                   : pct >= 50 ? "bg-amber-500/20 text-amber-700 dark:text-amber-300"
                                   : "bg-rose-500/20 text-rose-700 dark:text-rose-300"
                                 }`}>
-                                {t.awarded_points ?? "–"}/{t.max_points}
+                                {earned}p
                               </div>
                             );
                           })}
@@ -442,7 +662,7 @@ export default function Challenges() {
               <div>
                 <Label>Napi pontcél</Label>
                 <Input type="number" min={10} max={150} value={dailyGoal} onChange={(e) => setDailyGoal(e.target.value)} />
-                <p className="text-[11px] text-muted-foreground mt-1">Hány pontot szeretnél naponta elérni?</p>
+                <p className="text-[11px] text-muted-foreground mt-1">A napi mini-feladatokból összesen.</p>
               </div>
               <div>
                 <Label>Havi pontcél</Label>
@@ -451,7 +671,7 @@ export default function Challenges() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Minden nap egy AI által tervezett kreatív feladatot kapsz (fogalmazás, gondolatkísérlet, projekt stb.) — nem feleletválasztós!
+              Minden nap 3-5 rövid, változatos kreatív mini-feladatot kapsz (ötletbörze, példák, gyors magyarázat, rejtvény, mini-projekt stb.) — sose feleletválasztós!
             </p>
           </div>
           <DialogFooter>
