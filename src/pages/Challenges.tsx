@@ -166,9 +166,9 @@ export default function Challenges() {
           id: uid(),
           title: t.title,
           task_type: t.task_type,
-          prompt_markdown: t.prompt_markdown,
           est_minutes: t.est_minutes || 5,
-          max_points: t.max_points || 20,
+          max_points: t.max_points || 15,
+          data: t,
           submission: null, awarded_points: null, feedback: null, completed_at: null,
         }));
         const totalMax = subtasks.reduce((s, x) => s + x.max_points, 0);
