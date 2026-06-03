@@ -2,18 +2,17 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   Trophy, Plus, Sparkles, Calendar, Target, Loader2, CheckCircle2,
-  Flame, Trash2, ArrowLeft, Send, Clock, RefreshCw, ChevronDown, ChevronUp, Zap,
+  Flame, Trash2, ArrowLeft, Clock, RefreshCw, ChevronDown, ChevronUp, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
 import DashboardNav from "@/components/DashboardNav";
+import ChallengeTaskRenderer from "@/components/ChallengeTaskRenderer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
