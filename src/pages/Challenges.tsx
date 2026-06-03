@@ -450,10 +450,6 @@ export default function Challenges() {
                             transition={{ duration: 0.18 }}
                           >
                             <div className="px-5 pb-5 pt-1 border-t border-border">
-                              <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
-                                <ReactMarkdown>{st.prompt_markdown}</ReactMarkdown>
-                              </div>
-
                               {!done && (
                                 <div className="flex justify-end mb-2">
                                   <Button
@@ -470,38 +466,22 @@ export default function Challenges() {
                                 </div>
                               )}
 
-                              <Label className="text-xs font-semibold">A te megoldásod</Label>
-                              <Textarea
-                                value={submissionDraft[st.id] || ""}
-                                onChange={(e) => setSubmissionDraft((d) => ({ ...d, [st.id]: e.target.value }))}
-                                placeholder="Írd ide röviden a válaszodat…"
-                                rows={4}
-                                disabled={done}
-                                className="mt-1.5"
+                              <ChallengeTaskRenderer
+                                taskType={st.task_type}
+                                data={st.data}
+                                maxPoints={st.max_points}
+                                done={done}
+                                savedResult={done ? {
+                                  awarded_points: st.awarded_points || 0,
+                                  feedback_markdown: st.feedback || "",
+                                  submission_summary: st.submission || "",
+                                } : null}
+                                writingDraft={submissionDraft[st.id] || ""}
+                                setWritingDraft={(s) => setSubmissionDraft((d) => ({ ...d, [st.id]: s }))}
+                                onSubmitWriting={() => submitWriting(st)}
+                                submittingWriting={submittingId === st.id}
+                                onSubmitInteractive={(r) => submitInteractive(st, r)}
                               />
-
-                              {done ? (
-                                st.feedback && (
-                                  <Card className="p-3 mt-3 bg-muted/40">
-                                    <p className="text-xs font-semibold mb-1">💬 AI visszajelzés</p>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                                      <ReactMarkdown>{st.feedback}</ReactMarkdown>
-                                    </div>
-                                  </Card>
-                                )
-                              ) : (
-                                <Button
-                                  onClick={() => submitSubtask(st)}
-                                  disabled={submittingId === st.id}
-                                  className="mt-3 gradient-hero text-white gap-2"
-                                  size="sm"
-                                >
-                                  {submittingId === st.id
-                                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                                    : <Send className="w-4 h-4" />}
-                                  Beküldés
-                                </Button>
-                              )}
                             </div>
                           </motion.div>
                         )}
