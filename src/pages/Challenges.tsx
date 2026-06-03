@@ -671,7 +671,7 @@ export default function Challenges() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Minden nap 3-5 rövid, változatos kreatív mini-feladatot kapsz (ötletbörze, példák, gyors magyarázat, rejtvény, mini-projekt stb.) — sose feleletválasztós!
+              Minden nap <strong>6 változatos feladat</strong>: 1 írásos, 1 feleletválasztós, 1 párosítós + 3 kreatív interaktív (csoportosítás, sorrend, igaz/hamis, szókitöltés, többszörös választás).
             </p>
           </div>
           <DialogFooter>
