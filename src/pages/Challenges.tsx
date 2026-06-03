@@ -2,18 +2,17 @@ import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   Trophy, Plus, Sparkles, Calendar, Target, Loader2, CheckCircle2,
-  Flame, Trash2, ArrowLeft, Send, Clock, RefreshCw, ChevronDown, ChevronUp, Zap,
+  Flame, Trash2, ArrowLeft, Clock, RefreshCw, ChevronDown, ChevronUp, Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
 import DashboardNav from "@/components/DashboardNav";
+import ChallengeTaskRenderer from "@/components/ChallengeTaskRenderer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,9 +40,9 @@ type SubTask = {
   id: string;
   title: string;
   task_type: string;
-  prompt_markdown: string;
   est_minutes: number;
   max_points: number;
+  data: any; // full type-specific payload from AI
   submission?: string | null;
   awarded_points?: number | null;
   feedback?: string | null;
@@ -167,9 +166,9 @@ export default function Challenges() {
           id: uid(),
           title: t.title,
           task_type: t.task_type,
-          prompt_markdown: t.prompt_markdown,
           est_minutes: t.est_minutes || 5,
-          max_points: t.max_points || 20,
+          max_points: t.max_points || 15,
+          data: t,
           submission: null, awarded_points: null, feedback: null, completed_at: null,
         }));
         const totalMax = subtasks.reduce((s, x) => s + x.max_points, 0);
@@ -211,7 +210,8 @@ export default function Challenges() {
     }).eq("id", next.id);
   };
 
-  const submitSubtask = async (st: SubTask) => {
+  // For writing tasks: AI evaluation
+  const submitWriting = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
     const text = (submissionDraft[st.id] || "").trim();
     if (text.length < 2) { toast.error("Írj valamit."); return; }
@@ -221,29 +221,16 @@ export default function Challenges() {
         body: {
           mode: "evaluate",
           subject: activeSub.subject, grade: activeSub.grade,
-          task_title: st.title, task_prompt: st.prompt_markdown,
+          task_title: st.title, task_prompt: st.data?.prompt_markdown || "",
           submission: text, max_points: st.max_points,
         },
       });
       if (error || data?.awarded_points == null) throw error || new Error("Hiba");
-      const updatedSt: SubTask = {
-        ...st,
+      await finalizeSubtask(st, {
         submission: text,
         awarded_points: data.awarded_points,
         feedback: data.feedback_markdown,
-        completed_at: new Date().toISOString(),
-      };
-      const next: DailyTask = {
-        ...activeTask,
-        subtasks: activeTask.subtasks.map((x) => x.id === st.id ? updatedSt : x),
-      };
-      await persistTask(next);
-      setActiveTask(next);
-      toast.success(`${data.awarded_points}/${st.max_points} pont 🎯`);
-      // auto open next undone
-      const nextUndone = next.subtasks.find((x) => !x.completed_at);
-      if (nextUndone) setOpenSubtaskId(nextUndone.id);
-      await load();
+      });
     } catch (e) {
       console.error(e);
       toast.error("Nem sikerült értékelni.");
@@ -252,26 +239,59 @@ export default function Challenges() {
     }
   };
 
+  // For interactive tasks: client-side scoring already done
+  const submitInteractive = async (st: SubTask, result: { awarded_points: number; feedback_markdown: string; submission_summary: string }) => {
+    await finalizeSubtask(st, {
+      submission: result.submission_summary,
+      awarded_points: result.awarded_points,
+      feedback: result.feedback_markdown,
+    });
+  };
+
+  const finalizeSubtask = async (st: SubTask, res: { submission: string; awarded_points: number; feedback: string }) => {
+    if (!activeTask) return;
+    const updatedSt: SubTask = {
+      ...st,
+      submission: res.submission,
+      awarded_points: res.awarded_points,
+      feedback: res.feedback,
+      completed_at: new Date().toISOString(),
+    };
+    const next: DailyTask = {
+      ...activeTask,
+      subtasks: activeTask.subtasks.map((x) => x.id === st.id ? updatedSt : x),
+    };
+    await persistTask(next);
+    setActiveTask(next);
+    toast.success(`${res.awarded_points}/${st.max_points} pont 🎯`);
+    const nextUndone = next.subtasks.find((x) => !x.completed_at);
+    if (nextUndone) setOpenSubtaskId(nextUndone.id);
+    await load();
+  };
+
   const regenerateSubtask = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
     if (st.completed_at) { toast.error("Már beküldött feladatot nem cserélhetsz."); return; }
     setRegenId(st.id);
     try {
+      const dayIndex = Math.ceil((Date.now() - new Date(activeSub.start_date).getTime()) / 86400000) + 1;
       const { data, error } = await supabase.functions.invoke("challenge-task", {
         body: {
           mode: "regenerate_one",
           subject: activeSub.subject, grade: activeSub.grade,
           exclude_titles: activeTask.subtasks.map((x) => x.title),
-          prev_type: st.task_type,
+          task_type: st.task_type,
+          day_index: dayIndex,
         },
       });
-      if (error || !data?.prompt_markdown) throw error || new Error("Hiba");
+      if (error || !data?.title) throw error || new Error("Hiba");
       const replaced: SubTask = {
         id: st.id,
-        title: data.title, task_type: data.task_type,
-        prompt_markdown: data.prompt_markdown,
+        title: data.title,
+        task_type: data.task_type || st.task_type,
         est_minutes: data.est_minutes || 5,
         max_points: data.max_points || st.max_points,
+        data,
         submission: null, awarded_points: null, feedback: null, completed_at: null,
       };
       const next: DailyTask = {
@@ -354,7 +374,7 @@ export default function Challenges() {
             <Card className="p-12 text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
               <p className="font-semibold">Készülnek a mai mini-feladataid…</p>
-              <p className="text-sm text-muted-foreground mt-1">3-5 rövid, kreatív feladat egy nap alatt</p>
+              <p className="text-sm text-muted-foreground mt-1">6 változatos interaktív feladat – írás, kvíz, párosítás, csoportosítás és még sok más!</p>
             </Card>
           ) : activeTask ? (
             <>
@@ -430,10 +450,6 @@ export default function Challenges() {
                             transition={{ duration: 0.18 }}
                           >
                             <div className="px-5 pb-5 pt-1 border-t border-border">
-                              <div className="prose prose-sm dark:prose-invert max-w-none mb-3">
-                                <ReactMarkdown>{st.prompt_markdown}</ReactMarkdown>
-                              </div>
-
                               {!done && (
                                 <div className="flex justify-end mb-2">
                                   <Button
@@ -450,38 +466,22 @@ export default function Challenges() {
                                 </div>
                               )}
 
-                              <Label className="text-xs font-semibold">A te megoldásod</Label>
-                              <Textarea
-                                value={submissionDraft[st.id] || ""}
-                                onChange={(e) => setSubmissionDraft((d) => ({ ...d, [st.id]: e.target.value }))}
-                                placeholder="Írd ide röviden a válaszodat…"
-                                rows={4}
-                                disabled={done}
-                                className="mt-1.5"
+                              <ChallengeTaskRenderer
+                                taskType={st.task_type}
+                                data={st.data}
+                                maxPoints={st.max_points}
+                                done={done}
+                                savedResult={done ? {
+                                  awarded_points: st.awarded_points || 0,
+                                  feedback_markdown: st.feedback || "",
+                                  submission_summary: st.submission || "",
+                                } : null}
+                                writingDraft={submissionDraft[st.id] || ""}
+                                setWritingDraft={(s) => setSubmissionDraft((d) => ({ ...d, [st.id]: s }))}
+                                onSubmitWriting={() => submitWriting(st)}
+                                submittingWriting={submittingId === st.id}
+                                onSubmitInteractive={(r) => submitInteractive(st, r)}
                               />
-
-                              {done ? (
-                                st.feedback && (
-                                  <Card className="p-3 mt-3 bg-muted/40">
-                                    <p className="text-xs font-semibold mb-1">💬 AI visszajelzés</p>
-                                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                                      <ReactMarkdown>{st.feedback}</ReactMarkdown>
-                                    </div>
-                                  </Card>
-                                )
-                              ) : (
-                                <Button
-                                  onClick={() => submitSubtask(st)}
-                                  disabled={submittingId === st.id}
-                                  className="mt-3 gradient-hero text-white gap-2"
-                                  size="sm"
-                                >
-                                  {submittingId === st.id
-                                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                                    : <Send className="w-4 h-4" />}
-                                  Beküldés
-                                </Button>
-                              )}
                             </div>
                           </motion.div>
                         )}
@@ -671,7 +671,7 @@ export default function Challenges() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Minden nap 3-5 rövid, változatos kreatív mini-feladatot kapsz (ötletbörze, példák, gyors magyarázat, rejtvény, mini-projekt stb.) — sose feleletválasztós!
+              Minden nap <strong>6 változatos feladat</strong>: 1 írásos, 1 feleletválasztós, 1 párosítós + 3 kreatív interaktív (csoportosítás, sorrend, igaz/hamis, szókitöltés, többszörös választás).
             </p>
           </div>
           <DialogFooter>
