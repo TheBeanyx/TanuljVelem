@@ -210,7 +210,8 @@ export default function Challenges() {
     }).eq("id", next.id);
   };
 
-  const submitSubtask = async (st: SubTask) => {
+  // For writing tasks: AI evaluation
+  const submitWriting = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
     const text = (submissionDraft[st.id] || "").trim();
     if (text.length < 2) { toast.error("Írj valamit."); return; }
@@ -220,29 +221,16 @@ export default function Challenges() {
         body: {
           mode: "evaluate",
           subject: activeSub.subject, grade: activeSub.grade,
-          task_title: st.title, task_prompt: st.prompt_markdown,
+          task_title: st.title, task_prompt: st.data?.prompt_markdown || "",
           submission: text, max_points: st.max_points,
         },
       });
       if (error || data?.awarded_points == null) throw error || new Error("Hiba");
-      const updatedSt: SubTask = {
-        ...st,
+      await finalizeSubtask(st, {
         submission: text,
         awarded_points: data.awarded_points,
         feedback: data.feedback_markdown,
-        completed_at: new Date().toISOString(),
-      };
-      const next: DailyTask = {
-        ...activeTask,
-        subtasks: activeTask.subtasks.map((x) => x.id === st.id ? updatedSt : x),
-      };
-      await persistTask(next);
-      setActiveTask(next);
-      toast.success(`${data.awarded_points}/${st.max_points} pont 🎯`);
-      // auto open next undone
-      const nextUndone = next.subtasks.find((x) => !x.completed_at);
-      if (nextUndone) setOpenSubtaskId(nextUndone.id);
-      await load();
+      });
     } catch (e) {
       console.error(e);
       toast.error("Nem sikerült értékelni.");
@@ -251,26 +239,59 @@ export default function Challenges() {
     }
   };
 
+  // For interactive tasks: client-side scoring already done
+  const submitInteractive = async (st: SubTask, result: { awarded_points: number; feedback_markdown: string; submission_summary: string }) => {
+    await finalizeSubtask(st, {
+      submission: result.submission_summary,
+      awarded_points: result.awarded_points,
+      feedback: result.feedback_markdown,
+    });
+  };
+
+  const finalizeSubtask = async (st: SubTask, res: { submission: string; awarded_points: number; feedback: string }) => {
+    if (!activeTask) return;
+    const updatedSt: SubTask = {
+      ...st,
+      submission: res.submission,
+      awarded_points: res.awarded_points,
+      feedback: res.feedback,
+      completed_at: new Date().toISOString(),
+    };
+    const next: DailyTask = {
+      ...activeTask,
+      subtasks: activeTask.subtasks.map((x) => x.id === st.id ? updatedSt : x),
+    };
+    await persistTask(next);
+    setActiveTask(next);
+    toast.success(`${res.awarded_points}/${st.max_points} pont 🎯`);
+    const nextUndone = next.subtasks.find((x) => !x.completed_at);
+    if (nextUndone) setOpenSubtaskId(nextUndone.id);
+    await load();
+  };
+
   const regenerateSubtask = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
     if (st.completed_at) { toast.error("Már beküldött feladatot nem cserélhetsz."); return; }
     setRegenId(st.id);
     try {
+      const dayIndex = Math.ceil((Date.now() - new Date(activeSub.start_date).getTime()) / 86400000) + 1;
       const { data, error } = await supabase.functions.invoke("challenge-task", {
         body: {
           mode: "regenerate_one",
           subject: activeSub.subject, grade: activeSub.grade,
           exclude_titles: activeTask.subtasks.map((x) => x.title),
-          prev_type: st.task_type,
+          task_type: st.task_type,
+          day_index: dayIndex,
         },
       });
-      if (error || !data?.prompt_markdown) throw error || new Error("Hiba");
+      if (error || !data?.title) throw error || new Error("Hiba");
       const replaced: SubTask = {
         id: st.id,
-        title: data.title, task_type: data.task_type,
-        prompt_markdown: data.prompt_markdown,
+        title: data.title,
+        task_type: data.task_type || st.task_type,
         est_minutes: data.est_minutes || 5,
         max_points: data.max_points || st.max_points,
+        data,
         submission: null, awarded_points: null, feedback: null, completed_at: null,
       };
       const next: DailyTask = {
