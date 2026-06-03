@@ -40,9 +40,9 @@ type SubTask = {
   id: string;
   title: string;
   task_type: string;
-  prompt_markdown: string;
   est_minutes: number;
   max_points: number;
+  data: any; // full type-specific payload from AI
   submission?: string | null;
   awarded_points?: number | null;
   feedback?: string | null;
