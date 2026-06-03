@@ -374,7 +374,7 @@ export default function Challenges() {
             <Card className="p-12 text-center">
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-primary" />
               <p className="font-semibold">Készülnek a mai mini-feladataid…</p>
-              <p className="text-sm text-muted-foreground mt-1">3-5 rövid, kreatív feladat egy nap alatt</p>
+              <p className="text-sm text-muted-foreground mt-1">6 változatos interaktív feladat – írás, kvíz, párosítás, csoportosítás és még sok más!</p>
             </Card>
           ) : activeTask ? (
             <>
