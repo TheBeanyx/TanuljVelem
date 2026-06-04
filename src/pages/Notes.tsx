@@ -189,7 +189,7 @@ const Notes = () => {
                     />
                   ) : (
                     <div className="prose prose-sm dark:prose-invert max-w-none min-h-[55vh] p-2">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{active.markdown}</ReactMarkdown>
+                      <ReactMarkdown>{active.markdown}</ReactMarkdown>
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground flex items-center gap-1">
