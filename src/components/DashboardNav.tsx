@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -23,11 +23,14 @@ const navItems = [
     icon: Brain,
     badgeKey: null,
     dropdown: [
-      { to: "/learn", label: "Jegyzet & Flashcard", icon: NotebookPen },
+      { to: "/learn", label: "Flashcard", icon: NotebookPen },
+      { to: "/notes", label: "Jegyzetek", icon: StickyNote },
       { to: "/ai-tutor", label: "AI Tanár", icon: Bot },
       { to: "/pdf-analyzer", label: "PDF elemző", icon: FileText },
+      { to: "/pomodoro", label: "Pomodoro", icon: Timer },
     ],
   },
+  { to: "/materials", label: "Tananyag", icon: Library, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
   { to: "/challenges", label: "Kihívás", icon: Flame, badgeKey: null },
@@ -38,11 +41,11 @@ const navItems = [
     badgeKey: "messages" as const,
     dropdown: [
       { to: "/messages", label: "Privát üzenetek", icon: MessageSquare },
+      { to: "/friends", label: "Barátok", icon: UserPlus },
       { to: "/classes", label: "Osztály", icon: Users },
       { to: "/announcements", label: "Közlemények", icon: Megaphone },
     ],
   },
-  { to: "/friends", label: "Barátok", icon: UserPlus, badgeKey: null },
 ];
 
 const DashboardNav = () => {

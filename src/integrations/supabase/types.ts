@@ -508,6 +508,9 @@ export type Database = {
           grade: number | null
           id: string
           length: string
+          lesson_ref_id: string | null
+          lesson_ref_title: string | null
+          lesson_ref_type: string | null
           markdown: string
           owner_id: string
           source: string
@@ -523,6 +526,9 @@ export type Database = {
           grade?: number | null
           id?: string
           length?: string
+          lesson_ref_id?: string | null
+          lesson_ref_title?: string | null
+          lesson_ref_type?: string | null
           markdown: string
           owner_id: string
           source?: string
@@ -538,6 +544,9 @@ export type Database = {
           grade?: number | null
           id?: string
           length?: string
+          lesson_ref_id?: string | null
+          lesson_ref_title?: string | null
+          lesson_ref_type?: string | null
           markdown?: string
           owner_id?: string
           source?: string
@@ -652,6 +661,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      study_materials: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          grade: number | null
+          id: string
+          mime_type: string | null
+          owner_id: string
+          storage_path: string | null
+          subject: string | null
+          title: string
+          type: string
+          updated_at: string
+          url: string | null
+          visibility: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          grade?: number | null
+          id?: string
+          mime_type?: string | null
+          owner_id: string
+          storage_path?: string | null
+          subject?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+          url?: string | null
+          visibility?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          grade?: number | null
+          id?: string
+          mime_type?: string | null
+          owner_id?: string
+          storage_path?: string | null
+          subject?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+          url?: string | null
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_materials_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       test_questions: {
         Row: {

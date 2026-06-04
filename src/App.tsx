@@ -24,6 +24,9 @@ import Messages from "./pages/Messages";
 import Announcements from "./pages/Announcements";
 import Notifications from "./pages/Notifications";
 import Profile from "./pages/Profile";
+import Materials from "./pages/Materials";
+import Notes from "./pages/Notes";
+import Pomodoro from "./pages/Pomodoro";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "./components/AiAssistant";
 
@@ -57,6 +60,9 @@ const App = () => (
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/materials" element={<Materials />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/pomodoro" element={<Pomodoro />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AiAssistant />
