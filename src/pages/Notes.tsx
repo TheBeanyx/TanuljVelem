@@ -10,7 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
 import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { StickyNote, Plus, Search, Download, Trash2, Eye, Edit3, Save } from "lucide-react";
 import PomodoroWidget from "@/components/PomodoroWidget";
 
