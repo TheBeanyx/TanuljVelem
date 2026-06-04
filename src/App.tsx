@@ -60,6 +60,9 @@ const App = () => (
             <Route path="/announcements" element={<Announcements />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/materials" element={<Materials />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/pomodoro" element={<Pomodoro />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AiAssistant />
