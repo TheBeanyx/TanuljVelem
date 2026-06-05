@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ type ChatMessage = {
   sender_id: string;
   receiver_id: string;
   reply_to_id: string | null;
+  is_warning?: boolean;
   created_at: string;
   reply_text?: string;
   reply_sender_name?: string;
@@ -285,9 +287,24 @@ const Messages = () => {
                                 <p className="truncate opacity-70">{m.reply_text}</p>
                               </div>
                             )}
-                            <div className={`rounded-2xl px-4 py-2.5 ${isOwn ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                              <p className="text-sm">{m.text}</p>
-                              <p className={`text-[10px] mt-1 ${isOwn ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                            <div
+                              className={`rounded-2xl px-4 py-2.5 ${
+                                m.is_warning
+                                  ? "bg-destructive/10 border-2 border-destructive text-foreground animate-pulse-once"
+                                  : isOwn
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                              }`}
+                            >
+                              {m.is_warning && (
+                                <div className="flex items-center gap-1.5 text-destructive font-bold text-xs mb-1.5 uppercase tracking-wide">
+                                  <AlertTriangle className="w-3.5 h-3.5" /> Admin Figyelmeztetés
+                                </div>
+                              )}
+                              <div className={`text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&_a]:underline ${isOwn && !m.is_warning ? "prose-invert" : ""}`}>
+                                <ReactMarkdown>{m.text}</ReactMarkdown>
+                              </div>
+                              <p className={`text-[10px] mt-1 ${isOwn && !m.is_warning ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
                                 {new Date(m.created_at).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })}
                               </p>
                             </div>
