@@ -342,6 +342,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_warning: boolean
           receiver_id: string
           reply_to_id: string | null
           sender_id: string
@@ -350,6 +351,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_warning?: boolean
           receiver_id: string
           reply_to_id?: string | null
           sender_id: string
@@ -358,6 +360,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_warning?: boolean
           receiver_id?: string
           reply_to_id?: string | null
           sender_id?: string
@@ -662,6 +665,36 @@ export type Database = {
         }
         Relationships: []
       }
+      rules: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       study_materials: {
         Row: {
           class_id: string | null
@@ -925,7 +958,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin_email: { Args: never; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
