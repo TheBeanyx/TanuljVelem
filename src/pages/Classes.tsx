@@ -264,19 +264,34 @@ const Classes = () => {
   const teacherMembers = members.filter((m) => m.role === "teacher");
   const headTeacher = members.find((m) => m.isHeadTeacher);
 
-  // Render mention-highlighted text - all mentions green
+  // Inline parser: supports @mentions (green), **bold**, *italic*, `code`
   const renderMessageText = (text: string) => {
-    const parts = text.split(/(@[^\s@]+(?:\s[^\s@]+)?)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith("@")) {
-        const name = part.slice(1);
+    // First split by mentions (preserved as tokens), then process inline markdown in each non-mention chunk.
+    const mentionRe = /(@[^\s@]+(?:\s[^\s@]+)?)/g;
+    const tokens = text.split(mentionRe);
+    const out: React.ReactNode[] = [];
+    tokens.forEach((tok, ti) => {
+      if (tok.startsWith("@")) {
+        const name = tok.slice(1);
         const isMember = members.some((m) => m.display_name === name);
-        if (isMember) {
-          return <span key={i} className="text-green-500 font-semibold">{part}</span>;
-        }
+        out.push(
+          <span key={`m${ti}`} className={isMember ? "text-green-500 font-semibold" : ""}>{tok}</span>,
+        );
+        return;
       }
-      return <span key={i}>{part}</span>;
+      // inline markdown in this chunk
+      const inlineRe = /(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`|~~[^~]+~~)/g;
+      const parts = tok.split(inlineRe);
+      parts.forEach((p, pi) => {
+        if (!p) return;
+        if (p.startsWith("**") && p.endsWith("**")) out.push(<strong key={`b${ti}-${pi}`}>{p.slice(2, -2)}</strong>);
+        else if (p.startsWith("*") && p.endsWith("*")) out.push(<em key={`i${ti}-${pi}`}>{p.slice(1, -1)}</em>);
+        else if (p.startsWith("`") && p.endsWith("`")) out.push(<code key={`c${ti}-${pi}`} className="bg-muted px-1 rounded text-xs">{p.slice(1, -1)}</code>);
+        else if (p.startsWith("~~") && p.endsWith("~~")) out.push(<s key={`s${ti}-${pi}`}>{p.slice(2, -2)}</s>);
+        else out.push(<span key={`t${ti}-${pi}`}>{p}</span>);
+      });
     });
+    return out;
   };
 
   return (
