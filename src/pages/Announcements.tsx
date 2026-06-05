@@ -11,6 +11,7 @@ import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import ReactMarkdown from "react-markdown";
 
 type Comment = {
   id: string;
@@ -482,7 +483,7 @@ const Announcements = () => {
                   </div>
                 </div>
                 {a.subject && <Badge variant="outline" className="mb-2">{a.subject}</Badge>}
-                <div className="text-sm">{renderFormattedText(a.message)}</div>
+                <div className="text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1"><ReactMarkdown>{a.message}</ReactMarkdown></div>
                 {a.weight && <p className="text-xs text-muted-foreground mt-2">Súlyozás: {a.weight}%</p>}
                 {a.image_url && <img src={a.image_url} alt="Csatolmány" className="mt-3 rounded-xl max-h-48 object-cover" />}
 
@@ -505,7 +506,7 @@ const Announcements = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-semibold">{c.user_profile?.display_name || c.user_profile?.username}</p>
-                            <p className="text-sm">{c.message}</p>
+                            <div className="text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-0.5"><ReactMarkdown>{c.message}</ReactMarkdown></div>
                             <p className="text-[10px] text-muted-foreground mt-0.5">{new Date(c.created_at).toLocaleDateString("hu-HU")}</p>
                           </div>
                           {c.user_id === user?.id && (
