@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check, Lightbulb, ScrollText, Shield, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check, Lightbulb, ScrollText, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/input";
@@ -226,30 +227,22 @@ const Profile = () => {
           </TabsList>
 
           <div className="flex flex-wrap gap-2 mb-6">
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full gap-2"
-              onClick={() => window.open("/suggestions", "_blank")}
-            >
-              <Lightbulb className="w-4 h-4" /> Javaslatok <ExternalLink className="w-3 h-3 opacity-60" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full gap-2"
-              onClick={() => window.open("/rules", "_blank")}
-            >
-              <ScrollText className="w-4 h-4" /> Szabályzat <ExternalLink className="w-3 h-3 opacity-60" />
-            </Button>
-            {user?.email?.toLowerCase() === "thebeanyx11@gmail.com" && (
-              <Button
-                size="sm"
-                className="rounded-full gap-2 bg-destructive hover:bg-destructive/90"
-                onClick={() => window.open("/admin", "_blank")}
-              >
-                <Shield className="w-4 h-4" /> Admin Panel <ExternalLink className="w-3 h-3 opacity-80" />
+            <Link to="/suggestions">
+              <Button variant="outline" size="sm" className="rounded-full gap-2">
+                <Lightbulb className="w-4 h-4" /> Javaslatok
               </Button>
+            </Link>
+            <Link to="/rules">
+              <Button variant="outline" size="sm" className="rounded-full gap-2">
+                <ScrollText className="w-4 h-4" /> Szabályzat
+              </Button>
+            </Link>
+            {user?.email?.toLowerCase() === "thebeanyx11@gmail.com" && (
+              <Link to="/admin">
+                <Button size="sm" className="rounded-full gap-2 bg-destructive hover:bg-destructive/90">
+                  <Shield className="w-4 h-4" /> Admin Panel
+                </Button>
+              </Link>
             )}
           </div>
 
