@@ -26,13 +26,13 @@ const Suggestions = () => {
     if (!title.trim() || !body.trim()) return;
     setSending(true);
     try {
-      // Find admin profile (by email is not exposed; use username fallback)
-      const { data: admin } = await supabase
+      // Find admin profile (case-insensitive username match)
+      const { data: admins } = await supabase
         .from("profiles")
-        .select("id")
-        .eq("username", ADMIN_USERNAME_FALLBACK)
-        .maybeSingle();
+        .select("id, username")
+        .ilike("username", ADMIN_USERNAME_FALLBACK);
 
+      const admin = admins?.[0];
       if (!admin?.id) {
         toast({ title: "Nem található az admin felhasználó", variant: "destructive" });
         return;
