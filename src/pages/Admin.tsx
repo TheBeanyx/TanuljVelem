@@ -57,6 +57,7 @@ const Admin = () => {
   const [userHomeworks, setUserHomeworks] = useState<any[]>([]);
   const [pointDelta, setPointDelta] = useState("");
   const [pointReason, setPointReason] = useState("");
+  const [newStreak, setNewStreak] = useState("");
 
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
