@@ -70,6 +70,7 @@ const App = () => (
             <Route path="/suggestions" element={<Suggestions />} />
             <Route path="/rules" element={<Rules />} />
             <Route path="/admin" element={<Admin />} />
+            <Route path="/study-groups" element={<StudyGroups />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AiAssistant />
