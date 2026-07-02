@@ -234,7 +234,7 @@ const StudyGroups = () => {
                         <div className={`max-w-[75%] rounded-2xl px-3 py-2 ${mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                           {!mine && <p className="text-[10px] font-bold opacity-70 mb-0.5">{m.sender_name}</p>}
                           <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-0.5 prose-headings:my-1">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
+                            <ReactMarkdown>{m.text}</ReactMarkdown>
                           </div>
                           <p className="text-[9px] opacity-60 mt-1">{new Date(m.created_at).toLocaleTimeString("hu-HU", { hour: "2-digit", minute: "2-digit" })}</p>
                         </div>
