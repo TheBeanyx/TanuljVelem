@@ -244,6 +244,9 @@ const Admin = () => {
     setNewStreak("");
     toast({ title: "Streak frissítve", description: `Új sorozat: ${n} nap` });
     loadUserDetail(selectedUser);
+  };
+
+
 
   const grantBadge = async (badgeId: BadgeId) => {
     if (!selectedUser) return;
