@@ -30,6 +30,7 @@ import Pomodoro from "./pages/Pomodoro";
 import Suggestions from "./pages/Suggestions";
 import Rules from "./pages/Rules";
 import Admin from "./pages/Admin";
+import StudyGroups from "./pages/StudyGroups";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "./components/AiAssistant";
 
