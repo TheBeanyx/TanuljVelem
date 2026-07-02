@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles } from "lucide-react";
+import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ const Admin = () => {
   const [userHomeworks, setUserHomeworks] = useState<any[]>([]);
   const [pointDelta, setPointDelta] = useState("");
   const [pointReason, setPointReason] = useState("");
+  const [newStreak, setNewStreak] = useState("");
 
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
@@ -217,6 +218,36 @@ const Admin = () => {
     loadUserDetail(selectedUser);
   };
 
+  const restoreStreak = async () => {
+    if (!selectedUser) return;
+    const n = parseInt(newStreak || "0", 10);
+    if (isNaN(n) || n < 0) return;
+    const longest = Math.max(userStats?.longest_streak ?? 0, n);
+    await supabase.from("user_stats").upsert({
+      user_id: selectedUser.id,
+      total_points: userStats?.total_points ?? 0,
+      current_streak: n,
+      longest_streak: longest,
+      last_activity_date: new Date().toISOString().slice(0, 10),
+    });
+    await supabase.from("point_events").insert({
+      user_id: selectedUser.id,
+      action: "admin_streak_restore",
+      points: 0,
+      metadata: { new_streak: n, by: "admin" } as never,
+    });
+    await notify(
+      user.id,
+      selectedUser.id,
+      `🔥 **Sorozat visszaállítva**\n\nAz admin visszaállította a napi sorozatodat: **${n} nap**. Tarts ki! 💪`,
+    );
+    setNewStreak("");
+    toast({ title: "Streak frissítve", description: `Új sorozat: ${n} nap` });
+    loadUserDetail(selectedUser);
+  };
+
+
+
   const grantBadge = async (badgeId: BadgeId) => {
     if (!selectedUser) return;
     if (userBadges.includes(badgeId)) return toast({ title: "Már megvan ez a küldetés" });
@@ -349,7 +380,26 @@ const Admin = () => {
                           {parseInt(pointDelta || "0") < 0 ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />} Alkalmaz
                         </Button>
                       </div>
+                      <div className="flex gap-2 flex-wrap items-end border-t border-border pt-3">
+                        <div className="flex-1 min-w-[100px]">
+                          <Label className="text-xs flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" /> Streak visszaállítás (nap)</Label>
+                          <Input type="number" min="0" placeholder="pl. 7" value={newStreak} onChange={(e) => setNewStreak(e.target.value)} className="rounded-xl" />
+                        </div>
+                        <Button onClick={restoreStreak} variant="outline" className="rounded-xl gap-1">
+                          <RotateCcw className="w-4 h-4" /> Visszaállít
+                        </Button>
+                        <Button
+                          onClick={() => { setNewStreak(String(userStats?.longest_streak ?? 0)); }}
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-xl text-xs"
+                          title="Töltsd ki a leghosszabb sorozat értékével"
+                        >
+                          Max: {userStats?.longest_streak ?? 0}
+                        </Button>
+                      </div>
                     </div>
+
 
                     {/* Badges/quests */}
                     <div className="bg-card rounded-2xl border border-border p-4">
