@@ -380,7 +380,26 @@ const Admin = () => {
                           {parseInt(pointDelta || "0") < 0 ? <Minus className="w-4 h-4" /> : <Plus className="w-4 h-4" />} Alkalmaz
                         </Button>
                       </div>
+                      <div className="flex gap-2 flex-wrap items-end border-t border-border pt-3">
+                        <div className="flex-1 min-w-[100px]">
+                          <Label className="text-xs flex items-center gap-1"><Flame className="w-3 h-3 text-orange-500" /> Streak visszaállítás (nap)</Label>
+                          <Input type="number" min="0" placeholder="pl. 7" value={newStreak} onChange={(e) => setNewStreak(e.target.value)} className="rounded-xl" />
+                        </div>
+                        <Button onClick={restoreStreak} variant="outline" className="rounded-xl gap-1">
+                          <RotateCcw className="w-4 h-4" /> Visszaállít
+                        </Button>
+                        <Button
+                          onClick={() => { setNewStreak(String(userStats?.longest_streak ?? 0)); }}
+                          variant="ghost"
+                          size="sm"
+                          className="rounded-xl text-xs"
+                          title="Töltsd ki a leghosszabb sorozat értékével"
+                        >
+                          Max: {userStats?.longest_streak ?? 0}
+                        </Button>
+                      </div>
                     </div>
+
 
                     {/* Badges/quests */}
                     <div className="bg-card rounded-2xl border border-border p-4">
