@@ -218,6 +218,33 @@ const Admin = () => {
     loadUserDetail(selectedUser);
   };
 
+  const restoreStreak = async () => {
+    if (!selectedUser) return;
+    const n = parseInt(newStreak || "0", 10);
+    if (isNaN(n) || n < 0) return;
+    const longest = Math.max(userStats?.longest_streak ?? 0, n);
+    await supabase.from("user_stats").upsert({
+      user_id: selectedUser.id,
+      total_points: userStats?.total_points ?? 0,
+      current_streak: n,
+      longest_streak: longest,
+      last_activity_date: new Date().toISOString().slice(0, 10),
+    });
+    await supabase.from("point_events").insert({
+      user_id: selectedUser.id,
+      action: "admin_streak_restore",
+      points: 0,
+      metadata: { new_streak: n, by: "admin" } as never,
+    });
+    await notify(
+      user.id,
+      selectedUser.id,
+      `🔥 **Sorozat visszaállítva**\n\nAz admin visszaállította a napi sorozatodat: **${n} nap**. Tarts ki! 💪`,
+    );
+    setNewStreak("");
+    toast({ title: "Streak frissítve", description: `Új sorozat: ${n} nap` });
+    loadUserDetail(selectedUser);
+
   const grantBadge = async (badgeId: BadgeId) => {
     if (!selectedUser) return;
     if (userBadges.includes(badgeId)) return toast({ title: "Már megvan ez a küldetés" });
