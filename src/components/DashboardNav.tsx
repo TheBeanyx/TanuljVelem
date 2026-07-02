@@ -44,6 +44,7 @@ const navItems = [
       { to: "/friends", label: "Barátok", icon: UserPlus },
       { to: "/classes", label: "Osztály", icon: Users },
       { to: "/announcements", label: "Közlemények", icon: Megaphone },
+      { to: "/study-groups", label: "Tanulócsoportok", icon: Users2 },
     ],
   },
 ];
