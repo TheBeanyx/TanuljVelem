@@ -556,6 +556,84 @@ const Profile = () => {
               </div>
             </div>
           </TabsContent>
+
+          <TabsContent value="download" className="space-y-4">
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Alkalmazás letöltése</h2>
+                  <p className="text-sm text-muted-foreground">Telepítsd a TanuljVelem-et a telefonodra vagy gépedre.</p>
+                </div>
+              </div>
+
+              {isInstalled ? (
+                <div className="rounded-xl bg-green-500/10 border border-green-500/30 p-4 flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-5 h-5" />
+                  <span className="font-semibold text-sm">Az alkalmazás már telepítve van! 🎉</span>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleInstall}
+                    className="w-full rounded-xl bg-primary hover:bg-primary/90 gap-2 font-bold py-5"
+                  >
+                    <Download className="w-5 h-5" />
+                    {isIOS ? "Telepítési útmutató (iPhone)" : "App telepítése"}
+                  </Button>
+
+                  {showIOSHint && isIOS && (
+                    <div className="mt-4 rounded-xl bg-primary/5 border border-primary/20 p-4 space-y-3 text-sm">
+                      <p className="font-semibold flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-primary" /> iPhone / iPad telepítés
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+                        <li>Nyisd meg az oldalt a <strong>Safari</strong> böngészőben.</li>
+                        <li>Koppints a <strong>Megosztás</strong> gombra (📤 alul).</li>
+                        <li>Görgess és válaszd a <strong>„Hozzáadás a főképernyőhöz"</strong> opciót.</li>
+                        <li>Nyomd meg a <strong>Hozzáadás</strong> gombot a jobb felső sarokban.</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid gap-2 text-xs text-muted-foreground">
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">🤖 Android:</span>
+                      <span>Kattints a gombra és megjelenik a Chrome telepítési ablaka.</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">🍎 iOS:</span>
+                      <span>Nyisd meg Safariban, majd Megosztás → Hozzáadás a főképernyőhöz.</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">💻 Asztali:</span>
+                      <span>Chrome/Edge címsorában található telepítés ikon.</span>
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h3 className="font-bold mb-2 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" /> Push értesítések
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Telepítés után a mobilod push értesítéseket kaphat, weben pedig a böngésző jelez.
+              </p>
+              {notifPermission === "granted" ? (
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                  <Check className="w-4 h-4" /> Már engedélyezve
+                </div>
+              ) : (
+                <Button onClick={requestNotifications} variant="outline" className="w-full rounded-xl gap-2">
+                  <Bell className="w-4 h-4" /> Értesítések bekapcsolása
+                </Button>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
     </div>
