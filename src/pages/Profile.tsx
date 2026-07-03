@@ -41,6 +41,71 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // PWA install & notifications
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSHint, setShowIOSHint] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
+
+  useEffect(() => {
+    const ua = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(ua));
+    setIsInstalled(
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    );
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    const installedHandler = () => setIsInstalled(true);
+    window.addEventListener("appinstalled", installedHandler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (isIOS) {
+      setShowIOSHint(true);
+      return;
+    }
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === "accepted") {
+        toast({ title: "Sikeres telepítés! 🎉" });
+        setInstallPrompt(null);
+      }
+    } else {
+      toast({
+        title: "Telepítés nem elérhető",
+        description: "Használd a böngésző menüjét: 'Alkalmazás telepítése' vagy 'Hozzáadás a főképernyőhöz'.",
+      });
+    }
+  };
+
+  const requestNotifications = async () => {
+    if (typeof Notification === "undefined") {
+      toast({ title: "A böngésző nem támogatja az értesítéseket", variant: "destructive" });
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+    if (perm === "granted") {
+      new Notification("TanuljVelem", { body: "Értesítések bekapcsolva! 🔔", icon: "/icon-192.png" });
+      toast({ title: "Értesítések engedélyezve! ✅" });
+    } else {
+      toast({ title: "Értesítések letiltva", description: "A böngésző beállításaiban módosíthatod.", variant: "destructive" });
+    }
+  };
+
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
