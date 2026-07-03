@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check, Lightbulb, ScrollText, Shield } from "lucide-react";
+import { Settings, Save, MessageCircleQuestion, Send, Bot, Loader2, Sun, Moon, Monitor, Upload, Check, Lightbulb, ScrollText, Shield, Download, Bell, Smartphone, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 import { Input } from "@/components/ui/input";
@@ -40,6 +40,71 @@ const Profile = () => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // PWA install & notifications
+  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSHint, setShowIOSHint] = useState(false);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof Notification !== "undefined" ? Notification.permission : "default"
+  );
+
+  useEffect(() => {
+    const ua = window.navigator.userAgent.toLowerCase();
+    setIsIOS(/iphone|ipad|ipod/.test(ua));
+    setIsInstalled(
+      window.matchMedia?.("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    );
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    const installedHandler = () => setIsInstalled(true);
+    window.addEventListener("appinstalled", installedHandler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+      window.removeEventListener("appinstalled", installedHandler);
+    };
+  }, []);
+
+  const handleInstall = async () => {
+    if (isIOS) {
+      setShowIOSHint(true);
+      return;
+    }
+    if (installPrompt) {
+      installPrompt.prompt();
+      const { outcome } = await installPrompt.userChoice;
+      if (outcome === "accepted") {
+        toast({ title: "Sikeres telepítés! 🎉" });
+        setInstallPrompt(null);
+      }
+    } else {
+      toast({
+        title: "Telepítés nem elérhető",
+        description: "Használd a böngésző menüjét: 'Alkalmazás telepítése' vagy 'Hozzáadás a főképernyőhöz'.",
+      });
+    }
+  };
+
+  const requestNotifications = async () => {
+    if (typeof Notification === "undefined") {
+      toast({ title: "A böngésző nem támogatja az értesítéseket", variant: "destructive" });
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setNotifPermission(perm);
+    if (perm === "granted") {
+      new Notification("TanuljVelem", { body: "Értesítések bekapcsolva! 🔔", icon: "/icon-192.png" });
+      toast({ title: "Értesítések engedélyezve! ✅" });
+    } else {
+      toast({ title: "Értesítések letiltva", description: "A böngésző beállításaiban módosíthatod.", variant: "destructive" });
+    }
+  };
+
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -224,6 +289,9 @@ const Profile = () => {
             <TabsTrigger value="contact" className="flex-1 gap-2">
               <MessageCircleQuestion className="w-4 h-4" /> Kapcsolat
             </TabsTrigger>
+            <TabsTrigger value="download" className="flex-1 gap-2">
+              <Download className="w-4 h-4" /> Letöltés
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex flex-wrap gap-2 mb-6">
@@ -375,6 +443,31 @@ const Profile = () => {
                   </div>
                 ))}
               </div>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex items-start gap-3 mb-3">
+                  <Bell className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">Push / böngésző értesítések</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Weben a böngésző, telepített appként pedig a mobil push értesítéseket használjuk.
+                    </p>
+                  </div>
+                </div>
+                {notifPermission === "granted" ? (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                    <Check className="w-4 h-4" /> Értesítések engedélyezve
+                  </div>
+                ) : notifPermission === "denied" ? (
+                  <p className="text-xs text-destructive">
+                    Az értesítések le vannak tiltva. Engedélyezd a böngésző beállításaiban.
+                  </p>
+                ) : (
+                  <Button onClick={requestNotifications} variant="outline" className="w-full rounded-xl gap-2">
+                    <Bell className="w-4 h-4" /> Értesítések engedélyezése
+                  </Button>
+                )}
+              </div>
             </div>
 
             <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90 gap-2 font-bold text-lg py-5">
@@ -461,6 +554,84 @@ const Profile = () => {
                   <Send className="w-4 h-4" />
                 </Button>
               </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="download" className="space-y-4">
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <Smartphone className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-lg">Alkalmazás letöltése</h2>
+                  <p className="text-sm text-muted-foreground">Telepítsd a TanuljVelem-et a telefonodra vagy gépedre.</p>
+                </div>
+              </div>
+
+              {isInstalled ? (
+                <div className="rounded-xl bg-green-500/10 border border-green-500/30 p-4 flex items-center gap-2 text-green-700 dark:text-green-400">
+                  <Check className="w-5 h-5" />
+                  <span className="font-semibold text-sm">Az alkalmazás már telepítve van! 🎉</span>
+                </div>
+              ) : (
+                <>
+                  <Button
+                    onClick={handleInstall}
+                    className="w-full rounded-xl bg-primary hover:bg-primary/90 gap-2 font-bold py-5"
+                  >
+                    <Download className="w-5 h-5" />
+                    {isIOS ? "Telepítési útmutató (iPhone)" : "App telepítése"}
+                  </Button>
+
+                  {showIOSHint && isIOS && (
+                    <div className="mt-4 rounded-xl bg-primary/5 border border-primary/20 p-4 space-y-3 text-sm">
+                      <p className="font-semibold flex items-center gap-2">
+                        <Share2 className="w-4 h-4 text-primary" /> iPhone / iPad telepítés
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+                        <li>Nyisd meg az oldalt a <strong>Safari</strong> böngészőben.</li>
+                        <li>Koppints a <strong>Megosztás</strong> gombra (📤 alul).</li>
+                        <li>Görgess és válaszd a <strong>„Hozzáadás a főképernyőhöz"</strong> opciót.</li>
+                        <li>Nyomd meg a <strong>Hozzáadás</strong> gombot a jobb felső sarokban.</li>
+                      </ol>
+                    </div>
+                  )}
+
+                  <div className="mt-4 grid gap-2 text-xs text-muted-foreground">
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">🤖 Android:</span>
+                      <span>Kattints a gombra és megjelenik a Chrome telepítési ablaka.</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">🍎 iOS:</span>
+                      <span>Nyisd meg Safariban, majd Megosztás → Hozzáadás a főképernyőhöz.</span>
+                    </p>
+                    <p className="flex items-start gap-2">
+                      <span className="font-bold text-foreground">💻 Asztali:</span>
+                      <span>Chrome/Edge címsorában található telepítés ikon.</span>
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h3 className="font-bold mb-2 flex items-center gap-2">
+                <Bell className="w-4 h-4 text-primary" /> Push értesítések
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">
+                Telepítés után a mobilod push értesítéseket kaphat, weben pedig a böngésző jelez.
+              </p>
+              {notifPermission === "granted" ? (
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                  <Check className="w-4 h-4" /> Már engedélyezve
+                </div>
+              ) : (
+                <Button onClick={requestNotifications} variant="outline" className="w-full rounded-xl gap-2">
+                  <Bell className="w-4 h-4" /> Értesítések bekapcsolása
+                </Button>
+              )}
             </div>
           </TabsContent>
         </Tabs>
