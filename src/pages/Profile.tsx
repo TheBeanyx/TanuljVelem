@@ -443,6 +443,31 @@ const Profile = () => {
                   </div>
                 ))}
               </div>
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <div className="flex items-start gap-3 mb-3">
+                  <Bell className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">Push / böngésző értesítések</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Weben a böngésző, telepített appként pedig a mobil push értesítéseket használjuk.
+                    </p>
+                  </div>
+                </div>
+                {notifPermission === "granted" ? (
+                  <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 font-medium">
+                    <Check className="w-4 h-4" /> Értesítések engedélyezve
+                  </div>
+                ) : notifPermission === "denied" ? (
+                  <p className="text-xs text-destructive">
+                    Az értesítések le vannak tiltva. Engedélyezd a böngésző beállításaiban.
+                  </p>
+                ) : (
+                  <Button onClick={requestNotifications} variant="outline" className="w-full rounded-xl gap-2">
+                    <Bell className="w-4 h-4" /> Értesítések engedélyezése
+                  </Button>
+                )}
+              </div>
             </div>
 
             <Button onClick={handleSave} className="w-full rounded-xl bg-primary hover:bg-primary/90 gap-2 font-bold text-lg py-5">
