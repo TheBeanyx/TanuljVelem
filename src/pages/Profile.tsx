@@ -276,21 +276,24 @@ const Profile = () => {
   return (
     <div className="min-h-screen bg-background">
       <DashboardNav />
-      <main className="container mx-auto px-4 py-8 max-w-xl">
-        <h1 className="text-2xl font-black flex items-center gap-2 mb-8">
-          <Settings className="w-6 h-6 text-primary" /> Profil Beállítások
+      <main className="container mx-auto px-4 py-6 sm:py-8 max-w-xl">
+        <h1 className="text-xl sm:text-2xl font-black flex items-center gap-2 mb-6 sm:mb-8">
+          <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" /> Profil Beállítások
         </h1>
 
         <Tabs defaultValue="settings" className="w-full">
-          <TabsList className="w-full mb-3 flex-wrap h-auto">
-            <TabsTrigger value="settings" className="flex-1 gap-2">
-              <Settings className="w-4 h-4" /> Beállítások
+          <TabsList className="w-full mb-3 grid grid-cols-3 h-auto p-1 gap-1">
+            <TabsTrigger value="settings" className="gap-1.5 px-2 py-2 text-xs sm:text-sm min-w-0">
+              <Settings className="w-4 h-4 shrink-0" />
+              <span className="truncate">Beállítások</span>
             </TabsTrigger>
-            <TabsTrigger value="contact" className="flex-1 gap-2">
-              <MessageCircleQuestion className="w-4 h-4" /> Kapcsolat
+            <TabsTrigger value="contact" className="gap-1.5 px-2 py-2 text-xs sm:text-sm min-w-0">
+              <MessageCircleQuestion className="w-4 h-4 shrink-0" />
+              <span className="truncate">Kapcsolat</span>
             </TabsTrigger>
-            <TabsTrigger value="download" className="flex-1 gap-2">
-              <Download className="w-4 h-4" /> Letöltés
+            <TabsTrigger value="download" className="gap-1.5 px-2 py-2 text-xs sm:text-sm min-w-0">
+              <Download className="w-4 h-4 shrink-0" />
+              <span className="truncate">Letöltés</span>
             </TabsTrigger>
           </TabsList>
 
