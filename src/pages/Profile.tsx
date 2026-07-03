@@ -479,7 +479,7 @@ const Profile = () => {
           </TabsContent>
 
           <TabsContent value="contact">
-            <div className="bg-card rounded-2xl border border-border overflow-hidden flex flex-col" style={{ height: "500px" }}>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden flex flex-col h-[70vh] max-h-[600px] min-h-[400px]">
               {/* Header */}
               <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
                 <MessageCircleQuestion className="w-5 h-5 text-primary" />
