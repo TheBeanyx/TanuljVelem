@@ -289,6 +289,9 @@ const Profile = () => {
             <TabsTrigger value="contact" className="flex-1 gap-2">
               <MessageCircleQuestion className="w-4 h-4" /> Kapcsolat
             </TabsTrigger>
+            <TabsTrigger value="download" className="flex-1 gap-2">
+              <Download className="w-4 h-4" /> Letöltés
+            </TabsTrigger>
           </TabsList>
 
           <div className="flex flex-wrap gap-2 mb-6">
