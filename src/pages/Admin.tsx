@@ -164,7 +164,7 @@ const Admin = () => {
   const sendWarning = async () => {
     if (!warnUser || !warnText.trim()) return;
     const formatted = `⚠️ **HIVATALOS FIGYELMEZTETÉS — TanuljVelem Admin**\n\n${warnText.trim()}\n\n_Kérjük tartsd be a [Szabályzatot](/rules). A figyelmeztetések felhalmozódhatnak és felfüggesztéshez vezethetnek._`;
-    await notify(user.id, warnUser.id, formatted, true);
+    await notify(user.id, warnUser.id, formatted, { isWarning: true, category: "warning" });
     toast({ title: "Figyelmeztetés elküldve" });
     setWarnUser(null);
     setWarnText("");
