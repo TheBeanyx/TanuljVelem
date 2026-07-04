@@ -8,6 +8,7 @@ type Profile = {
   display_name: string | null;
   role: string;
   avatar_url: string | null;
+  suspended?: boolean;
 };
 
 type AuthContextType = {
