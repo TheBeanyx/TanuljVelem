@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";

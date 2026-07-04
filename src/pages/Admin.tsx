@@ -24,7 +24,8 @@ const notify = async (adminId: string, userId: string, text: string, isWarning =
     receiver_id: userId,
     text,
     is_warning: isWarning,
-  });
+    is_system: true,
+  } as never);
 };
 
 const Admin = () => {
