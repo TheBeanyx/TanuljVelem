@@ -121,6 +121,8 @@ const Admin = () => {
     setUserGames(games.data || []);
     setUserAnnouncements(anns.data || []);
     setUserHomeworks(hws.data || []);
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.id);
+    setUserAppRoles((roles || []).map((r: any) => r.role as AppRole));
   };
 
   useEffect(() => {
@@ -128,7 +130,11 @@ const Admin = () => {
       fetchAll();
       fetchContent();
     }
-  }, [isAdmin]);
+    if (user?.id) {
+      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "superadmin")
+        .then(({ data }) => setMySuperadmin((data || []).length > 0));
+    }
+  }, [isAdmin, user?.id]);
 
   if (authLoading) return <div className="p-8">Betöltés...</div>;
   if (!user) return <Navigate to="/login" replace />;
