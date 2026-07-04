@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ type ChatMessage = {
   receiver_id: string;
   reply_to_id: string | null;
   is_warning?: boolean;
+  is_system?: boolean;
   created_at: string;
   reply_text?: string;
   reply_sender_name?: string;
@@ -195,9 +196,9 @@ const Messages = () => {
           </h1>
         </div>
 
-        <div className="grid lg:grid-cols-[320px_1fr] gap-4 h-[calc(100vh-200px)] min-h-[400px]">
-          {/* Left - Conversations + Search */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-4 h-[calc(100dvh-180px)] min-h-[420px] max-h-[calc(100dvh-180px)]">
+          {/* Left - Conversations + Search (hidden on mobile when a chat is open) */}
+          <div className={`bg-card rounded-2xl border border-border overflow-hidden flex flex-col min-h-0 ${selectedConversation ? "hidden lg:flex" : "flex"}`}>
             <div className="p-3 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -261,14 +262,17 @@ const Messages = () => {
           </div>
 
           {/* Right - Chat area */}
-          <div className="bg-card rounded-2xl border border-border flex flex-col">
+          <div className={`bg-card rounded-2xl border border-border flex-col min-h-0 ${selectedConversation ? "flex" : "hidden lg:flex"}`}>
             {selectedConversation ? (
               <>
-                <div className="p-4 border-b border-border font-bold flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                <div className="p-3 sm:p-4 border-b border-border font-bold flex items-center gap-3">
+                  <Button variant="ghost" size="icon" className="rounded-full lg:hidden shrink-0 h-8 w-8" onClick={() => setSelectedConversation(null)} aria-label="Vissza">
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                     {selectedConversation.name.charAt(0)}
                   </div>
-                  {selectedConversation.name}
+                  <span className="truncate">{selectedConversation.name}</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-5 space-y-3">
                   {chatMessages.length === 0 ? (
@@ -278,9 +282,20 @@ const Messages = () => {
                   ) : (
                     chatMessages.map((m) => {
                       const isOwn = m.sender_id === user?.id;
+                      const isSys = !!m.is_system && !isOwn;
                       return (
                         <div key={m.id} className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}>
-                          <div className="flex flex-col max-w-[70%]">
+                          {isSys && (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white shrink-0 mr-2 mt-1" title="TanuljVelem Admin">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div className="flex flex-col max-w-[80%] sm:max-w-[70%]">
+                            {isSys && (
+                              <span className="text-[11px] font-bold text-primary mb-0.5 flex items-center gap-1">
+                                <Shield className="w-3 h-3" /> TanuljVelem Admin
+                              </span>
+                            )}
                             {m.reply_text && (
                               <div className={`text-xs px-3 py-1.5 rounded-t-xl border-l-2 ${isOwn ? "bg-primary/5 border-primary/40 ml-auto" : "bg-muted/50 border-muted-foreground/30"} mb-0.5`}>
                                 <span className="font-semibold">{m.reply_sender_name}</span>
@@ -288,9 +303,11 @@ const Messages = () => {
                               </div>
                             )}
                             <div
-                              className={`rounded-2xl px-4 py-2.5 ${
+                              className={`rounded-2xl px-4 py-2.5 break-words ${
                                 m.is_warning
                                   ? "bg-destructive/10 border-2 border-destructive text-foreground animate-pulse-once"
+                                  : isSys
+                                  ? "bg-primary/10 border border-primary/30"
                                   : isOwn
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
@@ -301,7 +318,7 @@ const Messages = () => {
                                   <AlertTriangle className="w-3.5 h-3.5" /> Admin Figyelmeztetés
                                 </div>
                               )}
-                              <div className={`text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&_a]:underline ${isOwn && !m.is_warning ? "prose-invert" : ""}`}>
+                              <div className={`text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&_a]:underline break-words ${isOwn && !m.is_warning ? "prose-invert" : ""}`}>
                                 <ReactMarkdown>{m.text}</ReactMarkdown>
                               </div>
                               <p className={`text-[10px] mt-1 ${isOwn && !m.is_warning ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
