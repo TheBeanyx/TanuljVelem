@@ -19,41 +19,35 @@ const Suggestions = () => {
   const [done, setDone] = useState(false);
 
   const send = async () => {
-    if (!user) {
-      toast({ title: "Bejelentkezés szükséges", variant: "destructive" });
-      return;
-    }
+    if (!user) { toast({ title: "Bejelentkezés szükséges", variant: "destructive" }); return; }
     if (!title.trim() || !body.trim()) return;
     setSending(true);
     try {
-      // Find admin profile (case-insensitive username match)
-      const { data: admins } = await supabase
-        .from("profiles")
-        .select("id, username")
-        .ilike("username", ADMIN_USERNAME_FALLBACK);
+      // Find all platform staff (admin/superadmin/moderator)
+      const { data: staff } = await supabase.from("user_roles").select("user_id");
+      let recipientIds = [...new Set((staff || []).map((s: any) => s.user_id))];
 
-      const admin = admins?.[0];
-      if (!admin?.id) {
-        toast({ title: "Nem található az admin felhasználó", variant: "destructive" });
+      // Fallback to hardcoded admin username if no roles found
+      if (recipientIds.length === 0) {
+        const { data: admins } = await supabase.from("profiles").select("id").ilike("username", ADMIN_USERNAME_FALLBACK);
+        recipientIds = (admins || []).map((a: any) => a.id);
+      }
+      if (recipientIds.length === 0) {
+        toast({ title: "Nem található admin felhasználó", variant: "destructive" });
         return;
       }
 
       const text = `**💡 Javaslat: ${title.trim()}**\n\n${body.trim()}\n\n_— ${profile?.display_name || profile?.username || "Névtelen"}_`;
-
-      const { error } = await supabase.from("direct_messages").insert({
-        sender_id: user.id,
-        receiver_id: admin.id,
-        text,
-      });
+      const rows = recipientIds.map((rid) => ({
+        sender_id: user.id, receiver_id: rid, text,
+        is_suggestion: true, is_system: true, category: "suggestion",
+      }));
+      const { error } = await supabase.from("direct_messages").insert(rows as never);
       if (error) throw error;
-      setDone(true);
-      setTitle("");
-      setBody("");
+      setDone(true); setTitle(""); setBody("");
     } catch (e: any) {
       toast({ title: "Hiba", description: e.message, variant: "destructive" });
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   };
 
   return (
