@@ -79,7 +79,7 @@ const Admin = () => {
 
   const fetchAll = async () => {
     const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("id, username, display_name, role").order("username"),
+      supabase.from("profiles").select("id, username, display_name, role, suspended").order("username"),
       supabase.from("rules").select("*").order("sort_order"),
     ]);
     setProfiles((p || []) as ProfileRow[]);
