@@ -15,8 +15,10 @@ import { BADGES, BadgeId } from "@/lib/gamification";
 
 const ADMIN_EMAIL = "thebeanyx11@gmail.com";
 
-type ProfileRow = { id: string; username: string; display_name: string | null; role: string };
+type ProfileRow = { id: string; username: string; display_name: string | null; role: string; suspended?: boolean };
 type RuleRow = { id: string; title: string; body: string; sort_order: number };
+type AppRole = "operator" | "moderator" | "staff" | "admin" | "superadmin";
+const APP_ROLES: AppRole[] = ["operator", "moderator", "staff", "admin", "superadmin"];
 
 const notify = async (
   adminId: string,
