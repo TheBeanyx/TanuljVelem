@@ -367,8 +367,11 @@ const Admin = () => {
                         {(selectedUser.display_name || selectedUser.username).charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h2 className="font-black text-lg truncate">{selectedUser.display_name || selectedUser.username}</h2>
-                        <p className="text-xs text-muted-foreground">@{selectedUser.username} · {selectedUser.role}</p>
+                        <h2 className="font-black text-lg truncate flex items-center gap-2">
+                          {selectedUser.display_name || selectedUser.username}
+                          {selectedUser.suspended && <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground">FELFÜGGESZTVE</span>}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">@{selectedUser.username} · {selectedUser.role} {userAppRoles.length > 0 && `· ${userAppRoles.join(", ")}`}</p>
                       </div>
                       <Button size="sm" variant="outline" className="rounded-xl gap-1" onClick={() => setEditing({ ...selectedUser })}>
                         <Pencil className="w-3.5 h-3.5" /> Szerkeszt
@@ -376,7 +379,47 @@ const Admin = () => {
                       <Button size="sm" variant="destructive" className="rounded-xl gap-1" onClick={() => setWarnUser(selectedUser)}>
                         <AlertTriangle className="w-3.5 h-3.5" /> Figyelmeztetés
                       </Button>
+                      <Button size="sm" variant={selectedUser.suspended ? "outline" : "destructive"} className="rounded-xl gap-1"
+                        onClick={async () => {
+                          const next = !selectedUser.suspended;
+                          const { error } = await supabase.from("profiles").update({ suspended: next }).eq("id", selectedUser.id);
+                          if (error) return toast({ title: "Hiba", description: error.message, variant: "destructive" });
+                          await notify(user.id, selectedUser.id,
+                            next ? `🚫 **Fiók felfüggesztve**\n\nA fiókodat az admin csapat felfüggesztette. Nem férsz hozzá a felülethez amíg vissza nem kapod a hozzáférést.`
+                                 : `✅ **Fiók visszaállítva**\n\nA felfüggesztést feloldottuk. Újra használhatod a felületet.`,
+                            { category: "info", isWarning: next });
+                          toast({ title: next ? "Felfüggesztve" : "Feloldva" });
+                          setSelectedUser({ ...selectedUser, suspended: next });
+                          fetchAll();
+                        }}>
+                        <Shield className="w-3.5 h-3.5" /> {selectedUser.suspended ? "Feloldás" : "Felfüggesztés"}
+                      </Button>
                     </div>
+
+                    {mySuperadmin && (
+                      <div className="bg-card rounded-2xl border border-border p-4">
+                        <h3 className="font-bold text-sm flex items-center gap-2 mb-2"><Shield className="w-4 h-4 text-primary" /> Rangok (superadmin)</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {APP_ROLES.map((r) => {
+                            const has = userAppRoles.includes(r);
+                            return (
+                              <button key={r} onClick={async () => {
+                                if (has) {
+                                  await supabase.from("user_roles").delete().eq("user_id", selectedUser.id).eq("role", r as never);
+                                } else {
+                                  await supabase.from("user_roles").insert({ user_id: selectedUser.id, role: r as never });
+                                  await notify(user.id, selectedUser.id, `🎖️ **Új rang: ${r}**\n\nA superadmin új rangot adott neked: **${r}**.`, { category: "info" });
+                                }
+                                loadUserDetail(selectedUser);
+                              }} className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${has ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border hover:bg-primary/10"}`}>
+                                {has ? "✓ " : "+ "}{r}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
 
                     {/* Stats + point adjust */}
                     <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
