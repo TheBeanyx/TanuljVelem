@@ -32,6 +32,7 @@ type ChatMessage = {
   receiver_id: string;
   reply_to_id: string | null;
   is_warning?: boolean;
+  is_system?: boolean;
   created_at: string;
   reply_text?: string;
   reply_sender_name?: string;
@@ -195,9 +196,9 @@ const Messages = () => {
           </h1>
         </div>
 
-        <div className="grid lg:grid-cols-[320px_1fr] gap-4 h-[calc(100vh-200px)] min-h-[400px]">
-          {/* Left - Conversations + Search */}
-          <div className="bg-card rounded-2xl border border-border overflow-hidden flex flex-col">
+        <div className="grid lg:grid-cols-[320px_1fr] gap-4 h-[calc(100dvh-180px)] min-h-[420px] max-h-[calc(100dvh-180px)]">
+          {/* Left - Conversations + Search (hidden on mobile when a chat is open) */}
+          <div className={`bg-card rounded-2xl border border-border overflow-hidden flex flex-col min-h-0 ${selectedConversation ? "hidden lg:flex" : "flex"}`}>
             <div className="p-3 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
