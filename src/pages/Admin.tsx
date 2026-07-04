@@ -18,13 +18,20 @@ const ADMIN_EMAIL = "thebeanyx11@gmail.com";
 type ProfileRow = { id: string; username: string; display_name: string | null; role: string };
 type RuleRow = { id: string; title: string; body: string; sort_order: number };
 
-const notify = async (adminId: string, userId: string, text: string, isWarning = false) => {
+const notify = async (
+  adminId: string,
+  userId: string,
+  text: string,
+  opts: { isWarning?: boolean; category?: string; pointsDelta?: number | null } = {},
+) => {
   await supabase.from("direct_messages").insert({
     sender_id: adminId,
     receiver_id: userId,
     text,
-    is_warning: isWarning,
+    is_warning: !!opts.isWarning,
     is_system: true,
+    category: opts.category || (opts.isWarning ? "warning" : "info"),
+    points_delta: opts.pointsDelta ?? null,
   } as never);
 };
 
