@@ -282,9 +282,20 @@ const Messages = () => {
                   ) : (
                     chatMessages.map((m) => {
                       const isOwn = m.sender_id === user?.id;
+                      const isSys = !!m.is_system && !isOwn;
                       return (
                         <div key={m.id} className={`flex ${isOwn ? "justify-end" : "justify-start"} group`}>
-                          <div className="flex flex-col max-w-[70%]">
+                          {isSys && (
+                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-purple-500 flex items-center justify-center text-white shrink-0 mr-2 mt-1" title="TanuljVelem Admin">
+                              <Shield className="w-4 h-4" />
+                            </div>
+                          )}
+                          <div className="flex flex-col max-w-[80%] sm:max-w-[70%]">
+                            {isSys && (
+                              <span className="text-[11px] font-bold text-primary mb-0.5 flex items-center gap-1">
+                                <Shield className="w-3 h-3" /> TanuljVelem Admin
+                              </span>
+                            )}
                             {m.reply_text && (
                               <div className={`text-xs px-3 py-1.5 rounded-t-xl border-l-2 ${isOwn ? "bg-primary/5 border-primary/40 ml-auto" : "bg-muted/50 border-muted-foreground/30"} mb-0.5`}>
                                 <span className="font-semibold">{m.reply_sender_name}</span>
@@ -292,9 +303,11 @@ const Messages = () => {
                               </div>
                             )}
                             <div
-                              className={`rounded-2xl px-4 py-2.5 ${
+                              className={`rounded-2xl px-4 py-2.5 break-words ${
                                 m.is_warning
                                   ? "bg-destructive/10 border-2 border-destructive text-foreground animate-pulse-once"
+                                  : isSys
+                                  ? "bg-primary/10 border border-primary/30"
                                   : isOwn
                                   ? "bg-primary text-primary-foreground"
                                   : "bg-muted"
@@ -305,7 +318,7 @@ const Messages = () => {
                                   <AlertTriangle className="w-3.5 h-3.5" /> Admin Figyelmeztetés
                                 </div>
                               )}
-                              <div className={`text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&_a]:underline ${isOwn && !m.is_warning ? "prose-invert" : ""}`}>
+                              <div className={`text-sm prose prose-sm max-w-none dark:prose-invert [&>p]:my-1 [&_a]:underline break-words ${isOwn && !m.is_warning ? "prose-invert" : ""}`}>
                                 <ReactMarkdown>{m.text}</ReactMarkdown>
                               </div>
                               <p className={`text-[10px] mt-1 ${isOwn && !m.is_warning ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
