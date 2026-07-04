@@ -262,14 +262,17 @@ const Messages = () => {
           </div>
 
           {/* Right - Chat area */}
-          <div className="bg-card rounded-2xl border border-border flex flex-col">
+          <div className={`bg-card rounded-2xl border border-border flex-col min-h-0 ${selectedConversation ? "flex" : "hidden lg:flex"}`}>
             {selectedConversation ? (
               <>
-                <div className="p-4 border-b border-border font-bold flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                <div className="p-3 sm:p-4 border-b border-border font-bold flex items-center gap-3">
+                  <Button variant="ghost" size="icon" className="rounded-full lg:hidden shrink-0 h-8 w-8" onClick={() => setSelectedConversation(null)} aria-label="Vissza">
+                    <ArrowLeft className="w-4 h-4" />
+                  </Button>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
                     {selectedConversation.name.charAt(0)}
                   </div>
-                  {selectedConversation.name}
+                  <span className="truncate">{selectedConversation.name}</span>
                 </div>
                 <div className="flex-1 overflow-y-auto p-5 space-y-3">
                   {chatMessages.length === 0 ? (
