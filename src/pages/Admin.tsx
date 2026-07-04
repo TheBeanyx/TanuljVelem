@@ -219,6 +219,7 @@ const Admin = () => {
       user.id,
       selectedUser.id,
       `${emoji} **Pont módosítás admin által**\n\n**${sign}${delta} pont** ${delta > 0 ? "hozzáadva" : "levonva"}.\nÚj egyenleg: **${newTotal}**\n${pointReason ? `\n_Indok: ${pointReason}_` : ""}`,
+      { category: "points", pointsDelta: delta },
     );
     setPointDelta("");
     setPointReason("");
