@@ -68,6 +68,8 @@ const Admin = () => {
   const [pointDelta, setPointDelta] = useState("");
   const [pointReason, setPointReason] = useState("");
   const [newStreak, setNewStreak] = useState("");
+  const [userAppRoles, setUserAppRoles] = useState<AppRole[]>([]);
+  const [mySuperadmin, setMySuperadmin] = useState(false);
 
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
