@@ -340,30 +340,39 @@ export type Database = {
       }
       direct_messages: {
         Row: {
+          category: string
           created_at: string
           id: string
+          is_suggestion: boolean
           is_system: boolean
           is_warning: boolean
+          points_delta: number | null
           receiver_id: string
           reply_to_id: string | null
           sender_id: string
           text: string
         }
         Insert: {
+          category?: string
           created_at?: string
           id?: string
+          is_suggestion?: boolean
           is_system?: boolean
           is_warning?: boolean
+          points_delta?: number | null
           receiver_id: string
           reply_to_id?: string | null
           sender_id: string
           text: string
         }
         Update: {
+          category?: string
           created_at?: string
           id?: string
+          is_suggestion?: boolean
           is_system?: boolean
           is_warning?: boolean
+          points_delta?: number | null
           receiver_id?: string
           reply_to_id?: string | null
           sender_id?: string
@@ -624,6 +633,7 @@ export type Database = {
           display_name: string | null
           id: string
           role: string
+          suspended: boolean
           username: string
         }
         Insert: {
@@ -632,6 +642,7 @@ export type Database = {
           display_name?: string | null
           id: string
           role?: string
+          suspended?: boolean
           username: string
         }
         Update: {
@@ -640,6 +651,7 @@ export type Database = {
           display_name?: string | null
           id?: string
           role?: string
+          suspended?: boolean
           username?: string
         }
         Relationships: []

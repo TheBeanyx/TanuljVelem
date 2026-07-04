@@ -8,6 +8,7 @@ type Profile = {
   display_name: string | null;
   role: string;
   avatar_url: string | null;
+  suspended?: boolean;
 };
 
 type AuthContextType = {
@@ -78,7 +79,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>
-      {children}
+      {profile?.suspended ? (
+        <div className="min-h-screen flex items-center justify-center p-6 bg-background">
+          <div className="bg-card border-2 border-destructive rounded-2xl p-8 text-center max-w-md">
+            <div className="text-5xl mb-3">🚫</div>
+            <h1 className="text-2xl font-black text-destructive mb-2">Fiók felfüggesztve</h1>
+            <p className="text-sm text-muted-foreground mb-4">
+              A fiókodat az admin csapat felfüggesztette. Amíg nem oldják fel, nem férsz hozzá a felülethez.
+              Írj az admin csapatnak email-ben, ha kérdésed van.
+            </p>
+            <button onClick={signOut} className="px-4 py-2 rounded-xl bg-muted hover:bg-muted/70 text-sm font-semibold">
+              Kijelentkezés
+            </button>
+          </div>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 };

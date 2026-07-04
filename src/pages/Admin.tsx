@@ -15,16 +15,25 @@ import { BADGES, BadgeId } from "@/lib/gamification";
 
 const ADMIN_EMAIL = "thebeanyx11@gmail.com";
 
-type ProfileRow = { id: string; username: string; display_name: string | null; role: string };
+type ProfileRow = { id: string; username: string; display_name: string | null; role: string; suspended?: boolean };
 type RuleRow = { id: string; title: string; body: string; sort_order: number };
+type AppRole = "operator" | "moderator" | "staff" | "admin" | "superadmin";
+const APP_ROLES: AppRole[] = ["operator", "moderator", "staff", "admin", "superadmin"];
 
-const notify = async (adminId: string, userId: string, text: string, isWarning = false) => {
+const notify = async (
+  adminId: string,
+  userId: string,
+  text: string,
+  opts: { isWarning?: boolean; category?: string; pointsDelta?: number | null } = {},
+) => {
   await supabase.from("direct_messages").insert({
     sender_id: adminId,
     receiver_id: userId,
     text,
-    is_warning: isWarning,
+    is_warning: !!opts.isWarning,
     is_system: true,
+    category: opts.category || (opts.isWarning ? "warning" : "info"),
+    points_delta: opts.pointsDelta ?? null,
   } as never);
 };
 
@@ -59,6 +68,8 @@ const Admin = () => {
   const [pointDelta, setPointDelta] = useState("");
   const [pointReason, setPointReason] = useState("");
   const [newStreak, setNewStreak] = useState("");
+  const [userAppRoles, setUserAppRoles] = useState<AppRole[]>([]);
+  const [mySuperadmin, setMySuperadmin] = useState(false);
 
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
@@ -68,7 +79,7 @@ const Admin = () => {
 
   const fetchAll = async () => {
     const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("id, username, display_name, role").order("username"),
+      supabase.from("profiles").select("id, username, display_name, role, suspended").order("username"),
       supabase.from("rules").select("*").order("sort_order"),
     ]);
     setProfiles((p || []) as ProfileRow[]);
@@ -110,6 +121,8 @@ const Admin = () => {
     setUserGames(games.data || []);
     setUserAnnouncements(anns.data || []);
     setUserHomeworks(hws.data || []);
+    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", u.id);
+    setUserAppRoles((roles || []).map((r: any) => r.role as AppRole));
   };
 
   useEffect(() => {
@@ -117,7 +130,11 @@ const Admin = () => {
       fetchAll();
       fetchContent();
     }
-  }, [isAdmin]);
+    if (user?.id) {
+      supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "superadmin")
+        .then(({ data }) => setMySuperadmin((data || []).length > 0));
+    }
+  }, [isAdmin, user?.id]);
 
   if (authLoading) return <div className="p-8">Betöltés...</div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -157,7 +174,7 @@ const Admin = () => {
   const sendWarning = async () => {
     if (!warnUser || !warnText.trim()) return;
     const formatted = `⚠️ **HIVATALOS FIGYELMEZTETÉS — TanuljVelem Admin**\n\n${warnText.trim()}\n\n_Kérjük tartsd be a [Szabályzatot](/rules). A figyelmeztetések felhalmozódhatnak és felfüggesztéshez vezethetnek._`;
-    await notify(user.id, warnUser.id, formatted, true);
+    await notify(user.id, warnUser.id, formatted, { isWarning: true, category: "warning" });
     toast({ title: "Figyelmeztetés elküldve" });
     setWarnUser(null);
     setWarnText("");
@@ -212,6 +229,7 @@ const Admin = () => {
       user.id,
       selectedUser.id,
       `${emoji} **Pont módosítás admin által**\n\n**${sign}${delta} pont** ${delta > 0 ? "hozzáadva" : "levonva"}.\nÚj egyenleg: **${newTotal}**\n${pointReason ? `\n_Indok: ${pointReason}_` : ""}`,
+      { category: "points", pointsDelta: delta },
     );
     setPointDelta("");
     setPointReason("");
@@ -349,8 +367,11 @@ const Admin = () => {
                         {(selectedUser.display_name || selectedUser.username).charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h2 className="font-black text-lg truncate">{selectedUser.display_name || selectedUser.username}</h2>
-                        <p className="text-xs text-muted-foreground">@{selectedUser.username} · {selectedUser.role}</p>
+                        <h2 className="font-black text-lg truncate flex items-center gap-2">
+                          {selectedUser.display_name || selectedUser.username}
+                          {selectedUser.suspended && <span className="text-[10px] px-2 py-0.5 rounded-full bg-destructive text-destructive-foreground">FELFÜGGESZTVE</span>}
+                        </h2>
+                        <p className="text-xs text-muted-foreground">@{selectedUser.username} · {selectedUser.role} {userAppRoles.length > 0 && `· ${userAppRoles.join(", ")}`}</p>
                       </div>
                       <Button size="sm" variant="outline" className="rounded-xl gap-1" onClick={() => setEditing({ ...selectedUser })}>
                         <Pencil className="w-3.5 h-3.5" /> Szerkeszt
@@ -358,7 +379,47 @@ const Admin = () => {
                       <Button size="sm" variant="destructive" className="rounded-xl gap-1" onClick={() => setWarnUser(selectedUser)}>
                         <AlertTriangle className="w-3.5 h-3.5" /> Figyelmeztetés
                       </Button>
+                      <Button size="sm" variant={selectedUser.suspended ? "outline" : "destructive"} className="rounded-xl gap-1"
+                        onClick={async () => {
+                          const next = !selectedUser.suspended;
+                          const { error } = await supabase.from("profiles").update({ suspended: next }).eq("id", selectedUser.id);
+                          if (error) return toast({ title: "Hiba", description: error.message, variant: "destructive" });
+                          await notify(user.id, selectedUser.id,
+                            next ? `🚫 **Fiók felfüggesztve**\n\nA fiókodat az admin csapat felfüggesztette. Nem férsz hozzá a felülethez amíg vissza nem kapod a hozzáférést.`
+                                 : `✅ **Fiók visszaállítva**\n\nA felfüggesztést feloldottuk. Újra használhatod a felületet.`,
+                            { category: "info", isWarning: next });
+                          toast({ title: next ? "Felfüggesztve" : "Feloldva" });
+                          setSelectedUser({ ...selectedUser, suspended: next });
+                          fetchAll();
+                        }}>
+                        <Shield className="w-3.5 h-3.5" /> {selectedUser.suspended ? "Feloldás" : "Felfüggesztés"}
+                      </Button>
                     </div>
+
+                    {mySuperadmin && (
+                      <div className="bg-card rounded-2xl border border-border p-4">
+                        <h3 className="font-bold text-sm flex items-center gap-2 mb-2"><Shield className="w-4 h-4 text-primary" /> Rangok (superadmin)</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {APP_ROLES.map((r) => {
+                            const has = userAppRoles.includes(r);
+                            return (
+                              <button key={r} onClick={async () => {
+                                if (has) {
+                                  await supabase.from("user_roles").delete().eq("user_id", selectedUser.id).eq("role", r as never);
+                                } else {
+                                  await supabase.from("user_roles").insert({ user_id: selectedUser.id, role: r as never });
+                                  await notify(user.id, selectedUser.id, `🎖️ **Új rang: ${r}**\n\nA superadmin új rangot adott neked: **${r}**.`, { category: "info" });
+                                }
+                                loadUserDetail(selectedUser);
+                              }} className={`px-3 py-1 rounded-full text-xs font-semibold border transition ${has ? "bg-primary text-primary-foreground border-primary" : "bg-muted border-border hover:bg-primary/10"}`}>
+                                {has ? "✓ " : "+ "}{r}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
 
                     {/* Stats + point adjust */}
                     <div className="bg-card rounded-2xl border border-border p-4 space-y-3">
