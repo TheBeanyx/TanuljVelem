@@ -587,6 +587,10 @@ const Admin = () => {
             <ContentSection title="Játékok" icon={<Gamepad2 className="w-4 h-4" />} items={allGames.map((g) => ({ id: g.id, label: g.title, sub: g.subject, ownerId: g.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("ai_games", id, ownerId, label)} />
             <ContentSection title="Posztok / Közlemények" icon={<Megaphone className="w-4 h-4" />} items={allAnnouncements.map((a) => ({ id: a.id, label: a.subject || a.message.slice(0, 60), sub: a.visibility, ownerId: a.sender_id }))} onDelete={(id, ownerId, label) => deleteContent("announcements", id, ownerId, label)} />
             <ContentSection title="Házi feladatok" icon={<BookOpen className="w-4 h-4" />} items={allHomeworks.map((h) => ({ id: h.id, label: h.title, sub: `${h.subject} · ${h.deadline || "—"}`, ownerId: h.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("homeworks", id, ownerId, label)} />
+            <ContentSection title="Osztályok" icon={<School className="w-4 h-4" />} items={allClasses.map((c) => ({ id: c.id, label: c.name, sub: c.subject || "", ownerId: c.teacher_id }))} onDelete={(id, ownerId, label) => deleteContent("classes", id, ownerId, label)} />
+            <ContentSection title="Tanulócsoportok" icon={<UsersRound className="w-4 h-4" />} items={allStudyGroups.map((s) => ({ id: s.id, label: s.name, sub: s.subject || "", ownerId: s.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("study_groups", id, ownerId, label)} />
+            <ContentSection title="Tanulókártyák" icon={<Layers className="w-4 h-4" />} items={allFlashcards.map((f) => ({ id: f.id, label: f.title, sub: f.subject || "", ownerId: f.user_id }))} onDelete={(id, ownerId, label) => deleteContent("flashcard_sets", id, ownerId, label)} />
+            <ContentSection title="Tananyagok" icon={<Library className="w-4 h-4" />} items={allMaterials.map((m) => ({ id: m.id, label: m.title, sub: m.subject || "", ownerId: m.uploader_id }))} onDelete={(id, ownerId, label) => deleteContent("study_materials", id, ownerId, label)} />
           </TabsContent>
 
           {/* RULES TAB */}
