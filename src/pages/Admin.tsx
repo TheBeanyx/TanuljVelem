@@ -300,7 +300,7 @@ const Admin = () => {
 
   // ------- Content deletion -------
   const deleteContent = async (
-    table: "tests" | "ai_games" | "announcements" | "homeworks",
+    table: "tests" | "ai_games" | "announcements" | "homeworks" | "classes" | "study_groups" | "flashcard_sets" | "study_materials",
     id: string,
     ownerId: string | null,
     label: string,
@@ -315,6 +315,10 @@ const Admin = () => {
         ai_games: "játékot",
         announcements: "posztot",
         homeworks: "házi feladatot",
+        classes: "osztályt",
+        study_groups: "tanulócsoportot",
+        flashcard_sets: "tanulókártya-csomagot",
+        study_materials: "tananyagot",
       };
       await notify(user.id, ownerId, `🗑️ **Tartalom eltávolítva**\n\nAz egyik ${typeMap[table]} eltávolítottuk: _"${label}"_\nHa kérdésed van a döntéssel kapcsolatban, válaszolj erre.`);
     }
