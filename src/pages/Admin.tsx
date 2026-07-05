@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw } from "lucide-react";
+import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,10 @@ const Admin = () => {
   const [allGames, setAllGames] = useState<any[]>([]);
   const [allAnnouncements, setAllAnnouncements] = useState<any[]>([]);
   const [allHomeworks, setAllHomeworks] = useState<any[]>([]);
+  const [allClasses, setAllClasses] = useState<any[]>([]);
+  const [allStudyGroups, setAllStudyGroups] = useState<any[]>([]);
+  const [allFlashcards, setAllFlashcards] = useState<any[]>([]);
+  const [allMaterials, setAllMaterials] = useState<any[]>([]);
 
   const fetchAll = async () => {
     const [{ data: p }, { data: r }] = await Promise.all([
@@ -87,16 +91,24 @@ const Admin = () => {
   };
 
   const fetchContent = async () => {
-    const [t, g, a, h] = await Promise.all([
+    const [t, g, a, h, cl, sg, fc, mt] = await Promise.all([
       supabase.from("tests").select("id, title, subject, grade, creator_name, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("ai_games").select("id, title, subject, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("announcements").select("id, subject, message, sender_id, visibility, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("homeworks").select("id, title, subject, deadline, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("classes").select("id, name, subject, teacher_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("study_groups").select("id, name, subject, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("flashcard_sets").select("id, title, subject, user_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("study_materials").select("id, title, subject, uploader_id, created_at").order("created_at", { ascending: false }).limit(200),
     ]);
     setAllTests(t.data || []);
     setAllGames(g.data || []);
     setAllAnnouncements(a.data || []);
     setAllHomeworks(h.data || []);
+    setAllClasses(cl.data || []);
+    setAllStudyGroups(sg.data || []);
+    setAllFlashcards(fc.data || []);
+    setAllMaterials(mt.data || []);
   };
 
   const loadUserDetail = async (u: ProfileRow) => {
@@ -288,7 +300,7 @@ const Admin = () => {
 
   // ------- Content deletion -------
   const deleteContent = async (
-    table: "tests" | "ai_games" | "announcements" | "homeworks",
+    table: "tests" | "ai_games" | "announcements" | "homeworks" | "classes" | "study_groups" | "flashcard_sets" | "study_materials",
     id: string,
     ownerId: string | null,
     label: string,
@@ -303,6 +315,10 @@ const Admin = () => {
         ai_games: "játékot",
         announcements: "posztot",
         homeworks: "házi feladatot",
+        classes: "osztályt",
+        study_groups: "tanulócsoportot",
+        flashcard_sets: "tanulókártya-csomagot",
+        study_materials: "tananyagot",
       };
       await notify(user.id, ownerId, `🗑️ **Tartalom eltávolítva**\n\nAz egyik ${typeMap[table]} eltávolítottuk: _"${label}"_\nHa kérdésed van a döntéssel kapcsolatban, válaszolj erre.`);
     }
@@ -571,6 +587,10 @@ const Admin = () => {
             <ContentSection title="Játékok" icon={<Gamepad2 className="w-4 h-4" />} items={allGames.map((g) => ({ id: g.id, label: g.title, sub: g.subject, ownerId: g.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("ai_games", id, ownerId, label)} />
             <ContentSection title="Posztok / Közlemények" icon={<Megaphone className="w-4 h-4" />} items={allAnnouncements.map((a) => ({ id: a.id, label: a.subject || a.message.slice(0, 60), sub: a.visibility, ownerId: a.sender_id }))} onDelete={(id, ownerId, label) => deleteContent("announcements", id, ownerId, label)} />
             <ContentSection title="Házi feladatok" icon={<BookOpen className="w-4 h-4" />} items={allHomeworks.map((h) => ({ id: h.id, label: h.title, sub: `${h.subject} · ${h.deadline || "—"}`, ownerId: h.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("homeworks", id, ownerId, label)} />
+            <ContentSection title="Osztályok" icon={<School className="w-4 h-4" />} items={allClasses.map((c) => ({ id: c.id, label: c.name, sub: c.subject || "", ownerId: c.teacher_id }))} onDelete={(id, ownerId, label) => deleteContent("classes", id, ownerId, label)} />
+            <ContentSection title="Tanulócsoportok" icon={<UsersRound className="w-4 h-4" />} items={allStudyGroups.map((s) => ({ id: s.id, label: s.name, sub: s.subject || "", ownerId: s.creator_id }))} onDelete={(id, ownerId, label) => deleteContent("study_groups", id, ownerId, label)} />
+            <ContentSection title="Tanulókártyák" icon={<Layers className="w-4 h-4" />} items={allFlashcards.map((f) => ({ id: f.id, label: f.title, sub: f.subject || "", ownerId: f.user_id }))} onDelete={(id, ownerId, label) => deleteContent("flashcard_sets", id, ownerId, label)} />
+            <ContentSection title="Tananyagok" icon={<Library className="w-4 h-4" />} items={allMaterials.map((m) => ({ id: m.id, label: m.title, sub: m.subject || "", ownerId: m.uploader_id }))} onDelete={(id, ownerId, label) => deleteContent("study_materials", id, ownerId, label)} />
           </TabsContent>
 
           {/* RULES TAB */}
