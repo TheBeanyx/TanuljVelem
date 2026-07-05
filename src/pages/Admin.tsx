@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw } from "lucide-react";
+import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
