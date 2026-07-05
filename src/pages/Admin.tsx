@@ -76,6 +76,10 @@ const Admin = () => {
   const [allGames, setAllGames] = useState<any[]>([]);
   const [allAnnouncements, setAllAnnouncements] = useState<any[]>([]);
   const [allHomeworks, setAllHomeworks] = useState<any[]>([]);
+  const [allClasses, setAllClasses] = useState<any[]>([]);
+  const [allStudyGroups, setAllStudyGroups] = useState<any[]>([]);
+  const [allFlashcards, setAllFlashcards] = useState<any[]>([]);
+  const [allMaterials, setAllMaterials] = useState<any[]>([]);
 
   const fetchAll = async () => {
     const [{ data: p }, { data: r }] = await Promise.all([
@@ -87,16 +91,24 @@ const Admin = () => {
   };
 
   const fetchContent = async () => {
-    const [t, g, a, h] = await Promise.all([
+    const [t, g, a, h, cl, sg, fc, mt] = await Promise.all([
       supabase.from("tests").select("id, title, subject, grade, creator_name, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("ai_games").select("id, title, subject, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("announcements").select("id, subject, message, sender_id, visibility, created_at").order("created_at", { ascending: false }).limit(200),
       supabase.from("homeworks").select("id, title, subject, deadline, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("classes").select("id, name, subject, teacher_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("study_groups").select("id, name, subject, creator_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("flashcard_sets").select("id, title, subject, user_id, created_at").order("created_at", { ascending: false }).limit(200),
+      supabase.from("study_materials").select("id, title, subject, uploader_id, created_at").order("created_at", { ascending: false }).limit(200),
     ]);
     setAllTests(t.data || []);
     setAllGames(g.data || []);
     setAllAnnouncements(a.data || []);
     setAllHomeworks(h.data || []);
+    setAllClasses(cl.data || []);
+    setAllStudyGroups(sg.data || []);
+    setAllFlashcards(fc.data || []);
+    setAllMaterials(mt.data || []);
   };
 
   const loadUserDetail = async (u: ProfileRow) => {
