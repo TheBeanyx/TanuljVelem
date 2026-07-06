@@ -73,6 +73,16 @@ const Admin = () => {
   const [userAppRoles, setUserAppRoles] = useState<AppRole[]>([]);
   const [mySuperadmin, setMySuperadmin] = useState(false);
 
+  // Admin AI chat
+  type AiMsg = { role: "user" | "assistant"; content: string };
+  const [aiMessages, setAiMessages] = useState<AiMsg[]>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiBottomRef = useRef<HTMLDivElement>(null);
+
+  // Log
+  const [logEvents, setLogEvents] = useState<any[]>([]);
+
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
   const [allGames, setAllGames] = useState<any[]>([]);
