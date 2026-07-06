@@ -387,4 +387,28 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
+function MiniChart({ title, sum, color, data, dataKey, positive }: { title: string; sum: number; color: string; data: any[]; dataKey: string; positive: boolean }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-bold text-muted-foreground">{title}</h3>
+        <span className={`text-lg font-black ${positive ? (dataKey === "plus" ? "text-emerald-600" : "text-primary") : "text-destructive"}`}>
+          {sum > 0 ? "+" : ""}{sum}
+        </span>
+      </div>
+      <div className="h-[140px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="day" tick={{ fontSize: 9 }} />
+            <YAxis tick={{ fontSize: 9 }} />
+            <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export default Messages;
