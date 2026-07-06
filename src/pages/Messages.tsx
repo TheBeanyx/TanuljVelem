@@ -133,16 +133,34 @@ const Messages = () => {
   }, [adminMsgs, adminFilter]);
 
   const pointChartData = useMemo(() => {
-    const pts = adminMsgs
-      .filter((m) => m.points_delta != null)
-      .slice()
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    let cum = 0;
-    return pts.map((m) => {
-      cum += m.points_delta || 0;
-      return { time: new Date(m.created_at).toLocaleDateString("hu-HU"), delta: m.points_delta || 0, cum };
-    });
+    // 30-day per-day aggregate of the user's own point changes
+    const byDay = new Map<string, { day: string; total: number; plus: number; minus: number }>();
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      byDay.set(key, { day: key.slice(5), total: 0, plus: 0, minus: 0 });
+    }
+    for (const m of adminMsgs) {
+      if (m.points_delta == null) continue;
+      const key = (m.created_at || "").slice(0, 10);
+      const row = byDay.get(key);
+      if (!row) continue;
+      const p = Number(m.points_delta) || 0;
+      row.total += p;
+      if (p > 0) row.plus += p;
+      else if (p < 0) row.minus += Math.abs(p);
+    }
+    return Array.from(byDay.values());
   }, [adminMsgs]);
+
+  const pointSums = useMemo(() => {
+    return pointChartData.reduce(
+      (acc, d) => ({ total: acc.total + d.total, plus: acc.plus + d.plus, minus: acc.minus + d.minus }),
+      { total: 0, plus: 0, minus: 0 },
+    );
+  }, [pointChartData]);
 
   return (
     <div className="min-h-screen bg-background">
