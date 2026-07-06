@@ -149,16 +149,93 @@ const Admin = () => {
     setUserAppRoles((roles || []).map((r: any) => r.role as AppRole));
   };
 
+  const fetchLog = async () => {
+    const { data } = await supabase
+      .from("point_events")
+      .select("id, user_id, action, points, created_at, metadata")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    setLogEvents(data || []);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchAll();
       fetchContent();
+      fetchLog();
     }
     if (user?.id) {
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "superadmin")
         .then(({ data }) => setMySuperadmin((data || []).length > 0));
     }
   }, [isAdmin, user?.id]);
+
+  useEffect(() => {
+    aiBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [aiMessages]);
+
+  const sendAi = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg: AiMsg = { role: "user", content: aiInput.trim() };
+    const all = [...aiMessages, userMsg];
+    setAiMessages(all);
+    setAiInput("");
+    setAiLoading(true);
+    let acc = "";
+    const push = (chunk: string) => {
+      acc += chunk;
+      setAiMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: acc } : m));
+        return [...prev, { role: "assistant", content: acc }];
+      });
+    };
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-ai`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sess.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: all }),
+      });
+      if (!resp.ok || !resp.body) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Hiba");
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const j = line.slice(6).trim();
+          if (j === "[DONE]") break;
+          try {
+            const p = JSON.parse(j);
+            const c = p.choices?.[0]?.delta?.content;
+            if (c) push(c);
+          } catch {
+            buf = line + "\n" + buf;
+            break;
+          }
+        }
+      }
+    } catch (e: any) {
+      push(`\n\n⚠️ ${e.message || "Hiba"}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
 
   if (authLoading) return <div className="p-8">Betöltés...</div>;
   if (!user) return <Navigate to="/login" replace />;
