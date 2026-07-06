@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound, Bot, Loader2, LineChart as LineChartIcon } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
 import { BADGES, BadgeId } from "@/lib/gamification";
+import ReactMarkdown from "react-markdown";
+import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const ADMIN_EMAIL = "thebeanyx11@gmail.com";
 
@@ -70,6 +72,16 @@ const Admin = () => {
   const [newStreak, setNewStreak] = useState("");
   const [userAppRoles, setUserAppRoles] = useState<AppRole[]>([]);
   const [mySuperadmin, setMySuperadmin] = useState(false);
+
+  // Admin AI chat
+  type AiMsg = { role: "user" | "assistant"; content: string };
+  const [aiMessages, setAiMessages] = useState<AiMsg[]>([]);
+  const [aiInput, setAiInput] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const aiBottomRef = useRef<HTMLDivElement>(null);
+
+  // Log
+  const [logEvents, setLogEvents] = useState<any[]>([]);
 
   // Global content
   const [allTests, setAllTests] = useState<any[]>([]);
@@ -137,16 +149,93 @@ const Admin = () => {
     setUserAppRoles((roles || []).map((r: any) => r.role as AppRole));
   };
 
+  const fetchLog = async () => {
+    const { data } = await supabase
+      .from("point_events")
+      .select("id, user_id, action, points, created_at, metadata")
+      .order("created_at", { ascending: false })
+      .limit(500);
+    setLogEvents(data || []);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchAll();
       fetchContent();
+      fetchLog();
     }
     if (user?.id) {
       supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "superadmin")
         .then(({ data }) => setMySuperadmin((data || []).length > 0));
     }
   }, [isAdmin, user?.id]);
+
+  useEffect(() => {
+    aiBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [aiMessages]);
+
+  const sendAi = async () => {
+    if (!aiInput.trim() || aiLoading) return;
+    const userMsg: AiMsg = { role: "user", content: aiInput.trim() };
+    const all = [...aiMessages, userMsg];
+    setAiMessages(all);
+    setAiInput("");
+    setAiLoading(true);
+    let acc = "";
+    const push = (chunk: string) => {
+      acc += chunk;
+      setAiMessages((prev) => {
+        const last = prev[prev.length - 1];
+        if (last?.role === "assistant") return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: acc } : m));
+        return [...prev, { role: "assistant", content: acc }];
+      });
+    };
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-ai`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sess.session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: all }),
+      });
+      if (!resp.ok || !resp.body) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || "Hiba");
+      }
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let idx: number;
+        while ((idx = buf.indexOf("\n")) !== -1) {
+          let line = buf.slice(0, idx);
+          buf = buf.slice(idx + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+          if (!line.startsWith("data: ")) continue;
+          const j = line.slice(6).trim();
+          if (j === "[DONE]") break;
+          try {
+            const p = JSON.parse(j);
+            const c = p.choices?.[0]?.delta?.content;
+            if (c) push(c);
+          } catch {
+            buf = line + "\n" + buf;
+            break;
+          }
+        }
+      }
+    } catch (e: any) {
+      push(`\n\n⚠️ ${e.message || "Hiba"}`);
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
 
   if (authLoading) return <div className="p-8">Betöltés...</div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -340,6 +429,8 @@ const Admin = () => {
             <TabsTrigger value="users" className="flex-1 gap-2"><Users className="w-4 h-4" /> Felhasználók</TabsTrigger>
             <TabsTrigger value="content" className="flex-1 gap-2"><FileText className="w-4 h-4" /> Tartalom</TabsTrigger>
             <TabsTrigger value="rules" className="flex-1 gap-2"><ScrollText className="w-4 h-4" /> Szabályok</TabsTrigger>
+            <TabsTrigger value="log" className="flex-1 gap-2"><LineChartIcon className="w-4 h-4" /> Napló</TabsTrigger>
+            <TabsTrigger value="ai" className="flex-1 gap-2"><Bot className="w-4 h-4" /> Admin AI</TabsTrigger>
           </TabsList>
 
           {/* USERS TAB */}
@@ -628,6 +719,61 @@ const Admin = () => {
               ))}
             </div>
           </TabsContent>
+
+          {/* LOG TAB */}
+          <TabsContent value="log" className="space-y-4">
+            <LogView events={logEvents} profiles={profiles} />
+          </TabsContent>
+
+          {/* ADMIN AI TAB */}
+          <TabsContent value="ai" className="space-y-4">
+            <div className="bg-card border border-border rounded-2xl overflow-hidden flex flex-col h-[70vh]">
+              <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-primary/5">
+                <Bot className="w-5 h-5 text-primary" />
+                <div className="flex-1">
+                  <p className="font-bold text-sm">TanuljVelem Admin AI</p>
+                  <p className="text-[10px] text-muted-foreground">Csak admin/staff · moderációs javaslatok, szabályírás, büntetés-tanácsadás</p>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {aiMessages.length === 0 && (
+                  <div className="text-center text-sm text-muted-foreground py-10">
+                    <Sparkles className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                    <p>Kérdezz bármit a moderációról!</p>
+                    <p className="text-xs mt-1">Pl. „Írj egy figyelmeztetést trágár beszéd miatt" · „Javasolj arányos büntetést zaklatásra" · „Fogalmazz meg egy új szabályt spam ellen"</p>
+                  </div>
+                )}
+                {aiMessages.map((m, i) => (
+                  <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${m.role === "user" ? "bg-primary text-primary-foreground rounded-br-md" : "bg-muted text-foreground rounded-bl-md"}`}>
+                      {m.role === "assistant" ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1">
+                          <ReactMarkdown>{m.content}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p className="whitespace-pre-wrap">{m.content}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {aiLoading && aiMessages[aiMessages.length - 1]?.role === "user" && (
+                  <div className="flex justify-start"><div className="bg-muted rounded-2xl rounded-bl-md px-3 py-2"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div></div>
+                )}
+                <div ref={aiBottomRef} />
+              </div>
+              <div className="p-3 border-t border-border flex gap-2">
+                <Textarea
+                  value={aiInput}
+                  onChange={(e) => setAiInput(e.target.value)}
+                  placeholder="Írj egy kérdést vagy tartalmat értékelésre..."
+                  rows={1}
+                  className="resize-none rounded-xl text-sm min-h-[38px] max-h-[120px]"
+                  onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendAi(); } }}
+                />
+                <Button onClick={sendAi} disabled={aiLoading || !aiInput.trim()} size="icon" className="rounded-xl shrink-0"><Send className="w-4 h-4" /></Button>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
 
         {/* Edit profile dialog */}
@@ -709,6 +855,94 @@ function ContentSection({ title, icon, items, onDelete }: { title: string; icon:
             </Button>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function LogView({ events, profiles }: { events: any[]; profiles: { id: string; username: string; display_name: string | null }[] }) {
+  // Build per-day aggregates for the last 30 days
+  const byDay = new Map<string, { day: string; total: number; plus: number; minus: number }>();
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    byDay.set(key, { day: key.slice(5), total: 0, plus: 0, minus: 0 });
+  }
+  for (const e of events) {
+    const key = (e.created_at || "").slice(0, 10);
+    const row = byDay.get(key);
+    if (!row) continue;
+    const pts = Number(e.points) || 0;
+    row.total += pts;
+    if (pts > 0) row.plus += pts;
+    else if (pts < 0) row.minus += Math.abs(pts);
+  }
+  const data = Array.from(byDay.values());
+  const nameOf = (id: string) => {
+    const p = profiles.find((x) => x.id === id);
+    return p ? p.display_name || p.username : id.slice(0, 6);
+  };
+  const totalSum = data.reduce((s, d) => s + d.total, 0);
+  const plusSum = data.reduce((s, d) => s + d.plus, 0);
+  const minusSum = data.reduce((s, d) => s + d.minus, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-3 gap-3">
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Összes (nettó, 30 nap)</p>
+          <p className={`text-2xl font-black ${totalSum >= 0 ? "text-primary" : "text-destructive"}`}>{totalSum > 0 ? "+" : ""}{totalSum}</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Plusz pontok</p>
+          <p className="text-2xl font-black text-emerald-600">+{plusSum}</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Mínusz pontok</p>
+          <p className="text-2xl font-black text-destructive">-{minusSum}</p>
+        </div>
+      </div>
+
+      <ChartBlock title="Összes (nettó napi)" color="hsl(var(--primary))" data={data} dataKey="total" />
+      <ChartBlock title="Plusz pontok naponta" color="hsl(142 71% 45%)" data={data} dataKey="plus" />
+      <ChartBlock title="Mínusz pontok naponta" color="hsl(var(--destructive))" data={data} dataKey="minus" />
+
+      <div className="bg-card border border-border rounded-2xl">
+        <div className="px-4 py-3 border-b border-border font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Pontváltozás napló <span className="text-xs text-muted-foreground font-normal">({events.length})</span></div>
+        <div className="divide-y divide-border max-h-[50vh] overflow-y-auto">
+          {events.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">Még nincs esemény.</p>}
+          {events.map((e) => (
+            <div key={e.id} className="p-3 flex items-center gap-3 text-xs">
+              <span className={`font-black text-sm w-14 text-right ${e.points >= 0 ? "text-emerald-600" : "text-destructive"}`}>{e.points > 0 ? "+" : ""}{e.points}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">{nameOf(e.user_id)} · <span className="text-muted-foreground font-normal">{e.action}</span></p>
+                {e.metadata?.reason && <p className="text-muted-foreground truncate">{e.metadata.reason}</p>}
+              </div>
+              <span className="text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toLocaleString("hu-HU")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChartBlock({ title, color, data, dataKey }: { title: string; color: string; data: any[]; dataKey: string }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <h3 className="font-bold text-sm mb-3">{title}</h3>
+      <div className="h-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
