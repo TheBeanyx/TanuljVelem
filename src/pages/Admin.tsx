@@ -430,6 +430,7 @@ const Admin = () => {
             <TabsTrigger value="content" className="flex-1 gap-2"><FileText className="w-4 h-4" /> Tartalom</TabsTrigger>
             <TabsTrigger value="rules" className="flex-1 gap-2"><ScrollText className="w-4 h-4" /> Szabályok</TabsTrigger>
             <TabsTrigger value="log" className="flex-1 gap-2"><LineChartIcon className="w-4 h-4" /> Napló</TabsTrigger>
+
             <TabsTrigger value="ai" className="flex-1 gap-2"><Bot className="w-4 h-4" /> Admin AI</TabsTrigger>
           </TabsList>
 
