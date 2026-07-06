@@ -320,21 +320,11 @@ const Messages = () => {
               <StatCard icon={<Lightbulb className="w-4 h-4" />} label="Javaslatok" value={suggestionCount} color="purple" />
             </div>
 
-            {pointChartData.length > 0 && (
-              <div className="bg-card border border-border rounded-2xl p-4">
-                <h3 className="text-sm font-bold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-amber-500" /> Pontok alakulása (admin változtatások)</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={pointChartData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="time" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <RTooltip />
-                    <Line type="monotone" dataKey="cum" name="Összesen" stroke="hsl(var(--primary))" strokeWidth={2} />
-                    <Line type="monotone" dataKey="delta" name="Változás" stroke="hsl(var(--destructive))" strokeWidth={1} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <div className="grid md:grid-cols-3 gap-3">
+              <MiniChart title="Összes (nettó)" sum={pointSums.total} color="hsl(var(--primary))" data={pointChartData} dataKey="total" positive={pointSums.total >= 0} />
+              <MiniChart title="Plusz pontok" sum={pointSums.plus} color="hsl(142 71% 45%)" data={pointChartData} dataKey="plus" positive />
+              <MiniChart title="Mínusz pontok" sum={-pointSums.minus} color="hsl(var(--destructive))" data={pointChartData} dataKey="minus" positive={false} />
+            </div>
 
             <div className="flex gap-2 flex-wrap">
               {(["all", "warning", "points", "suggestion"] as const).map((f) => (
