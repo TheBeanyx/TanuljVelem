@@ -891,24 +891,8 @@ function LogView({ events, profiles }: { events: any[]; profiles: { id: string; 
 
   return (
     <div className="space-y-4">
-      <div className="grid md:grid-cols-3 gap-3">
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Összes (nettó, 30 nap)</p>
-          <p className={`text-2xl font-black ${totalSum >= 0 ? "text-primary" : "text-destructive"}`}>{totalSum > 0 ? "+" : ""}{totalSum}</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Plusz pontok</p>
-          <p className="text-2xl font-black text-emerald-600">+{plusSum}</p>
-        </div>
-        <div className="bg-card border border-border rounded-2xl p-4">
-          <p className="text-xs text-muted-foreground">Mínusz pontok</p>
-          <p className="text-2xl font-black text-destructive">-{minusSum}</p>
-        </div>
-      </div>
+      <p className="text-xs text-muted-foreground">A pontok grafikonjai mostantól a felhasználók saját <strong>Üzenetek → Admin üzenetek</strong> fülén jelennek meg. Itt csak az összes pontesemény listáját látod moderációs célból.</p>
 
-      <ChartBlock title="Összes (nettó napi)" color="hsl(var(--primary))" data={data} dataKey="total" />
-      <ChartBlock title="Plusz pontok naponta" color="hsl(142 71% 45%)" data={data} dataKey="plus" />
-      <ChartBlock title="Mínusz pontok naponta" color="hsl(var(--destructive))" data={data} dataKey="minus" />
 
       <div className="bg-card border border-border rounded-2xl">
         <div className="px-4 py-3 border-b border-border font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Pontváltozás napló <span className="text-xs text-muted-foreground font-normal">({events.length})</span></div>
