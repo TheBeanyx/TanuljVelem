@@ -860,4 +860,92 @@ function ContentSection({ title, icon, items, onDelete }: { title: string; icon:
   );
 }
 
+function LogView({ events, profiles }: { events: any[]; profiles: { id: string; username: string; display_name: string | null }[] }) {
+  // Build per-day aggregates for the last 30 days
+  const byDay = new Map<string, { day: string; total: number; plus: number; minus: number }>();
+  const today = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    byDay.set(key, { day: key.slice(5), total: 0, plus: 0, minus: 0 });
+  }
+  for (const e of events) {
+    const key = (e.created_at || "").slice(0, 10);
+    const row = byDay.get(key);
+    if (!row) continue;
+    const pts = Number(e.points) || 0;
+    row.total += pts;
+    if (pts > 0) row.plus += pts;
+    else if (pts < 0) row.minus += Math.abs(pts);
+  }
+  const data = Array.from(byDay.values());
+  const nameOf = (id: string) => {
+    const p = profiles.find((x) => x.id === id);
+    return p ? p.display_name || p.username : id.slice(0, 6);
+  };
+  const totalSum = data.reduce((s, d) => s + d.total, 0);
+  const plusSum = data.reduce((s, d) => s + d.plus, 0);
+  const minusSum = data.reduce((s, d) => s + d.minus, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid md:grid-cols-3 gap-3">
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Összes (nettó, 30 nap)</p>
+          <p className={`text-2xl font-black ${totalSum >= 0 ? "text-primary" : "text-destructive"}`}>{totalSum > 0 ? "+" : ""}{totalSum}</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Plusz pontok</p>
+          <p className="text-2xl font-black text-emerald-600">+{plusSum}</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <p className="text-xs text-muted-foreground">Mínusz pontok</p>
+          <p className="text-2xl font-black text-destructive">-{minusSum}</p>
+        </div>
+      </div>
+
+      <ChartBlock title="Összes (nettó napi)" color="hsl(var(--primary))" data={data} dataKey="total" />
+      <ChartBlock title="Plusz pontok naponta" color="hsl(142 71% 45%)" data={data} dataKey="plus" />
+      <ChartBlock title="Mínusz pontok naponta" color="hsl(var(--destructive))" data={data} dataKey="minus" />
+
+      <div className="bg-card border border-border rounded-2xl">
+        <div className="px-4 py-3 border-b border-border font-bold flex items-center gap-2"><Activity className="w-4 h-4" /> Pontváltozás napló <span className="text-xs text-muted-foreground font-normal">({events.length})</span></div>
+        <div className="divide-y divide-border max-h-[50vh] overflow-y-auto">
+          {events.length === 0 && <p className="p-4 text-center text-sm text-muted-foreground">Még nincs esemény.</p>}
+          {events.map((e) => (
+            <div key={e.id} className="p-3 flex items-center gap-3 text-xs">
+              <span className={`font-black text-sm w-14 text-right ${e.points >= 0 ? "text-emerald-600" : "text-destructive"}`}>{e.points > 0 ? "+" : ""}{e.points}</span>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold truncate">{nameOf(e.user_id)} · <span className="text-muted-foreground font-normal">{e.action}</span></p>
+                {e.metadata?.reason && <p className="text-muted-foreground truncate">{e.metadata.reason}</p>}
+              </div>
+              <span className="text-muted-foreground whitespace-nowrap">{new Date(e.created_at).toLocaleString("hu-HU")}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ChartBlock({ title, color, data, dataKey }: { title: string; color: string; data: any[]; dataKey: string }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <h3 className="font-bold text-sm mb-3">{title}</h3>
+      <div className="h-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
 export default Admin;
