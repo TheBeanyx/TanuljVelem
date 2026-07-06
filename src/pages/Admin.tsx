@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Shield, AlertTriangle, Users, ScrollText, Plus, Trash2, Pencil, Save, Send, ArrowLeft, Activity, MessageSquare, Trophy, Award, Minus, Eye, FileText, Gamepad2, Megaphone, BookOpen, Sparkles, Flame, RotateCcw, School, Layers, Library, UsersRound, Bot, Loader2, LineChart as LineChartIcon } from "lucide-react";
 import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
 import { BADGES, BadgeId } from "@/lib/gamification";
+import ReactMarkdown from "react-markdown";
+import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
 const ADMIN_EMAIL = "thebeanyx11@gmail.com";
 
