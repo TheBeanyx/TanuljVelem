@@ -133,16 +133,34 @@ const Messages = () => {
   }, [adminMsgs, adminFilter]);
 
   const pointChartData = useMemo(() => {
-    const pts = adminMsgs
-      .filter((m) => m.points_delta != null)
-      .slice()
-      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    let cum = 0;
-    return pts.map((m) => {
-      cum += m.points_delta || 0;
-      return { time: new Date(m.created_at).toLocaleDateString("hu-HU"), delta: m.points_delta || 0, cum };
-    });
+    // 30-day per-day aggregate of the user's own point changes
+    const byDay = new Map<string, { day: string; total: number; plus: number; minus: number }>();
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().slice(0, 10);
+      byDay.set(key, { day: key.slice(5), total: 0, plus: 0, minus: 0 });
+    }
+    for (const m of adminMsgs) {
+      if (m.points_delta == null) continue;
+      const key = (m.created_at || "").slice(0, 10);
+      const row = byDay.get(key);
+      if (!row) continue;
+      const p = Number(m.points_delta) || 0;
+      row.total += p;
+      if (p > 0) row.plus += p;
+      else if (p < 0) row.minus += Math.abs(p);
+    }
+    return Array.from(byDay.values());
   }, [adminMsgs]);
+
+  const pointSums = useMemo(() => {
+    return pointChartData.reduce(
+      (acc, d) => ({ total: acc.total + d.total, plus: acc.plus + d.plus, minus: acc.minus + d.minus }),
+      { total: 0, plus: 0, minus: 0 },
+    );
+  }, [pointChartData]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -302,21 +320,11 @@ const Messages = () => {
               <StatCard icon={<Lightbulb className="w-4 h-4" />} label="Javaslatok" value={suggestionCount} color="purple" />
             </div>
 
-            {pointChartData.length > 0 && (
-              <div className="bg-card border border-border rounded-2xl p-4">
-                <h3 className="text-sm font-bold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-amber-500" /> Pontok alakulása (admin változtatások)</h3>
-                <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={pointChartData}>
-                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                    <XAxis dataKey="time" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <RTooltip />
-                    <Line type="monotone" dataKey="cum" name="Összesen" stroke="hsl(var(--primary))" strokeWidth={2} />
-                    <Line type="monotone" dataKey="delta" name="Változás" stroke="hsl(var(--destructive))" strokeWidth={1} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
+            <div className="grid md:grid-cols-3 gap-3">
+              <MiniChart title="Összes (nettó)" sum={pointSums.total} color="hsl(var(--primary))" data={pointChartData} dataKey="total" positive={pointSums.total >= 0} />
+              <MiniChart title="Plusz pontok" sum={pointSums.plus} color="hsl(142 71% 45%)" data={pointChartData} dataKey="plus" positive />
+              <MiniChart title="Mínusz pontok" sum={-pointSums.minus} color="hsl(var(--destructive))" data={pointChartData} dataKey="minus" positive={false} />
+            </div>
 
             <div className="flex gap-2 flex-wrap">
               {(["all", "warning", "points", "suggestion"] as const).map((f) => (
@@ -375,6 +383,30 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
     <div className={`rounded-2xl border p-3 ${colorMap[color]}`}>
       <div className="flex items-center gap-1.5 text-xs font-semibold">{icon}{label}</div>
       <p className="text-2xl font-black mt-1">{value}</p>
+    </div>
+  );
+}
+
+function MiniChart({ title, sum, color, data, dataKey, positive }: { title: string; sum: number; color: string; data: any[]; dataKey: string; positive: boolean }) {
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xs font-bold text-muted-foreground">{title}</h3>
+        <span className={`text-lg font-black ${positive ? (dataKey === "plus" ? "text-emerald-600" : "text-primary") : "text-destructive"}`}>
+          {sum > 0 ? "+" : ""}{sum}
+        </span>
+      </div>
+      <div className="h-[140px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis dataKey="day" tick={{ fontSize: 9 }} />
+            <YAxis tick={{ fontSize: 9 }} />
+            <RTooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+            <Line type="monotone" dataKey={dataKey} stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
