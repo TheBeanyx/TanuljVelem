@@ -276,10 +276,37 @@ export default function Challenges() {
     await persistTask(next);
     setActiveTask(next);
     toast.success(`${res.awarded_points}/${st.max_points} pont 🎯`);
+
+    // Napi pontcél elérése → globális pontok + küldetések
+    if (user && activeSub) {
+      const dayEarned = next.subtasks.reduce((s, x) => s + (x.awarded_points || 0), 0);
+      if (dayEarned >= activeSub.daily_goal_points) {
+        const key = `${next.id}`;
+        const { count } = await supabase
+          .from("point_events")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("action", "challenge_day_done")
+          .eq("metadata->>key", key);
+        if (!count) {
+          const newBadges = await awardPoints(user.id, "challenge_day_done", {
+            key, subject: activeSub.subject, date: next.task_date,
+          });
+          toast.success(`🔥 Napi pontcél teljesítve! +${POINTS.challenge_day_done} pont`);
+          if (newBadges.length) {
+            toast.success(
+              `🏅 Új küldetés: ${newBadges.map((b) => BADGES[b].name).join(", ")} (+${BADGE_REWARD_POINTS} pont / küldetés)`
+            );
+          }
+        }
+      }
+    }
+
     const nextUndone = next.subtasks.find((x) => !x.completed_at);
     if (nextUndone) setOpenSubtaskId(nextUndone.id);
     await load();
   };
+
 
   const regenerateSubtask = async (st: SubTask) => {
     if (!activeTask || !activeSub) return;
