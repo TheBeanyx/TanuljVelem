@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { awardPoints, POINTS, BADGES, BADGE_REWARD_POINTS } from "@/lib/gamification";
 
 const SUBJECTS = [
   "Matematika", "Magyar nyelv", "Magyar irodalom", "Történelem",
