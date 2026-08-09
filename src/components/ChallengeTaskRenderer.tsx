@@ -76,6 +76,9 @@ export default function ChallengeTaskRenderer(props: Props) {
     case "true_false": return <TrueFalseTask {...props} />;
     case "fill_blanks": return <FillBlanksTask {...props} />;
     case "pick_many": return <PickManyTask {...props} />;
+    case "crossword": return <CrosswordTask {...props} />;
+    case "memory": return <MemoryTask {...props} />;
+    case "odd_one_out": return <OddOneOutTask {...props} />;
     default:
       return <p className="text-sm text-muted-foreground">Ismeretlen feladattípus: {taskType}</p>;
   }
@@ -485,6 +488,229 @@ function PickManyTask({ data, maxPoints, onSubmitInteractive }: Props) {
         ))}
       </div>
       <Button onClick={submit} disabled={selected.size === 0} size="sm" className="gradient-hero text-white gap-2">
+        <Send className="w-4 h-4" /> Beküldés
+      </Button>
+    </div>
+  );
+}
+
+// ============ CROSSWORD (mini keresztrejtvény) ============
+function CrosswordTask({ data, maxPoints, onSubmitInteractive }: Props) {
+  const rows: { clue: string; answer: string; highlight_index: number }[] = data.rows || [];
+  const [inputs, setInputs] = useState<string[]>(() => rows.map(() => ""));
+  const anyFilled = inputs.some((v) => v.trim().length > 0);
+
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, "").trim();
+
+  const submit = () => {
+    let correct = 0;
+    rows.forEach((r, i) => { if (norm(inputs[i]) === norm(r.answer)) correct++; });
+    const pct = rows.length ? correct / rows.length : 0;
+    const pts = Math.round(maxPoints * pct);
+    onSubmitInteractive?.({
+      awarded_points: pts,
+      feedback_markdown:
+        `${correct}/${rows.length} megoldás helyes (${Math.round(pct * 100)}%).` +
+        (correct < rows.length
+          ? "\n\n**Helyes megoldások:**\n" + rows.map((r, i) => `${i + 1}. ${r.clue} → **${r.answer}**`).join("\n")
+          : " 🎉") +
+        (data.solution_word ? `\n\n🔑 A megfejtés: **${data.solution_word}**` : ""),
+      submission_summary: rows.map((r, i) => `${i + 1}. ${inputs[i] || "—"}`).join("\n"),
+    });
+  };
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground mb-3">{data.instructions}</p>
+      <div className="space-y-2.5 mb-3">
+        {rows.map((r, i) => {
+          const val = inputs[i];
+          const len = Math.max(r.answer.replace(/\s+/g, "").length, 3);
+          const hi = Math.min(r.highlight_index ?? 0, len - 1);
+          return (
+            <div key={i} className="rounded-lg bg-muted/30 p-2.5">
+              <p className="text-xs font-medium mb-1.5">
+                <span className="font-bold text-primary mr-1">{i + 1}.</span>{r.clue}
+              </p>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1 flex-wrap">
+                  {Array.from({ length: len }).map((_, ci) => (
+                    <span
+                      key={ci}
+                      className={cn(
+                        "w-7 h-8 rounded border-2 flex items-center justify-center text-sm font-bold uppercase",
+                        ci === hi ? "border-primary bg-primary/15 text-primary" : "border-border bg-background"
+                      )}
+                    >
+                      {val[ci] || ""}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <input
+                value={val}
+                maxLength={len}
+                onChange={(e) => {
+                  const next = [...inputs];
+                  next[i] = e.target.value.replace(/\s+/g, "");
+                  setInputs(next);
+                }}
+                placeholder="Írd be a szót…"
+                className="mt-2 w-full rounded-md border-2 border-border bg-background px-2.5 py-1.5 text-sm"
+              />
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">
+        🔑 A kiemelt betűk fentről lefelé egy megfejtést adnak!
+      </p>
+      <Button onClick={submit} disabled={!anyFilled} size="sm" className="gradient-hero text-white gap-2">
+        <Send className="w-4 h-4" /> Beküldés
+      </Button>
+    </div>
+  );
+}
+
+// ============ MEMORY (memóriajáték) ============
+function MemoryTask({ data, maxPoints, onSubmitInteractive }: Props) {
+  const pairs: { a: string; b: string }[] = data.pairs || [];
+  const cards = useMemo(
+    () => pairs.flatMap((p, i) => [{ text: p.a, pair: i }, { text: p.b, pair: i }]),
+    [pairs]
+  );
+  const deck = useShuffled(cards, pairs.map((p) => p.a + p.b).join("|"));
+  const [flipped, setFlipped] = useState<number[]>([]);
+  const [matched, setMatched] = useState<Set<number>>(new Set());
+  const [tries, setTries] = useState(0);
+  const [locked, setLocked] = useState(false);
+
+  const allMatched = matched.size === deck.length && deck.length > 0;
+
+  const flip = (i: number) => {
+    if (locked || matched.has(i) || flipped.includes(i)) return;
+    const next = [...flipped, i];
+    if (next.length < 2) { setFlipped(next); return; }
+    setFlipped(next);
+    setTries((t) => t + 1);
+    setLocked(true);
+    const [x, y] = next;
+    if (deck[x].pair === deck[y].pair) {
+      window.setTimeout(() => {
+        setMatched((m) => new Set([...m, x, y]));
+        setFlipped([]);
+        setLocked(false);
+      }, 450);
+    } else {
+      window.setTimeout(() => { setFlipped([]); setLocked(false); }, 850);
+    }
+  };
+
+  const submit = () => {
+    const perfectTries = pairs.length;
+    // 100% ha max 1.5x annyi próbálkozásból megvan, utána arányosan csökken
+    const efficiency = Math.max(0.4, Math.min(1, (perfectTries * 1.5) / Math.max(tries, 1)));
+    const pts = Math.round(maxPoints * efficiency);
+    onSubmitInteractive?.({
+      awarded_points: pts,
+      feedback_markdown:
+        `🧠 Minden párt megtaláltál **${tries} próbálkozásból** (ideális: ${perfectTries}).\n\n` +
+        `Hatékonyság: **${Math.round(efficiency * 100)}%**\n\n**Párok:**\n` +
+        pairs.map((p) => `- ${p.a} ↔ ${p.b}`).join("\n"),
+      submission_summary: `Memóriajáték teljesítve ${tries} próbálkozásból.`,
+    });
+  };
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground mb-1">{data.instructions}</p>
+      <p className="text-xs text-muted-foreground mb-3">
+        Találat: <span className="font-bold text-primary">{matched.size / 2}/{pairs.length}</span> · Próbálkozás: <span className="font-bold">{tries}</span>
+      </p>
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+        {deck.map((c, i) => {
+          const isOpen = flipped.includes(i) || matched.has(i);
+          return (
+            <button
+              key={i}
+              onClick={() => flip(i)}
+              className={cn(
+                "relative h-20 rounded-xl border-2 p-1.5 text-[11px] font-semibold leading-tight transition-all",
+                matched.has(i)
+                  ? "border-emerald-500 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
+                  : isOpen
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-muted/50 hover:border-primary/50"
+              )}
+            >
+              {isOpen ? (
+                <span className="flex h-full items-center justify-center text-center">{c.text}</span>
+              ) : (
+                <span className="flex h-full items-center justify-center text-2xl opacity-60">❓</span>
+              )}
+              {matched.has(i) && (
+                <CheckCircle2 className="absolute right-1 top-1 h-3.5 w-3.5 text-emerald-600" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <Button onClick={submit} disabled={!allMatched} size="sm" className="gradient-hero text-white gap-2">
+        <Send className="w-4 h-4" /> {allMatched ? "Beküldés" : "Találd meg az összes párt"}
+      </Button>
+    </div>
+  );
+}
+
+// ============ ODD ONE OUT (kakukktojás) ============
+function OddOneOutTask({ data, maxPoints, onSubmitInteractive }: Props) {
+  const sets: { items: string[]; odd_index: number; reason: string }[] = data.sets || [];
+  const [picks, setPicks] = useState<Record<number, number | null>>(
+    () => Object.fromEntries(sets.map((_, i) => [i, null]))
+  );
+  const allPicked = Object.values(picks).every((v) => v != null);
+
+  const submit = () => {
+    let correct = 0;
+    sets.forEach((s, i) => { if (picks[i] === s.odd_index) correct++; });
+    const pct = sets.length ? correct / sets.length : 0;
+    const pts = Math.round(maxPoints * pct);
+    onSubmitInteractive?.({
+      awarded_points: pts,
+      feedback_markdown:
+        `${correct}/${sets.length} kakukktojást találtál meg (${Math.round(pct * 100)}%).\n\n` +
+        sets.map((s, i) =>
+          `${picks[i] === s.odd_index ? "✅" : "❌"} **${s.items[s.odd_index]}** — _${s.reason}_`
+        ).join("\n"),
+      submission_summary: sets.map((s, i) => `${i + 1}. ${picks[i] != null ? s.items[picks[i]!] : "—"}`).join(", "),
+    });
+  };
+
+  return (
+    <div>
+      <p className="text-sm text-muted-foreground mb-3">{data.instructions}</p>
+      <div className="space-y-3 mb-3">
+        {sets.map((s, si) => (
+          <div key={si} className="rounded-lg bg-muted/30 p-2.5">
+            <p className="text-xs font-bold text-muted-foreground mb-2">{si + 1}. csoport — melyik nem illik oda?</p>
+            <div className="grid grid-cols-2 gap-2">
+              {s.items.map((it, ii) => (
+                <button
+                  key={ii}
+                  onClick={() => setPicks({ ...picks, [si]: ii })}
+                  className={cn(
+                    "rounded-lg border-2 px-2.5 py-2 text-left text-sm transition-all",
+                    picks[si] === ii ? "border-primary bg-primary/10 font-semibold" : "border-border bg-background hover:border-primary/50"
+                  )}
+                >
+                  {it}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <Button onClick={submit} disabled={!allPicked} size="sm" className="gradient-hero text-white gap-2">
         <Send className="w-4 h-4" /> Beküldés
       </Button>
     </div>

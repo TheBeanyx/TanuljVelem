@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useGamification } from "@/hooks/useGamification";
-import { BADGES, BadgeId } from "@/lib/gamification";
+import { BADGES, BadgeId, BADGE_REWARD_POINTS } from "@/lib/gamification";
+import BadgeBook from "@/components/BadgeBook";
+import Badge3DViewer from "@/components/Badge3DViewer";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -105,6 +107,30 @@ const Achievements = () => {
       case "night_owl": return { current: has("night_owl") ? 1 : 0, target: 1, label: "", task: "Tanulj este 10 óra után." };
       case "weekend_warrior": return { current: has("weekend_warrior") ? 1 : 0, target: 1, label: "", task: "Tanulj szombaton ÉS vasárnap is ugyanazon a hétvégén." };
       case "comeback_kid": return { current: has("comeback_kid") ? 1 : 0, target: 1, label: "", task: "Térj vissza legalább 7 napos szünet után." };
+      case "points_2500": return { current: points, target: 2500, label: "pont", task: "Gyűjts össze 2500 pontot." };
+      case "points_10000": return { current: points, target: 10000, label: "pont", task: "Gyűjts össze 10 000 pontot — legendás szint." };
+      case "streak_60": return { current: Math.max(streak, has("streak_60") ? 60 : 0), target: 60, label: "nap", task: "60 napos megszakítás nélküli sorozat." };
+      case "loyal_50": return { current: actionCounts["daily_login"] || 0, target: 50, label: "belépés", task: "Lépj be 50 különböző napon." };
+      case "loyal_200": return { current: actionCounts["daily_login"] || 0, target: 200, label: "belépés", task: "Lépj be 200 különböző napon." };
+      case "test_perfectionist": return { current: actionCounts["perfect_test"] || 0, target: 5, label: "tökéletes", task: "Érj el 100%-ot 5 különböző teszten." };
+      case "test_centurion": return { current: (actionCounts["complete_test"] || 0) + (actionCounts["perfect_test"] || 0), target: 50, label: "teszt", task: "Teljesíts 50 tesztet." };
+      case "sharpshooter": return { current: actionCounts["great_test"] || 0, target: 1, label: "teszt", task: "Érj el legalább 95%-ot egy teszten (+5 bónusz pont)." };
+      case "sniper": return { current: actionCounts["great_test"] || 0, target: 10, label: "teszt", task: "Érj el 10 alkalommal 95% feletti eredményt." };
+      case "card_shark": return { current: actionCounts["create_flashcard_set"] || 0, target: 50, label: "csomag", task: "Hozz létre 50 flashcard csomagot." };
+      case "review_ritual": return { current: actionCounts["view_flashcards"] || 0, target: 100, label: "ismétlés", task: "Nézz át 100-szor egy kártyacsomagot." };
+      case "note_library": return { current: actionCounts["create_note"] || 0, target: 50, label: "jegyzet", task: "Írj 50 jegyzetet." };
+      case "pdf_master": return { current: actionCounts["pdf_analyzed"] || 0, target: 30, label: "PDF", task: "Elemezz 30 dokumentumot." };
+      case "ai_master": return { current: actionCounts["ai_generation"] || 0, target: 100, label: "generálás", task: "Használd 100-szor az AI generálást." };
+      case "tutor_devotee": return { current: actionCounts["tutor_message"] || 0, target: 500, label: "üzenet", task: "Küldj 500 üzenetet az AI tanárnak." };
+      case "social_star": return { current: actionCounts["send_message"] || 0, target: 50, label: "üzenet", task: "Küldj 50 üzenetet a platformon." };
+      case "community_voice": return { current: actionCounts["send_message"] || 0, target: 250, label: "üzenet", task: "Küldj 250 üzenetet a platformon." };
+      case "challenger": return { current: actionCounts["challenge_subscribe"] || 0, target: 1, label: "kihívás", task: "Iratkozz fel az első 30 napos kihívásra." };
+      case "challenge_veteran": return { current: actionCounts["challenge_subscribe"] || 0, target: 5, label: "kihívás", task: "Iratkozz fel 5 kihívásra." };
+      case "challenge_finisher": return { current: actionCounts["challenge_day_done"] || 0, target: 10, label: "nap", task: "Teljesíts 10 kihívás-napot a napi pontcél feletti eredménnyel." };
+      case "challenge_champion": return { current: actionCounts["challenge_day_done"] || 0, target: 30, label: "nap", task: "Teljesíts 30 kihívás-napot." };
+      case "badge_hunter": return { current: owned.size, target: 10, label: "küldetés", task: "Szerezz meg 10 küldetést." };
+      case "badge_collector": return { current: owned.size, target: 25, label: "küldetés", task: "Szerezz meg 25 küldetést." };
+      case "badge_legend": return { current: owned.size, target: 50, label: "küldetés", task: "Szerezz meg 50 küldetést." };
       default: return { current: 0, target: 1, label: "", task: "" };
     }
   };
@@ -132,54 +158,29 @@ const Achievements = () => {
         </div>
 
         <section className="mb-10">
-          <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+          <h2 className="text-2xl font-bold mb-1 flex items-center gap-2">
             <Award className="w-6 h-6 text-primary" />
-            Jelvények ({owned.size}/{allBadges.length})
+            Küldetések Könyve ({owned.size}/{allBadges.length})
           </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {allBadges.map((b, idx) => {
-              const earned = owned.has(b.id as BadgeId);
-              const p = progressOf(b.id as BadgeId);
-              const pct = Math.min(100, Math.round((p.current / p.target) * 100));
-              return (
-                <motion.button
-                  type="button"
-                  onClick={() => setSelected(b.id as BadgeId)}
-                  key={b.id}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: idx * 0.04 }}
-                  whileHover={{ scale: 1.03 }}
-                  className={`text-left rounded-2xl p-5 border-2 transition-all cursor-pointer ${
-                    earned
-                      ? `bg-gradient-to-br ${b.color} text-white border-white/30 shadow-lg`
-                      : "bg-muted/30 border-border hover:border-primary/40"
-                  }`}
-                >
-                  <div className={`text-5xl mb-2 text-center ${earned ? "" : "grayscale opacity-60"}`}>{b.emoji}</div>
-                  <div className="font-bold text-sm text-center">{b.name}</div>
-                  <div className={`text-xs mt-1 text-center ${earned ? "text-white/90" : "text-muted-foreground"}`}>{b.description}</div>
-                  {!earned && (
-                    <div className="mt-3 space-y-1">
-                      <Progress value={pct} className="h-1.5" />
-                      <div className="text-[10px] text-muted-foreground text-center font-medium">
-                        {p.current}/{p.target} {p.label}
-                      </div>
-                    </div>
-                  )}
-                </motion.button>
-              );
-            })}
-          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Nyisd ki a könyvet, lapozz benne, és kattints bármelyik küldetésre a 3D nézethez.
+            Minden megszerzett küldetés <span className="font-semibold text-primary">+{BADGE_REWARD_POINTS} pontot</span> ér!
+          </p>
+          <BadgeBook
+            badges={allBadges}
+            owned={owned as Set<BadgeId>}
+            progressOf={progressOf}
+            onOpen3D={(id) => setSelected(id)}
+          />
         </section>
 
         <Dialog open={!!selected} onOpenChange={(o) => !o && setSelected(null)}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md max-h-[92vh] overflow-y-auto">
             {selectedBadge && selectedProgress && (
               <>
                 <DialogHeader>
-                  <div className={`mx-auto w-20 h-20 rounded-2xl flex items-center justify-center text-5xl mb-3 bg-gradient-to-br ${selectedBadge.color} ${owned.has(selected!) ? "" : "grayscale opacity-60"}`}>
-                    {selectedBadge.emoji}
+                  <div className="pt-2 pb-4">
+                    <Badge3DViewer badge={selectedBadge} earned={owned.has(selected!)} />
                   </div>
                   <DialogTitle className="text-center text-2xl">{selectedBadge.name}</DialogTitle>
                   <DialogDescription className="text-center">{selectedBadge.description}</DialogDescription>
@@ -196,8 +197,11 @@ const Achievements = () => {
                       <span className="font-semibold">Haladás</span>
                       <span className="font-bold text-primary">{selectedProgress.current}/{selectedProgress.target} {selectedProgress.label}</span>
                     </div>
-                    <Progress value={selectedPct} className="h-3" />
+                    <Progress value={selectedPct} className="h-3 bg-muted" />
                     <div className="text-right text-xs text-muted-foreground mt-1">{selectedPct}%</div>
+                  </div>
+                  <div className="rounded-xl border border-dashed border-primary/40 p-3 text-center text-sm">
+                    Jutalom: <span className="font-bold text-primary">+{BADGE_REWARD_POINTS} pont</span>
                   </div>
                   {owned.has(selected!) && (
                     <div className="text-center text-sm font-bold text-emerald-600 dark:text-emerald-400">
@@ -209,6 +213,7 @@ const Achievements = () => {
             )}
           </DialogContent>
         </Dialog>
+
 
         <section>
           <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">

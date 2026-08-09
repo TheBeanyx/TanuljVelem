@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_awarded_challenges: {
+        Row: {
+          accepted_at: string | null
+          admin_id: string
+          created_at: string
+          description: string | null
+          id: string
+          points: number
+          status: string
+          subject: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          admin_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          status?: string
+          subject?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          admin_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          status?: string
+          subject?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_chat_folders: {
         Row: {
           created_at: string
