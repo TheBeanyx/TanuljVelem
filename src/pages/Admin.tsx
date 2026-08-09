@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
-import { BADGES, BadgeId } from "@/lib/gamification";
+import { BADGES, BadgeId, grantBadgeWithPoints } from "@/lib/gamification";
 import ReactMarkdown from "react-markdown";
 import { LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 
@@ -371,12 +371,18 @@ const Admin = () => {
   const grantBadge = async (badgeId: BadgeId) => {
     if (!selectedUser) return;
     if (userBadges.includes(badgeId)) return toast({ title: "Már megvan ez a küldetés" });
-    const { error } = await supabase.from("user_badges").insert({ user_id: selectedUser.id, badge_id: badgeId });
-    if (error) return toast({ title: "Hiba", description: error.message, variant: "destructive" });
+    const bonus = await grantBadgeWithPoints(selectedUser.id, badgeId);
+    if (bonus === null) return toast({ title: "Hiba", description: "Nem sikerült odaítélni a küldetést.", variant: "destructive" });
     const b = BADGES[badgeId];
-    await notify(user.id, selectedUser.id, `🏅 **Küldetés odaítélve!**\n\n${b.emoji} **${b.name}** — _${b.description}_\n\nGratulálunk!`);
+    await notify(
+      user.id,
+      selectedUser.id,
+      `🏅 **Küldetés odaítélve!**\n\n${b.emoji} **${b.name}** — _${b.description}_\n\n➕ **${bonus} pont** jóváírva a küldetésért. Gratulálunk!`,
+    );
+    toast({ title: "Küldetés odaítélve", description: `+${bonus} pont jóváírva` });
     loadUserDetail(selectedUser);
   };
+
 
   const revokeBadge = async (badgeId: string) => {
     if (!selectedUser) return;

@@ -176,9 +176,102 @@ const SCHEMAS: Record<string, any> = {
       additionalProperties: false,
     },
   },
+  crossword: {
+    name: "make_crossword",
+    description: "Mini keresztrejtvény: 4-6 meghatározás, mindegyikhez EGY szó. A megoldások egy kiemelt betűoszlopot adnak.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        instructions: { type: "string", description: "Rövid útmutató." },
+        rows: {
+          type: "array", minItems: 4, maxItems: 6,
+          items: {
+            type: "object",
+            properties: {
+              clue: { type: "string", description: "A meghatározás." },
+              answer: { type: "string", description: "EGY szó, csak betűk, ékezet megengedett, 3-10 karakter." },
+              highlight_index: { type: "integer", minimum: 0, description: "A kiemelt betű pozíciója (0-tól) a válaszban." },
+            },
+            required: ["clue", "answer", "highlight_index"],
+            additionalProperties: false,
+          },
+        },
+        solution_word: { type: "string", description: "A kiemelt betűkből összeálló szó (fentről lefelé)." },
+        est_minutes: { type: "integer", minimum: 3, maximum: 8 },
+        max_points: { type: "integer", minimum: 12, maximum: 22 },
+      },
+      required: ["title", "instructions", "rows", "solution_word", "est_minutes", "max_points"],
+      additionalProperties: false,
+    },
+  },
+  memory: {
+    name: "make_memory",
+    description: "Memóriajáték: 5-6 összetartozó pár (fogalom ↔ jelentés/példa), amit fordított kártyákon kell megtalálni.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        instructions: { type: "string" },
+        pairs: {
+          type: "array", minItems: 5, maxItems: 6,
+          items: {
+            type: "object",
+            properties: {
+              a: { type: "string", description: "Első kártya szövege (rövid, max 4 szó)." },
+              b: { type: "string", description: "A párja (rövid, max 4 szó)." },
+            },
+            required: ["a", "b"],
+            additionalProperties: false,
+          },
+        },
+        est_minutes: { type: "integer", minimum: 2, maximum: 6 },
+        max_points: { type: "integer", minimum: 10, maximum: 20 },
+      },
+      required: ["title", "instructions", "pairs", "est_minutes", "max_points"],
+      additionalProperties: false,
+    },
+  },
+  odd_one_out: {
+    name: "make_odd_one_out",
+    description: "Kakukktojás: 3-4 csoport, mindegyikben 4 elem, amiből egy nem illik oda.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        instructions: { type: "string" },
+        sets: {
+          type: "array", minItems: 3, maxItems: 4,
+          items: {
+            type: "object",
+            properties: {
+              items: { type: "array", minItems: 4, maxItems: 4, items: { type: "string" } },
+              odd_index: { type: "integer", minimum: 0, maximum: 3 },
+              reason: { type: "string", description: "Rövid indoklás, miért az a kakukktojás." },
+            },
+            required: ["items", "odd_index", "reason"],
+            additionalProperties: false,
+          },
+        },
+        est_minutes: { type: "integer", minimum: 2, maximum: 5 },
+        max_points: { type: "integer", minimum: 10, maximum: 18 },
+      },
+      required: ["title", "instructions", "sets", "est_minutes", "max_points"],
+      additionalProperties: false,
+    },
+  },
 };
 
-const CREATIVE_TYPES = ["sort_groups", "order_sequence", "true_false", "fill_blanks", "pick_many"];
+const CREATIVE_TYPES = [
+  "sort_groups",
+  "order_sequence",
+  "true_false",
+  "fill_blanks",
+  "pick_many",
+  "crossword",
+  "memory",
+  "odd_one_out",
+];
 
 const EVAL_TOOL = {
   name: "evaluate_submission",

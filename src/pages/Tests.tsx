@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import DashboardNav from "@/components/DashboardNav";
 import { supabase } from "@/integrations/supabase/client";
+import { awardPoints, POINTS, BADGES, BadgeId, BADGE_REWARD_POINTS } from "@/lib/gamification";
 
 const subjectColors: Record<string, string> = {
   Matematika: "bg-primary/10 text-primary",
@@ -70,7 +71,7 @@ const Tests = () => {
   const [tests, setTests] = useState<Test[]>([]);
   const [results, setResults] = useState<(TestResult & { test_title?: string; test_subject?: string })[]>([]);
   const [loading, setLoading] = useState(true);
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const userRole = profile?.role || "student";
   const { toast } = useToast();
 
@@ -158,8 +159,34 @@ const Tests = () => {
     await supabase.from("test_results").insert({
       test_id: takingTest.id, score, total_questions: total, percentage, answers: answersArray,
     });
+
+    // --- Pontok ---
+    if (user) {
+      const earned: string[] = [];
+      const base = await awardPoints(user.id, percentage === 100 ? "perfect_test" : "complete_test", {
+        test_id: takingTest.id, percentage,
+      });
+      earned.push(...base);
+      let bonusText = "";
+      if (percentage >= 95) {
+        const bonus = await awardPoints(user.id, "great_test", { test_id: takingTest.id, percentage });
+        earned.push(...bonus);
+        bonusText = ` +${POINTS.great_test} bónusz pont a 95% feletti eredményért!`;
+      }
+      toast({
+        title: percentage === 100 ? "🎯 Tökéletes teszt!" : "Teszt beküldve",
+        description: `+${percentage === 100 ? POINTS.perfect_test : POINTS.complete_test} pont.${bonusText}`,
+      });
+      if (earned.length) {
+        toast({
+          title: "🏅 Új küldetés megszerezve!",
+          description: `${earned.map((b) => BADGES[b as BadgeId]?.name || b).join(", ")} — mindegyikért +${BADGE_REWARD_POINTS} pont!`,
+        });
+      }
+    }
     fetchData();
   };
+
 
   const exitTest = () => { setTakingTest(null); setQuestions([]); setSubmitted(false); };
 

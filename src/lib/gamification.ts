@@ -30,7 +30,31 @@ export type BadgeId =
   | "early_bird"
   | "night_owl"
   | "weekend_warrior"
-  | "comeback_kid";
+  | "comeback_kid"
+  | "points_2500"
+  | "points_10000"
+  | "streak_60"
+  | "loyal_50"
+  | "loyal_200"
+  | "test_perfectionist"
+  | "test_centurion"
+  | "sharpshooter"
+  | "sniper"
+  | "card_shark"
+  | "review_ritual"
+  | "note_library"
+  | "pdf_master"
+  | "ai_master"
+  | "tutor_devotee"
+  | "social_star"
+  | "community_voice"
+  | "challenger"
+  | "challenge_veteran"
+  | "challenge_finisher"
+  | "challenge_champion"
+  | "badge_hunter"
+  | "badge_collector"
+  | "badge_legend";
 
 export interface BadgeDef {
   id: BadgeId;
@@ -71,11 +95,36 @@ export const BADGES: Record<BadgeId, BadgeDef> = {
   night_owl: { id: "night_owl", name: "Éjszakai Bagoly", description: "Tanultál este 10 után", emoji: "🦉", color: "from-indigo-600 to-purple-800" },
   weekend_warrior: { id: "weekend_warrior", name: "Hétvégi Harcos", description: "Tanultál szombaton és vasárnap is", emoji: "⚔️", color: "from-red-500 to-orange-600" },
   comeback_kid: { id: "comeback_kid", name: "Visszatérő", description: "7 napos szünet után visszatértél", emoji: "🔄", color: "from-emerald-500 to-teal-700" },
+  points_2500: { id: "points_2500", name: "2500 Pont", description: "Félúton az 5000 felé", emoji: "💠", color: "from-blue-500 to-violet-700" },
+  points_10000: { id: "points_10000", name: "10 000 Pont", description: "Legendás pontmennyiség", emoji: "🚀", color: "from-slate-700 to-indigo-900" },
+  streak_60: { id: "streak_60", name: "Két Hónap Sorozat", description: "60 nap megszakítás nélkül", emoji: "📅", color: "from-orange-500 to-rose-700" },
+  loyal_50: { id: "loyal_50", name: "Hűséges Tanuló", description: "50 napon léptél be a platformra", emoji: "🤝", color: "from-sky-400 to-cyan-600" },
+  loyal_200: { id: "loyal_200", name: "Örök Diák", description: "200 belépés a TanuljVelemre", emoji: "🕰️", color: "from-cyan-600 to-blue-800" },
+  test_perfectionist: { id: "test_perfectionist", name: "Perfekcionista", description: "5 tökéletes (100%) teszt", emoji: "✨", color: "from-pink-500 to-fuchsia-700" },
+  test_centurion: { id: "test_centurion", name: "Teszt Centurio", description: "50 teszt teljesítve", emoji: "🛡️", color: "from-rose-600 to-red-800" },
+  sharpshooter: { id: "sharpshooter", name: "Célzó", description: "Elérted a 95%-ot egy teszten", emoji: "🎯", color: "from-lime-400 to-emerald-600" },
+  sniper: { id: "sniper", name: "Mesterlövész", description: "10 teszt 95% felett", emoji: "🏹", color: "from-emerald-600 to-teal-800" },
+  card_shark: { id: "card_shark", name: "Kártya Cápa", description: "50 flashcard készlet", emoji: "🦈", color: "from-fuchsia-600 to-purple-800" },
+  review_ritual: { id: "review_ritual", name: "Ismétlés Mestere", description: "100-szor néztél át kártyákat", emoji: "🔁", color: "from-violet-400 to-indigo-600" },
+  note_library: { id: "note_library", name: "Jegyzetkönyvtár", description: "50 jegyzet a gyűjteményedben", emoji: "🗂️", color: "from-green-600 to-teal-800" },
+  pdf_master: { id: "pdf_master", name: "PDF Mester", description: "30 dokumentum elemzése", emoji: "🗃️", color: "from-teal-600 to-emerald-800" },
+  ai_master: { id: "ai_master", name: "AI Mester", description: "100 AI generálás", emoji: "🛰️", color: "from-blue-600 to-indigo-800" },
+  tutor_devotee: { id: "tutor_devotee", name: "Elkötelezett Kérdező", description: "500 üzenet az AI tanárnak", emoji: "🧑‍🏫", color: "from-purple-600 to-fuchsia-800" },
+  social_star: { id: "social_star", name: "Közösségi Csillag", description: "50 elküldött üzenet", emoji: "🌠", color: "from-pink-400 to-rose-600" },
+  community_voice: { id: "community_voice", name: "Közösség Hangja", description: "250 elküldött üzenet", emoji: "📣", color: "from-rose-500 to-pink-700" },
+  challenger: { id: "challenger", name: "Kihívó", description: "Feliratkoztál az első kihívásra", emoji: "⚡", color: "from-amber-400 to-yellow-600" },
+  challenge_veteran: { id: "challenge_veteran", name: "Kihívás Veterán", description: "5 kihívásra iratkoztál fel", emoji: "🎽", color: "from-yellow-500 to-amber-700" },
+  challenge_finisher: { id: "challenge_finisher", name: "Napi Teljesítő", description: "10 kihívás-napot teljesítettél", emoji: "✅", color: "from-emerald-400 to-green-600" },
+  challenge_champion: { id: "challenge_champion", name: "Kihívás Bajnok", description: "30 kihívás-nap teljesítve", emoji: "🥇", color: "from-amber-500 to-orange-700" },
+  badge_hunter: { id: "badge_hunter", name: "Küldetés Vadász", description: "10 küldetést szereztél meg", emoji: "🧭", color: "from-orange-400 to-amber-600" },
+  badge_collector: { id: "badge_collector", name: "Küldetés Gyűjtő", description: "25 küldetés a könyvedben", emoji: "🗺️", color: "from-amber-600 to-orange-800" },
+  badge_legend: { id: "badge_legend", name: "Küldetés Legenda", description: "50 küldetés — a könyv szinte tele!", emoji: "🏛️", color: "from-yellow-400 to-amber-700" },
 };
 
 export const POINTS = {
   daily_login: 5,
   complete_test: 20,
+  great_test: 5,
   perfect_test: 50,
   create_homework: 10,
   create_flashcard_set: 15,
@@ -86,9 +135,16 @@ export const POINTS = {
   send_message: 2,
   ai_generation: 8,
   tutor_message: 3,
+  challenge_subscribe: 5,
+  challenge_day_done: 10,
+  badge_earned: 25,
 } as const;
 
 export type PointAction = keyof typeof POINTS;
+
+/** Egy megszerzett küldetés (jelvény) ennyi pontot ér — bárhonnan kapod. */
+export const BADGE_REWARD_POINTS = POINTS.badge_earned;
+
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -162,15 +218,21 @@ export async function awardPoints(userId: string, action: PointAction, metadata:
   tryAdd("points_100", totalPoints >= 100);
   tryAdd("points_500", totalPoints >= 500);
   tryAdd("points_1000", totalPoints >= 1000);
+  tryAdd("points_2500", totalPoints >= 2500);
   tryAdd("points_5000", totalPoints >= 5000);
+  tryAdd("points_10000", totalPoints >= 10000);
   tryAdd("streak_3", currentStreak >= 3);
   tryAdd("streak_7", currentStreak >= 7);
   tryAdd("streak_14", currentStreak >= 14);
   tryAdd("streak_30", currentStreak >= 30);
+  tryAdd("streak_60", currentStreak >= 60);
   tryAdd("streak_100", currentStreak >= 100);
   if (action === "perfect_test") tryAdd("test_master", true);
+  if (action === "great_test") tryAdd("sharpshooter", true);
   if (action === "pdf_analyzed") tryAdd("pdf_explorer", true);
   if (action === "join_class") tryAdd("social_butterfly", true);
+  if (action === "challenge_subscribe") tryAdd("challenger", true);
+
 
   // Time-of-day badges
   const hour = new Date().getHours();
@@ -204,6 +266,11 @@ export async function awardPoints(userId: string, action: PointAction, metadata:
     return count ?? 0;
   };
 
+  if (action === "daily_login") {
+    const c = await countAction("daily_login");
+    tryAdd("loyal_50", c >= 50);
+    tryAdd("loyal_200", c >= 200);
+  }
   if (action === "create_homework") {
     const c = await countAction("create_homework");
     tryAdd("homework_hero", c >= 10);
@@ -213,41 +280,128 @@ export async function awardPoints(userId: string, action: PointAction, metadata:
     const c = await countAction("create_flashcard_set");
     tryAdd("flashcard_fan", c >= 5);
     tryAdd("flashcard_master", c >= 20);
+    tryAdd("card_shark", c >= 50);
+  }
+  if (action === "view_flashcards") {
+    const c = await countAction("view_flashcards");
+    tryAdd("review_ritual", c >= 100);
   }
   if (action === "create_note") {
     const c = await countAction("create_note");
     tryAdd("note_taker", c >= 5);
     tryAdd("note_scholar", c >= 20);
+    tryAdd("note_library", c >= 50);
   }
-  if (action === "complete_test" || action === "perfect_test") {
+  if (action === "complete_test" || action === "perfect_test" || action === "great_test") {
     const a = await countAction("complete_test");
     const b = await countAction("perfect_test");
     tryAdd("test_marathon", a + b >= 10);
+    tryAdd("test_centurion", a + b >= 50);
+    tryAdd("test_perfectionist", b >= 5);
+    const g = await countAction("great_test");
+    tryAdd("sniper", g >= 10);
   }
   if (action === "pdf_analyzed") {
     const c = await countAction("pdf_analyzed");
     tryAdd("pdf_pro", c >= 10);
+    tryAdd("pdf_master", c >= 30);
   }
   if (action === "join_class") {
     const c = await countAction("join_class");
     tryAdd("class_collector", c >= 5);
   }
+  if (action === "send_message") {
+    const c = await countAction("send_message");
+    tryAdd("social_star", c >= 50);
+    tryAdd("community_voice", c >= 250);
+  }
   if (action === "ai_generation") {
     const c = await countAction("ai_generation");
     tryAdd("ai_apprentice", c >= 1);
     tryAdd("ai_expert", c >= 25);
+    tryAdd("ai_master", c >= 100);
   }
   if (action === "tutor_message") {
     const c = await countAction("tutor_message");
     tryAdd("tutor_chat", c >= 1);
     tryAdd("chatterbox", c >= 100);
+    tryAdd("tutor_devotee", c >= 500);
   }
+  if (action === "challenge_subscribe") {
+    const c = await countAction("challenge_subscribe");
+    tryAdd("challenge_veteran", c >= 5);
+  }
+  if (action === "challenge_day_done") {
+    const c = await countAction("challenge_day_done");
+    tryAdd("challenge_finisher", c >= 10);
+    tryAdd("challenge_champion", c >= 30);
+  }
+
+  // Meta badges: küldetés-gyűjtő mérföldkövek (a most szerzettekkel együtt)
+  const totalOwnedAfter = owned.size + newBadges.length;
+  tryAdd("badge_hunter", totalOwnedAfter >= 10);
+  tryAdd("badge_collector", totalOwnedAfter >= 25);
+  tryAdd("badge_legend", totalOwnedAfter >= 50);
 
   if (newBadges.length) {
     await supabase
       .from("user_badges")
       .insert(newBadges.map((badge_id) => ({ user_id: userId, badge_id })));
+    // Minden megszerzett küldetés extra pontot ér
+    if (action !== "badge_earned") {
+      await addBadgeRewardPoints(userId, newBadges, "earned");
+    }
   }
 
   return newBadges;
+}
+
+/**
+ * Küldetésért járó pontok jóváírása (a jelvény már be van szúrva).
+ * `source`: "earned" = magától szerezte, "admin" = admin adta oda.
+ */
+export async function addBadgeRewardPoints(
+  userId: string,
+  badgeIds: BadgeId[],
+  source: "earned" | "admin" = "earned",
+): Promise<number> {
+  if (!badgeIds.length) return 0;
+  const bonus = BADGE_REWARD_POINTS * badgeIds.length;
+
+  const { data: existing } = await supabase
+    .from("user_stats")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  await supabase.from("user_stats").upsert({
+    user_id: userId,
+    total_points: (existing?.total_points ?? 0) + bonus,
+    current_streak: existing?.current_streak ?? 0,
+    longest_streak: existing?.longest_streak ?? 0,
+    last_activity_date: existing?.last_activity_date ?? todayISO(),
+  });
+
+  await supabase.from("point_events").insert(
+    badgeIds.map((badge_id) => ({
+      user_id: userId,
+      action: "badge_earned",
+      points: BADGE_REWARD_POINTS,
+      metadata: { badge_id, source } as never,
+    })),
+  );
+
+  return bonus;
+}
+
+/**
+ * Küldetés odaítélése kézzel (admin felület) — a felhasználó a pontot is megkapja.
+ * Visszaadja a jóváírt pontszámot, vagy null-t ha már megvolt a jelvény.
+ */
+export async function grantBadgeWithPoints(userId: string, badgeId: BadgeId): Promise<number | null> {
+  const { error } = await supabase
+    .from("user_badges")
+    .insert({ user_id: userId, badge_id: badgeId });
+  if (error) return null;
+  return await addBadgeRewardPoints(userId, [badgeId], "admin");
 }
