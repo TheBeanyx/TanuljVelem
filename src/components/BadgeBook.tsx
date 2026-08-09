@@ -213,7 +213,7 @@ function BookPage({
         <span className="text-[11px] font-semibold text-muted-foreground">{pageNumber}. oldal</span>
       </div>
 
-      <div className="grid flex-1 grid-cols-2 gap-2.5 sm:grid-cols-3">
+      <div className="grid auto-rows-min grid-cols-2 content-start gap-2.5 sm:grid-cols-3">
         {items.map((b, i) => {
           const earned = owned.has(b.id);
           const p = progressOf(b.id);
