@@ -197,7 +197,7 @@ const Achievements = () => {
                       <span className="font-semibold">Haladás</span>
                       <span className="font-bold text-primary">{selectedProgress.current}/{selectedProgress.target} {selectedProgress.label}</span>
                     </div>
-                    <Progress value={selectedPct} className="h-3" />
+                    <Progress value={selectedPct} className="h-3 bg-muted" />
                     <div className="text-right text-xs text-muted-foreground mt-1">{selectedPct}%</div>
                   </div>
                   <div className="rounded-xl border border-dashed border-primary/40 p-3 text-center text-sm">
