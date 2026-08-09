@@ -239,7 +239,7 @@ function BookPage({
               <span className="mt-1 text-[11px] font-bold leading-tight">{b.name}</span>
               {!earned && (
                 <span className="mt-1.5 w-full">
-                  <Progress value={pct} className="h-1" />
+                  <Progress value={pct} className="h-1 bg-muted" />
                   <span className="mt-0.5 block text-[9px] font-medium text-muted-foreground">
                     {p.current}/{p.target}
                   </span>
