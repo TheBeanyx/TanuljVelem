@@ -123,9 +123,20 @@ export default function Challenges() {
       daily_goal_points: dg, total_goal_points: tg,
     });
     if (error) toast.error("Nem sikerült feliratkozni.");
-    else { toast.success("Sikeres feliratkozás! 🎯"); setOpen(false); load(); }
+    else {
+      const newBadges = await awardPoints(user.id, "challenge_subscribe", { subject, grade: Number(grade) });
+      toast.success(`Sikeres feliratkozás! 🎯 +${POINTS.challenge_subscribe} pont`);
+      if (newBadges.length) {
+        toast.success(
+          `🏅 Új küldetés: ${newBadges.map((b) => BADGES[b].name).join(", ")} (+${BADGE_REWARD_POINTS} pont / küldetés)`
+        );
+      }
+      setOpen(false);
+      load();
+    }
     setCreating(false);
   };
+
 
   const cancelSub = async (id: string) => {
     if (!confirm("Biztos lemondod ezt a kihívást?")) return;
