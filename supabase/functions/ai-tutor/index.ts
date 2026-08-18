@@ -13,8 +13,23 @@ STÍLUS:
 - A válasz hossza igazodjon a kérdéshez. Rövid kérdésre rövid válasz, köszönésre csak köszönj vissza.
 - Csak akkor magyarázz hosszan/példákkal, ha témakör/fogalom magyarázatot kérnek.
 - Ne ismételd magad, ne tegyél bevezetőt és záró összefoglalót.
-- Markdown formázás engedélyezett (címek, listák, **kiemelés**, kódblokkok, képletek).
-- Légy barátságos, bátorító, kérdezz vissza ha kell.`;
+- Légy barátságos, bátorító, kérdezz vissza ha kell.
+
+FORMÁZÁS (GitHub-flavored Markdown támogatott):
+- Használj **kiemelést**, listákat, címeket, idézeteket, feladatlistákat (- [ ]).
+- TÁBLÁZATOKAT bátran használj összehasonlításhoz, adatokhoz, ragozáshoz, képletekhez (| fejléc | ... | szintaxis).
+- Kódot nyelv-jelöléssel adj meg (\`\`\`python, \`\`\`js).
+
+INTERAKTÍV TARTALOM ÉS ANIMÁCIÓK:
+- Ha a magyarázat szemléltetést, animációt, diagramot, szimulációt vagy interaktív játékot igényel (vagy a diák kéri),
+  írj EGY \`\`\`html kódblokkot: teljes, önálló HTML + CSS + <script> (külső könyvtár nélkül).
+  Ezt a platform automatikusan lefuttatja és megjeleníti a diáknak.
+- Az animációk legyenek CSS/canvas alapúak, reszponzívak (max-width:100%), magyar feliratokkal.
+- Egy válaszban legfeljebb 1-2 ilyen blokk legyen, és mellé rövid magyarázat.
+
+LÉTREHOZÁS:
+- Ha a diák tesztet, kvízt, igaz/hamis feladatot, jegyzetet vagy flashcardot kér, mondd el neki hogy a
+  "Létrehozás" gombbal (fent) egy kattintással elmentheted neki — vagy ha már megadta a témát, foglald össze röviden mit fogsz készíteni.`;
 
 const TEST_TOOL = {
   name: "create_test",
@@ -26,7 +41,7 @@ const TEST_TOOL = {
       subject: { type: "string", description: "Tantárgy neve, pl. Matematika, Történelem" },
       grade: { type: "integer", minimum: 1, maximum: 12 },
       questions: {
-        type: "array", minItems: 5, maxItems: 10,
+        type: "array", minItems: 5, maxItems: 12,
         items: {
           type: "object",
           properties: {
@@ -48,80 +63,224 @@ const TEST_TOOL = {
   },
 };
 
+const TF_TOOL = {
+  name: "create_true_false",
+  description: "Készíts igaz/hamis feladatsort a megadott témából.",
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      subject: { type: "string" },
+      grade: { type: "integer", minimum: 1, maximum: 12 },
+      statements: {
+        type: "array", minItems: 6, maxItems: 12,
+        items: {
+          type: "object",
+          properties: {
+            statement: { type: "string" },
+            is_true: { type: "boolean" },
+            explanation: { type: "string" },
+          },
+          required: ["statement", "is_true", "explanation"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["title", "subject", "grade", "statements"],
+    additionalProperties: false,
+  },
+};
+
+const NOTE_TOOL = {
+  name: "create_note",
+  description: "Készíts egy tanulási jegyzetet/vázlatot markdownban (címek, listák, táblázatok engedélyezettek).",
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      markdown: { type: "string", description: "A jegyzet teljes tartalma markdownban, táblázatokkal ahol hasznos." },
+    },
+    required: ["title", "markdown"],
+    additionalProperties: false,
+  },
+};
+
+const FLASHCARD_TOOL = {
+  name: "create_flashcards",
+  description: "Készíts tanulókártyákat (flashcard) a témából.",
+  parameters: {
+    type: "object",
+    properties: {
+      title: { type: "string" },
+      cards: {
+        type: "array", minItems: 6, maxItems: 20,
+        items: {
+          type: "object",
+          properties: {
+            front: { type: "string", description: "Kérdés / fogalom (rövid)." },
+            back: { type: "string", description: "Válasz / meghatározás (rövid)." },
+            emoji: { type: "string", description: "Egy illő emoji." },
+          },
+          required: ["front", "back", "emoji"],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ["title", "cards"],
+    additionalProperties: false,
+  },
+};
+
+const MODEL = "google/gemini-3-flash-preview";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const body = await req.json();
-    const { mode, messages, topic, grade, subject, creator_name } = body;
+    const { mode, messages, topic, grade, subject, creator_name, user_id, difficulty } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
 
-    // ===== TEST GENERATION =====
-    if (mode === "test") {
-      if (!topic || typeof topic !== "string" || topic.trim().length < 2) {
-        return json({ error: "Adj meg egy témát." }, 400);
-      }
-      const g = Number.isFinite(grade) ? Math.min(12, Math.max(1, Number(grade))) : 8;
-      const subj = typeof subject === "string" && subject.trim() ? subject : "Általános";
+    const admin = () => createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
 
+    const g = Number.isFinite(grade) ? Math.min(12, Math.max(1, Number(grade))) : 8;
+    const subj = typeof subject === "string" && subject.trim() ? subject : "Általános";
+    const diff = ["easy", "medium", "hard"].includes(difficulty) ? difficulty : "medium";
+
+    const needTopic = ["test", "true_false", "note", "flashcards"].includes(mode);
+    if (needTopic && (!topic || typeof topic !== "string" || topic.trim().length < 2)) {
+      return json({ error: "Adj meg egy témát." }, 400);
+    }
+
+    const callTool = async (tool: any, prompt: string) => {
       const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "google/gemini-3-flash-preview",
+          model: MODEL,
           messages: [
             { role: "system", content: SYSTEM },
-            { role: "user", content: `Készíts ${g}. évfolyamos gyakorlótesztet a következő témáról: "${topic}". Tantárgy: ${subj}. 6-8 kérdés, 4 válaszlehetőséggel és rövid magyarázattal.` },
+            { role: "user", content: prompt },
           ],
-          tools: [{ type: "function", function: TEST_TOOL }],
-          tool_choice: { type: "function", function: { name: "create_test" } },
+          tools: [{ type: "function", function: tool }],
+          tool_choice: { type: "function", function: { name: tool.name } },
         }),
       });
-
-      if (!r.ok) return upstreamError(r);
+      if (!r.ok) return { err: await upstreamError(r) };
       const data = await r.json();
       const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-      if (!args) return json({ error: "Nem sikerült tesztet generálni." }, 500);
+      if (!args) return { err: json({ error: "Nem sikerült generálni." }, 500) };
+      try { return { parsed: JSON.parse(args) }; } catch { return { err: json({ error: "Hibás AI válasz." }, 500) }; }
+    };
 
-      let parsed: any;
-      try { parsed = JSON.parse(args); } catch { return json({ error: "Hibás AI válasz." }, 500); }
-
-      // Save to tests table
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      );
-
+    const saveTest = async (title: string, questions: any[]) => {
+      const supabase = admin();
       const { data: test, error: testErr } = await supabase.from("tests").insert({
-        title: parsed.title,
-        subject: parsed.subject || subj,
-        grade: parsed.grade || g,
+        title,
+        subject: subj,
+        grade: g,
         time_limit_minutes: 30,
         creator_name: creator_name || "AI Tanár",
         is_system: false,
       }).select().single();
-
       if (testErr || !test) {
         console.error("test insert", testErr);
-        return json({ error: "Nem sikerült menteni a tesztet." }, 500);
+        return null;
       }
+      await supabase.from("test_questions").insert(questions.map((q, i) => ({ ...q, test_id: test.id, sort_order: i + 1 })));
+      return test.id as string;
+    };
 
-      const qRows = (parsed.questions || []).map((q: any, i: number) => ({
-        test_id: test.id,
+    // ===== TEST GENERATION =====
+    if (mode === "test") {
+      const { parsed, err } = await callTool(
+        TEST_TOOL,
+        `Készíts ${g}. évfolyamos, ${diff} nehézségű gyakorlótesztet a következő témáról: "${topic}". Tantárgy: ${subj}. 8-10 kérdés, 4 válaszlehetőséggel és rövid magyarázattal.`,
+      );
+      if (err) return err;
+      const testId = await saveTest(parsed.title, (parsed.questions || []).map((q: any) => ({
         question: q.question,
         question_type: "multiple_choice",
-        option_a: q.option_a,
-        option_b: q.option_b,
-        option_c: q.option_c,
-        option_d: q.option_d,
+        option_a: q.option_a, option_b: q.option_b, option_c: q.option_c, option_d: q.option_d,
         correct_answer: q.correct_answer,
         explanation: q.explanation,
-        sort_order: i + 1,
-      }));
-      await supabase.from("test_questions").insert(qRows);
+      })));
+      if (!testId) return json({ error: "Nem sikerült menteni a tesztet." }, 500);
+      return json({ mode, test_id: testId, title: parsed.title, count: (parsed.questions || []).length });
+    }
 
-      return json({ mode: "test", test_id: test.id, title: parsed.title, count: qRows.length });
+    // ===== TRUE / FALSE =====
+    if (mode === "true_false") {
+      const { parsed, err } = await callTool(
+        TF_TOOL,
+        `Készíts ${g}. évfolyamos, ${diff} nehézségű IGAZ/HAMIS feladatsort a témáról: "${topic}". Tantárgy: ${subj}. 8-10 állítás, felé-felé igaz és hamis, rövid magyarázattal.`,
+      );
+      if (err) return err;
+      const testId = await saveTest(parsed.title, (parsed.statements || []).map((s: any) => ({
+        question: s.statement,
+        question_type: "true_false",
+        option_a: "Igaz", option_b: "Hamis", option_c: "-", option_d: "-",
+        correct_answer: s.is_true ? "A" : "B",
+        explanation: s.explanation,
+      })));
+      if (!testId) return json({ error: "Nem sikerült menteni." }, 500);
+      return json({ mode, test_id: testId, title: parsed.title, count: (parsed.statements || []).length });
+    }
+
+    // ===== NOTE =====
+    if (mode === "note") {
+      if (!user_id) return json({ error: "Jelentkezz be." }, 401);
+      const { parsed, err } = await callTool(
+        NOTE_TOOL,
+        `Készíts ${g}. évfolyamos, ${diff} nehézségű tanulási jegyzetet/vázlatot a témáról: "${topic}". Tantárgy: ${subj}. Használj címeket, listákat és legalább egy táblázatot ha értelmes. Magyarul.`,
+      );
+      if (err) return err;
+      const supabase = admin();
+      const { data, error } = await supabase.from("learn_notes").insert({
+        owner_id: user_id,
+        title: parsed.title,
+        markdown: parsed.markdown,
+        topic,
+        grade: g,
+        visibility: "private",
+        length: "medium",
+        difficulty: diff,
+        source: "ai",
+      }).select().single();
+      if (error) { console.error(error); return json({ error: "Nem sikerült menteni a jegyzetet." }, 500); }
+      return json({ mode, note_id: data.id, title: parsed.title });
+    }
+
+    // ===== FLASHCARDS =====
+    if (mode === "flashcards") {
+      if (!user_id) return json({ error: "Jelentkezz be." }, 401);
+      const { parsed, err } = await callTool(
+        FLASHCARD_TOOL,
+        `Készíts ${g}. évfolyamos, ${diff} nehézségű tanulókártyákat (flashcard) a témáról: "${topic}". Tantárgy: ${subj}. 10-14 kártya, rövid elő- és hátlappal. Magyarul.`,
+      );
+      if (err) return err;
+      const supabase = admin();
+      const { data: set, error } = await supabase.from("flashcard_sets").insert({
+        owner_id: user_id,
+        title: parsed.title,
+        topic,
+        grade: g,
+        visibility: "private",
+        length: "medium",
+        difficulty: diff,
+        source: "ai",
+      }).select().single();
+      if (error || !set) { console.error(error); return json({ error: "Nem sikerült menteni a szettet." }, 500); }
+      await supabase.from("flashcard_items").insert(
+        (parsed.cards || []).map((c: any, i: number) => ({
+          set_id: set.id, front: c.front, back: c.back, emoji: c.emoji, sort_order: i + 1,
+        })),
+      );
+      return json({ mode, set_id: set.id, title: parsed.title, count: (parsed.cards || []).length });
     }
 
     // ===== EXPLAIN / CHAT =====
@@ -131,7 +290,7 @@ serve(async (req) => {
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: MODEL,
         messages: [
           { role: "system", content: SYSTEM },
           ...messages.slice(-20).map((m: { role: string; content: string }) => ({ role: m.role, content: m.content })),

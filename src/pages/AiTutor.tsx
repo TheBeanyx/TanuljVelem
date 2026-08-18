@@ -19,7 +19,18 @@ type FolderRow = { id: string; name: string };
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 const SUBJECTS = ["Matematika","Magyar","Történelem","Földrajz","Biológia","Fizika","Kémia","Angol","Német","Informatika","Egyéb"];
 const TUTOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
-const WELCOME: Msg = { role: "assistant", content: "Szia! 👋 Én vagyok az AI tanárod. Mondj egy **tantárgyat** vagy **témakört**, és elmagyarázom — vagy kérj tőlem egy **gyakorlótesztet**, amit elmentek a Tesztek közé! 📚" };
+const GEN_MODES = [
+  { value: "test", label: "Kvíz / dolgozat" },
+  { value: "true_false", label: "Igaz–hamis" },
+  { value: "flashcards", label: "Flashcard szett" },
+  { value: "note", label: "Jegyzet / vázlat" },
+];
+const DIFFS = [
+  { value: "easy", label: "Könnyű" },
+  { value: "medium", label: "Közepes" },
+  { value: "hard", label: "Nehéz" },
+];
+const WELCOME: Msg = { role: "assistant", content: "Szia! 👋 Én vagyok az AI tanárod. Mondj egy **tantárgyat** vagy **témakört**, és elmagyarázom — akár **táblázattal**, **animációval** vagy **interaktív szemléltetéssel**. A *Létrehozás* gombbal kvízt, igaz–hamis feladatot, flashcardot vagy jegyzetet is kérhetsz! 📚" };
 
 const db: any = supabase;
 
@@ -207,15 +218,26 @@ const AiTutor = () => {
     setGenLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-tutor", {
-        body: { mode: "test", topic: testTopic, subject: testSubject, grade: parseInt(testGrade), creator_name: profile?.display_name || profile?.username || "AI Tanár" },
+        body: {
+          mode: genMode,
+          topic: testTopic,
+          subject: testSubject,
+          grade: parseInt(testGrade),
+          difficulty: genDifficulty,
+          user_id: user?.id,
+          creator_name: profile?.display_name || profile?.username || "AI Tanár",
+        },
       });
-      if (error || !data?.test_id) {
-        toast({ title: "Hiba a teszt generálásnál", description: data?.error || error?.message, variant: "destructive" });
+      const ok = data && !data.error && (data.test_id || data.note_id || data.set_id);
+      if (error || !ok) {
+        toast({ title: "Hiba a generálásnál", description: data?.error || error?.message, variant: "destructive" });
         return;
       }
-      toast({ title: "Teszt elkészült! 🎉", description: `${data.count} kérdés mentve a Tesztek közé.` });
+      const info = GEN_MODES.find((m) => m.value === genMode)!;
+      const link = data.test_id ? "[Tesztek](/tests)" : data.note_id ? "[Jegyzetek](/notes)" : "[Tanulás](/learn)";
+      toast({ title: `${info.label} elkész! 🎉`, description: data.count ? `${data.count} elem elmentve.` : "Elmentve." });
       award("ai_generation");
-      setMessages((prev) => [...prev, { role: "assistant", content: `✅ **Teszt elkészült:** *${data.title}* (${data.count} kérdés). Megtalálod a [Tesztek](/tests) között!` }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: `✅ **${info.label} elkészült:** *${data.title}*${data.count ? ` (${data.count} elem)` : ""}. Megtalálod itt: ${link}` }]);
       setGenTestOpen(false);
       setTestTopic("");
     } catch (e) {
@@ -224,7 +246,12 @@ const AiTutor = () => {
     } finally { setGenLoading(false); }
   };
 
-  const quickPrompts = ["Magyarázd el a Pitagorasz-tételt","Mi a fotoszintézis?","Foglald össze a 2. világháború kezdetét","Mik a szófajok?"];
+  const quickPrompts = [
+    "Magyarázd el a Pitagorasz-tételt táblázattal",
+    "Mutasd be animációval a fotoszintézist",
+    "Készíts egy interaktív számegyenes játékot",
+    "Mik a szófajok? Táblázatban kérem",
+  ];
 
   const rootThreads = threads.filter((t) => !t.folder_id);
   const threadsByFolder = (fid: string) => threads.filter((t) => t.folder_id === fid);
