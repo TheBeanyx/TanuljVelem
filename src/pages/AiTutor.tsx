@@ -207,15 +207,26 @@ const AiTutor = () => {
     setGenLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke("ai-tutor", {
-        body: { mode: "test", topic: testTopic, subject: testSubject, grade: parseInt(testGrade), creator_name: profile?.display_name || profile?.username || "AI Tanár" },
+        body: {
+          mode: genMode,
+          topic: testTopic,
+          subject: testSubject,
+          grade: parseInt(testGrade),
+          difficulty: genDifficulty,
+          user_id: user?.id,
+          creator_name: profile?.display_name || profile?.username || "AI Tanár",
+        },
       });
-      if (error || !data?.test_id) {
-        toast({ title: "Hiba a teszt generálásnál", description: data?.error || error?.message, variant: "destructive" });
+      const ok = data && !data.error && (data.test_id || data.note_id || data.set_id);
+      if (error || !ok) {
+        toast({ title: "Hiba a generálásnál", description: data?.error || error?.message, variant: "destructive" });
         return;
       }
-      toast({ title: "Teszt elkészült! 🎉", description: `${data.count} kérdés mentve a Tesztek közé.` });
+      const info = GEN_MODES.find((m) => m.value === genMode)!;
+      const link = data.test_id ? "[Tesztek](/tests)" : data.note_id ? "[Jegyzetek](/notes)" : "[Tanulás](/learn)";
+      toast({ title: `${info.label} elkész! 🎉`, description: data.count ? `${data.count} elem elmentve.` : "Elmentve." });
       award("ai_generation");
-      setMessages((prev) => [...prev, { role: "assistant", content: `✅ **Teszt elkészült:** *${data.title}* (${data.count} kérdés). Megtalálod a [Tesztek](/tests) között!` }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: `✅ **${info.label} elkészült:** *${data.title}*${data.count ? ` (${data.count} elem)` : ""}. Megtalálod itt: ${link}` }]);
       setGenTestOpen(false);
       setTestTopic("");
     } catch (e) {
@@ -224,7 +235,12 @@ const AiTutor = () => {
     } finally { setGenLoading(false); }
   };
 
-  const quickPrompts = ["Magyarázd el a Pitagorasz-tételt","Mi a fotoszintézis?","Foglald össze a 2. világháború kezdetét","Mik a szófajok?"];
+  const quickPrompts = [
+    "Magyarázd el a Pitagorasz-tételt táblázattal",
+    "Mutasd be animációval a fotoszintézist",
+    "Készíts egy interaktív számegyenes játékot",
+    "Mik a szófajok? Táblázatban kérem",
+  ];
 
   const rootThreads = threads.filter((t) => !t.folder_id);
   const threadsByFolder = (fid: string) => threads.filter((t) => t.folder_id === fid);
