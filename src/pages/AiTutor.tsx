@@ -19,7 +19,18 @@ type FolderRow = { id: string; name: string };
 const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 const SUBJECTS = ["Matematika","Magyar","Történelem","Földrajz","Biológia","Fizika","Kémia","Angol","Német","Informatika","Egyéb"];
 const TUTOR_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-tutor`;
-const WELCOME: Msg = { role: "assistant", content: "Szia! 👋 Én vagyok az AI tanárod. Mondj egy **tantárgyat** vagy **témakört**, és elmagyarázom — vagy kérj tőlem egy **gyakorlótesztet**, amit elmentek a Tesztek közé! 📚" };
+const GEN_MODES = [
+  { value: "test", label: "Kvíz / dolgozat" },
+  { value: "true_false", label: "Igaz–hamis" },
+  { value: "flashcards", label: "Flashcard szett" },
+  { value: "note", label: "Jegyzet / vázlat" },
+];
+const DIFFS = [
+  { value: "easy", label: "Könnyű" },
+  { value: "medium", label: "Közepes" },
+  { value: "hard", label: "Nehéz" },
+];
+const WELCOME: Msg = { role: "assistant", content: "Szia! 👋 Én vagyok az AI tanárod. Mondj egy **tantárgyat** vagy **témakört**, és elmagyarázom — akár **táblázattal**, **animációval** vagy **interaktív szemléltetéssel**. A *Létrehozás* gombbal kvízt, igaz–hamis feladatot, flashcardot vagy jegyzetet is kérhetsz! 📚" };
 
 const db: any = supabase;
 
