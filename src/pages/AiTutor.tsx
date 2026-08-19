@@ -369,9 +369,7 @@ const AiTutor = () => {
                   </div>
                   <div className={`max-w-[85%] rounded-2xl px-3 sm:px-4 py-2 sm:py-2.5 ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1.5 prose-headings:my-2 break-words">
-                        <ReactMarkdown>{m.content || "…"}</ReactMarkdown>
-                      </div>
+                      <RichMarkdown content={m.content || "…"} />
                     ) : (
                       <div className="whitespace-pre-wrap text-sm break-words">{m.content}</div>
                     )}
