@@ -148,9 +148,7 @@ const AiAssistant = () => {
                     }`}
                   >
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
-                      </div>
+                      <RichMarkdown content={m.content} />
                     ) : (
                       <p className="whitespace-pre-wrap">{m.content}</p>
                     )}
