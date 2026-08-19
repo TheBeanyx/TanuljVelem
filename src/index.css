@@ -108,10 +108,22 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground font-nunito antialiased;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  #root {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 }
+
 
 @layer utilities {
   .gradient-hero {
