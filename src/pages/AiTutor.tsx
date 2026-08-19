@@ -321,15 +321,19 @@ const AiTutor = () => {
             <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Magyarázat, kérdés-felelet vagy generált gyakorlóteszt egy helyen.</p>
           </div>
           <Button onClick={() => setGenTestOpen((v) => !v)} size="sm" className="rounded-full gap-1 sm:gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shrink-0">
-            <ClipboardList className="w-4 h-4" /> <span className="hidden sm:inline">Teszt generálás</span>
+            <ClipboardList className="w-4 h-4" /> <span className="hidden sm:inline">Létrehozás</span>
           </Button>
         </div>
 
         {genTestOpen && (
           <Card className="p-4 mb-4 border-2 border-primary/30 bg-primary/5">
-            <div className="flex items-center gap-2 mb-3 font-bold"><Sparkles className="w-4 h-4 text-primary" /> Új gyakorlóteszt</div>
-            <div className="grid sm:grid-cols-3 gap-2 mb-3">
-              <Input placeholder="Téma (pl. törtek)" value={testTopic} onChange={(e) => setTestTopic(e.target.value)} className="rounded-xl sm:col-span-3" />
+            <div className="flex items-center gap-2 mb-3 font-bold"><Sparkles className="w-4 h-4 text-primary" /> Tartalom létrehozása</div>
+            <div className="grid sm:grid-cols-4 gap-2 mb-3">
+              <Input placeholder="Téma (pl. törtek)" value={testTopic} onChange={(e) => setTestTopic(e.target.value)} className="rounded-xl sm:col-span-4" />
+              <Select value={genMode} onValueChange={setGenMode}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>{GEN_MODES.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}</SelectContent>
+              </Select>
               <Select value={testSubject} onValueChange={setTestSubject}>
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{SUBJECTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
@@ -338,11 +342,15 @@ const AiTutor = () => {
                 <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>{GRADES.map((g) => <SelectItem key={g} value={String(g)}>{g}. évf.</SelectItem>)}</SelectContent>
               </Select>
-              <Button onClick={generateTest} disabled={genLoading} className="rounded-xl">
+              <Select value={genDifficulty} onValueChange={setGenDifficulty}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                <SelectContent>{DIFFS.map((d) => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}</SelectContent>
+              </Select>
+              <Button onClick={generateTest} disabled={genLoading} className="rounded-xl sm:col-span-4">
                 {genLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Generálás <ArrowRight className="w-4 h-4 ml-1" /></>}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">A kész teszt automatikusan a <Link to="/tests" className="underline text-primary">Tesztek</Link> oldalra kerül.</p>
+            <p className="text-xs text-muted-foreground">A kész tartalom automatikusan a <Link to="/tests" className="underline text-primary">Tesztek</Link>, <Link to="/notes" className="underline text-primary">Jegyzetek</Link> vagy <Link to="/learn" className="underline text-primary">Tanulás</Link> oldalra kerül.</p>
           </Card>
         )}
 
