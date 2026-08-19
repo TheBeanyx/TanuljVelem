@@ -3,7 +3,7 @@ import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
+import RichMarkdown from "@/components/RichMarkdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -99,13 +99,13 @@ const AiAssistant = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
-            className="fixed bottom-6 right-6 z-50"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40"
           >
             <Button
               onClick={() => setOpen(true)}
-              className="w-14 h-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 p-0"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 p-0"
             >
-              <Bot className="w-6 h-6" />
+              <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
             </Button>
           </motion.div>
         )}
@@ -118,7 +118,7 @@ const AiAssistant = () => {
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-2rem)] h-[520px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[calc(100vw-2rem)] sm:w-[380px] h-[70vh] sm:h-[520px] max-h-[calc(100vh-6rem)] bg-card border border-border rounded-2xl shadow-2xl flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
@@ -148,9 +148,7 @@ const AiAssistant = () => {
                     }`}
                   >
                     {m.role === "assistant" ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:my-1 [&>ul]:my-1 [&>ol]:my-1">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
-                      </div>
+                      <RichMarkdown content={m.content} />
                     ) : (
                       <p className="whitespace-pre-wrap">{m.content}</p>
                     )}
