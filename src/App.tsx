@@ -33,8 +33,14 @@ import Admin from "./pages/Admin";
 import StudyGroups from "./pages/StudyGroups";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "./components/AiAssistant";
+import useChallengeReminder from "./hooks/useChallengeReminder";
 
 const queryClient = new QueryClient();
+
+const AppShell = () => {
+  useChallengeReminder();
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -42,6 +48,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <AppShell />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
