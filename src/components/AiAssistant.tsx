@@ -3,7 +3,7 @@ import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
-import ReactMarkdown from "react-markdown";
+import RichMarkdown from "@/components/RichMarkdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
