@@ -142,7 +142,7 @@ const DashboardNav = () => {
           })}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <StreakIndicator />
           <Link to="/achievements" aria-label="Eredmények">
             <Button variant="ghost" size="icon" className="rounded-full text-amber-500">
