@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useGamification } from "@/hooks/useGamification";
 import { supabase } from "@/integrations/supabase/client";
-import ReactMarkdown from "react-markdown";
+import RichMarkdown from "@/components/RichMarkdown";
 
 type Msg = { role: "user" | "assistant"; content: string };
 type Thread = { id: string; title: string; folder_id: string | null; updated_at: string };
