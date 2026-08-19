@@ -52,6 +52,8 @@ const AiTutor = () => {
   const [testTopic, setTestTopic] = useState("");
   const [testSubject, setTestSubject] = useState("Matematika");
   const [testGrade, setTestGrade] = useState("8");
+  const [genMode, setGenMode] = useState("test");
+  const [genDifficulty, setGenDifficulty] = useState("medium");
   const [genLoading, setGenLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
