@@ -71,15 +71,16 @@ const DashboardNav = () => {
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-        <Link to="/dashboard" className="flex items-center gap-2">
+      <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-1 sm:gap-2 max-w-full">
+        <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
           <div className="w-9 h-9 rounded-lg gradient-hero flex items-center justify-center">
             <GraduationCap className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-extrabold hidden sm:block">TanuljVelem</span>
+          <span className="text-lg font-extrabold hidden lg:block">TanuljVelem</span>
         </Link>
 
-        <nav className="flex items-center gap-1">
+        <nav className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+
           {navItems.map((item) => {
             const active = location.pathname === item.to;
             const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
