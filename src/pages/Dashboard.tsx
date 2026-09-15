@@ -116,6 +116,15 @@ const Dashboard = () => {
     setMyClasses(unique);
   };
 
+  const fetchTests = async () => {
+    const { data } = await supabase
+      .from("tests")
+      .select("id, subject, title, grade, created_at")
+      .eq("is_system", false)
+      .order("created_at", { ascending: false });
+    setTests((data || []) as TestItem[]);
+  };
+
   const fetchHomeworks = async () => {
     setLoading(true);
     const { data, error } = await supabase
