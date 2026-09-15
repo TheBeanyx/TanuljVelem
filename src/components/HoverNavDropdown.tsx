@@ -1,7 +1,8 @@
-import { useRef, useState, ReactNode } from "react";
+import { useRef, useState, ReactNode, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LucideIcon } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DropdownItem {
   to: string;
