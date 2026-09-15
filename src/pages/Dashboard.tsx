@@ -45,10 +45,13 @@ type ClassItem = {
   name: string;
 };
 
-const demoTests = [
-  { id: 1, subject: "Matematika", title: "Félév végi dolgozat", date: "Jún. 20", score: null },
-  { id: 2, subject: "Angol", title: "Grammar teszt", date: "Jún. 18", score: "85%" },
-];
+type TestItem = {
+  id: string;
+  subject: string;
+  title: string;
+  grade: number;
+  created_at: string;
+};
 
 function getDeadlineInfo(deadline: string | null) {
   if (!deadline) return { label: "Nincs határidő", color: "bg-muted text-muted-foreground" };
@@ -67,6 +70,7 @@ function getDeadlineInfo(deadline: string | null) {
 const Dashboard = () => {
   const [tab, setTab] = useState("homework");
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
+  const [tests, setTests] = useState<TestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -111,6 +115,15 @@ const Dashboard = () => {
     // Deduplicate
     const unique = Array.from(new Map(all.map((c) => [c.id, c])).values());
     setMyClasses(unique);
+  };
+
+  const fetchTests = async () => {
+    const { data } = await supabase
+      .from("tests")
+      .select("id, subject, title, grade, created_at")
+      .eq("is_system", false)
+      .order("created_at", { ascending: false });
+    setTests((data || []) as TestItem[]);
   };
 
   const fetchHomeworks = async () => {
