@@ -45,10 +45,13 @@ type ClassItem = {
   name: string;
 };
 
-const demoTests = [
-  { id: 1, subject: "Matematika", title: "Félév végi dolgozat", date: "Jún. 20", score: null },
-  { id: 2, subject: "Angol", title: "Grammar teszt", date: "Jún. 18", score: "85%" },
-];
+type TestItem = {
+  id: string;
+  subject: string;
+  title: string;
+  grade: number;
+  created_at: string;
+};
 
 function getDeadlineInfo(deadline: string | null) {
   if (!deadline) return { label: "Nincs határidő", color: "bg-muted text-muted-foreground" };
