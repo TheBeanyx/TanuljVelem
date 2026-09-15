@@ -70,6 +70,7 @@ function getDeadlineInfo(deadline: string | null) {
 const Dashboard = () => {
   const [tab, setTab] = useState("homework");
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
+  const [tests, setTests] = useState<TestItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
