@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2 } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -27,6 +27,7 @@ const navItems = [
       { to: "/notes", label: "Jegyzetek", icon: StickyNote },
       { to: "/ai-tutor", label: "AI Tanár", icon: Bot },
       { to: "/pdf-analyzer", label: "PDF elemző", icon: FileText },
+      { to: "/image-analyzer", label: "Kép elemző", icon: ImageIcon },
       { to: "/pomodoro", label: "Pomodoro", icon: Timer },
     ],
   },
