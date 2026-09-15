@@ -27,6 +27,7 @@ const navItems = [
       { to: "/notes", label: "Jegyzetek", icon: StickyNote },
       { to: "/ai-tutor", label: "AI Tanár", icon: Bot },
       { to: "/pdf-analyzer", label: "PDF elemző", icon: FileText },
+      { to: "/image-analyzer", label: "Kép elemző", icon: ImageIcon },
       { to: "/pomodoro", label: "Pomodoro", icon: Timer },
     ],
   },
