@@ -67,7 +67,7 @@ const ImageAnalyzer = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       setResult(data.markdown);
-      await award("image_analyzed", { mode, file: fileName });
+      await award("pdf_analyzed", { mode, file: fileName, kind: "image" });
     } catch (e) {
       toast({
         title: "Hiba történt",
