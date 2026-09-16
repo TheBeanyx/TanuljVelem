@@ -524,6 +524,53 @@ export type Database = {
           },
         ]
       }
+      exams: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          creator_id: string | null
+          exam_date: string | null
+          exam_type: string
+          id: string
+          subject: string
+          title: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          exam_date?: string | null
+          exam_type?: string
+          id?: string
+          subject: string
+          title: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          creator_id?: string | null
+          exam_date?: string | null
+          exam_type?: string
+          id?: string
+          subject?: string
+          title?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exams_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       flashcard_items: {
         Row: {
           back: string
