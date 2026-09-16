@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+
 import { motion } from "framer-motion";
 import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,13 +46,18 @@ type ClassItem = {
   name: string;
 };
 
-type TestItem = {
+type ExamItem = {
   id: string;
   subject: string;
   title: string;
-  grade: number;
-  created_at: string;
+  topic: string | null;
+  exam_type: string;
+  exam_date: string | null;
+  class_id: string | null;
+  creator_id: string | null;
 };
+
+const examTypes = ["Felmérő", "Témazáró", "Röpdolgozat", "Beugró", "Esszé", "Szóbeli felelés"];
 
 function getDeadlineInfo(deadline: string | null) {
   if (!deadline) return { label: "Nincs határidő", color: "bg-muted text-muted-foreground" };
@@ -71,7 +76,7 @@ function getDeadlineInfo(deadline: string | null) {
 const Dashboard = () => {
   const [tab, setTab] = useState("homework");
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
-  const [tests, setTests] = useState<TestItem[]>([]);
+  const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -85,7 +90,6 @@ const Dashboard = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [myClasses, setMyClasses] = useState<ClassItem[]>([]);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isTeacher = profile?.role === "teacher";
@@ -119,13 +123,12 @@ const Dashboard = () => {
     setMyClasses(unique);
   };
 
-  const fetchTests = async () => {
+  const fetchExams = async () => {
     const { data } = await supabase
-      .from("tests")
-      .select("id, subject, title, grade, created_at")
-      .eq("is_system", false)
-      .order("created_at", { ascending: false });
-    setTests((data || []) as TestItem[]);
+      .from("exams")
+      .select("id, subject, title, topic, exam_type, exam_date, class_id, creator_id")
+      .order("exam_date", { ascending: true, nullsFirst: false });
+    setExams((data || []) as ExamItem[]);
   };
 
   const fetchHomeworks = async () => {
@@ -174,7 +177,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchHomeworks();
     fetchMyClasses();
-    fetchTests();
+    fetchExams();
   }, [user]);
 
   const openAddDialog = () => {
@@ -250,6 +253,107 @@ const Dashboard = () => {
     fetchHomeworks();
   };
 
+  // ---- Exam (dolgozat) state & handlers ----
+  const [examDialogOpen, setExamDialogOpen] = useState(false);
+  const [examDeleteOpen, setExamDeleteOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
+  const [deletingExam, setDeletingExam] = useState<ExamItem | null>(null);
+  const [examSubject, setExamSubject] = useState("Matematika");
+  const [examTitle, setExamTitle] = useState("");
+  const [examTopic, setExamTopic] = useState("");
+  const [examType, setExamType] = useState("Felmérő");
+  const [examDate, setExamDate] = useState("");
+  const [examShareToClass, setExamShareToClass] = useState(false);
+  const [examClassId, setExamClassId] = useState("");
+
+  const openAddExam = () => {
+    setEditingExam(null);
+    setExamSubject("Matematika");
+    setExamTitle("");
+    setExamTopic("");
+    setExamType("Felmérő");
+    setExamDate("");
+    setExamShareToClass(false);
+    setExamClassId("");
+    setExamDialogOpen(true);
+  };
+
+  const openEditExam = (ex: ExamItem) => {
+    setEditingExam(ex);
+    setExamSubject(ex.subject);
+    setExamTitle(ex.title);
+    setExamTopic(ex.topic || "");
+    setExamType(ex.exam_type);
+    setExamDate(ex.exam_date || "");
+    setExamShareToClass(false);
+    setExamClassId("");
+    setExamDialogOpen(true);
+  };
+
+  const handleSaveExam = async () => {
+    if (!examTitle.trim()) {
+      toast({ title: "A téma kötelező!", variant: "destructive" });
+      return;
+    }
+
+    const payload: any = {
+      subject: examSubject,
+      title: examTitle.trim(),
+      topic: examTopic.trim() || null,
+      exam_type: examType,
+      exam_date: examDate || null,
+    };
+
+    if (editingExam) {
+      const { error } = await supabase.from("exams").update(payload).eq("id", editingExam.id);
+      if (error) {
+        toast({ title: "Hiba a mentésnél", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Dolgozat frissítve!" });
+    } else {
+      if (examShareToClass && examClassId) {
+        payload.class_id = examClassId;
+      }
+      payload.creator_id = user?.id || null;
+
+      const { data: inserted, error } = await supabase.from("exams").insert(payload).select().single();
+      if (error) {
+        toast({ title: "Hiba a hozzáadásnál", variant: "destructive" });
+        return;
+      }
+
+      if (examShareToClass && examClassId && inserted) {
+        const displayName = profile?.display_name || profile?.username || "Valaki";
+        const dateLabel = examDate ? new Date(examDate).toLocaleDateString("hu-HU", { month: "long", day: "numeric" }) : "hamarosan";
+        await supabase.from("class_messages").insert({
+          class_id: examClassId,
+          user_id: user!.id,
+          text: `📝 ${displayName} beírt egy dolgozatot: ${examType} ${examSubject} tantárgyból — "${examTitle.trim()}" (${dateLabel})`,
+          message_type: "text",
+        });
+      }
+
+      toast({ title: "Dolgozat feljegyezve!" });
+    }
+
+    setExamDialogOpen(false);
+    fetchExams();
+  };
+
+  const handleDeleteExam = async () => {
+    if (!deletingExam) return;
+    const { error } = await supabase.from("exams").delete().eq("id", deletingExam.id);
+    if (error) {
+      toast({ title: "Hiba a törlésnél", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Dolgozat törölve!" });
+    setExamDeleteOpen(false);
+    setDeletingExam(null);
+    fetchExams();
+  };
+
   const handleDelete = async () => {
     if (!deletingHw) return;
     const { error } = await supabase.from("homeworks").delete().eq("id", deletingHw.id);
@@ -278,10 +382,10 @@ const Dashboard = () => {
                 <BookOpen className="w-4 h-4" /> Házi Feladatok ({homeworks.length})
               </TabsTrigger>
               <TabsTrigger value="tests" className="rounded-full gap-2 data-[state=active]:bg-card">
-                <FileText className="w-4 h-4" /> Dolgozatok ({tests.length})
+                <FileText className="w-4 h-4" /> Dolgozatok ({exams.length})
               </TabsTrigger>
             </TabsList>
-            <Button onClick={tab === "homework" ? openAddDialog : () => navigate("/tests?create=true")} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
+            <Button onClick={tab === "homework" ? openAddDialog : openAddExam} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4" />
               {tab === "homework" ? "Új Házi" : "Új Dolgozat"}
             </Button>
@@ -350,35 +454,62 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="tests">
-            {tests.length === 0 ? (
+            {exams.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-semibold">Nincsenek dolgozatok</p>
-                <p className="text-sm mt-1">Kattints az "Új Dolgozat" gombra egy új hozzáadásához!</p>
+                <p className="text-lg font-semibold">Nincsenek feljegyzett dolgozatok</p>
+                <p className="text-sm mt-1">Kattints az "Új Dolgozat" gombra egy új feljegyzéséhez!</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
-                {tests.map((t, i) => (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => navigate("/tests")}
-                    className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow cursor-pointer"
-                  >
-                    <Badge className={`${subjectColors[t.subject] || "bg-muted text-muted-foreground"} font-semibold mb-3`}>
-                      {t.subject}
-                    </Badge>
-                    <h3 className="font-bold text-lg">{t.title}</h3>
-                    <div className="flex items-center gap-3 mt-3">
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(t.created_at).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
-                      </span>
-                      <Badge variant="outline" className="text-xs">{t.grade}. évfolyam</Badge>
-                    </div>
-                  </motion.div>
-                ))}
+                {exams.map((ex, i) => {
+                  const dl = getDeadlineInfo(ex.exam_date);
+                  return (
+                    <motion.div
+                      key={ex.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow group"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            <Badge className={`${subjectColors[ex.subject] || "bg-muted text-muted-foreground"} font-semibold`}>
+                              {ex.subject}
+                            </Badge>
+                            <Badge variant="secondary" className="font-semibold">{ex.exam_type}</Badge>
+                            {ex.class_id && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <Share2 className="w-3 h-3" /> Osztály
+                              </Badge>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-lg">{ex.title}</h3>
+                          {ex.topic && <p className="text-muted-foreground text-sm mt-1">{ex.topic}</p>}
+                          <Badge variant="outline" className={`mt-3 ${dl.color} border-0`}>
+                            <Clock className="w-3 h-3 mr-1" /> {dl.label}
+                          </Badge>
+                        </div>
+                        {(ex.creator_id === user?.id || profile?.role === "teacher") && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => openEditExam(ex)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full w-8 h-8 text-destructive"
+                              onClick={() => { setDeletingExam(ex); setExamDeleteOpen(true); }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -454,6 +585,106 @@ const Dashboard = () => {
             <Button onClick={handleSave} className="rounded-xl bg-primary hover:bg-primary/90">
               {editingHw ? "Mentés" : "Hozzáadás"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Exam Dialog */}
+      <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingExam ? "Dolgozat szerkesztése" : "Új dolgozat feljegyzése"}</DialogTitle>
+            <DialogDescription>
+              {editingExam ? "Módosítsd a dolgozat adatait." : "Jegyezd fel a közelgő dolgozat részleteit."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="font-semibold">Tantárgy</Label>
+              <Select value={examSubject} onValueChange={setExamSubject}>
+                <SelectTrigger className="mt-1.5 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="font-semibold">Típus</Label>
+              <Select value={examType} onValueChange={setExamType}>
+                <SelectTrigger className="mt-1.5 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {examTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="font-semibold">Téma / cím *</Label>
+              <Input value={examTitle} onChange={(e) => setExamTitle(e.target.value)} className="mt-1.5 rounded-xl" placeholder="pl. Másodfokú egyenletek témazáró" />
+            </div>
+            <div>
+              <Label className="font-semibold">Részletek</Label>
+              <Textarea value={examTopic} onChange={(e) => setExamTopic(e.target.value)} className="mt-1.5 rounded-xl" placeholder="pl. 4. fejezet, egyenletrendszerek" />
+            </div>
+            <div>
+              <Label className="font-semibold">Dátum</Label>
+              <Input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className="mt-1.5 rounded-xl" />
+            </div>
+
+            {!editingExam && myClasses.length > 0 && (
+              <div className="border border-border rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="examShareToClass"
+                    checked={examShareToClass}
+                    onCheckedChange={(v) => setExamShareToClass(v === true)}
+                  />
+                  <Label htmlFor="examShareToClass" className="font-semibold flex items-center gap-2 cursor-pointer">
+                    <Share2 className="w-4 h-4" /> Felírás az osztálycsoportba
+                  </Label>
+                </div>
+                {examShareToClass && (
+                  <Select value={examClassId} onValueChange={setExamClassId}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Válassz osztályt..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {myClasses.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExamDialogOpen(false)} className="rounded-xl">Mégse</Button>
+            <Button onClick={handleSaveExam} className="rounded-xl bg-primary hover:bg-primary/90">
+              {editingExam ? "Mentés" : "Hozzáadás"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Exam Confirmation Dialog */}
+      <Dialog open={examDeleteOpen} onOpenChange={setExamDeleteOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Dolgozat törlése</DialogTitle>
+            <DialogDescription>Ez a művelet nem vonható vissza.</DialogDescription>
+          </DialogHeader>
+          <p className="text-muted-foreground">Biztosan törölni szeretnéd a(z) „{deletingExam?.title}" dolgozatot?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExamDeleteOpen(false)} className="rounded-xl">Mégse</Button>
+            <Button variant="destructive" onClick={handleDeleteExam} className="rounded-xl">Törlés</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
