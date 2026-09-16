@@ -178,7 +178,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchHomeworks();
     fetchMyClasses();
-    fetchTests();
+    fetchExams();
   }, [user]);
 
   const openAddDialog = () => {
@@ -252,6 +252,107 @@ const Dashboard = () => {
 
     setDialogOpen(false);
     fetchHomeworks();
+  };
+
+  // ---- Exam (dolgozat) state & handlers ----
+  const [examDialogOpen, setExamDialogOpen] = useState(false);
+  const [examDeleteOpen, setExamDeleteOpen] = useState(false);
+  const [editingExam, setEditingExam] = useState<ExamItem | null>(null);
+  const [deletingExam, setDeletingExam] = useState<ExamItem | null>(null);
+  const [examSubject, setExamSubject] = useState("Matematika");
+  const [examTitle, setExamTitle] = useState("");
+  const [examTopic, setExamTopic] = useState("");
+  const [examType, setExamType] = useState("Felmérő");
+  const [examDate, setExamDate] = useState("");
+  const [examShareToClass, setExamShareToClass] = useState(false);
+  const [examClassId, setExamClassId] = useState("");
+
+  const openAddExam = () => {
+    setEditingExam(null);
+    setExamSubject("Matematika");
+    setExamTitle("");
+    setExamTopic("");
+    setExamType("Felmérő");
+    setExamDate("");
+    setExamShareToClass(false);
+    setExamClassId("");
+    setExamDialogOpen(true);
+  };
+
+  const openEditExam = (ex: ExamItem) => {
+    setEditingExam(ex);
+    setExamSubject(ex.subject);
+    setExamTitle(ex.title);
+    setExamTopic(ex.topic || "");
+    setExamType(ex.exam_type);
+    setExamDate(ex.exam_date || "");
+    setExamShareToClass(false);
+    setExamClassId("");
+    setExamDialogOpen(true);
+  };
+
+  const handleSaveExam = async () => {
+    if (!examTitle.trim()) {
+      toast({ title: "A téma kötelező!", variant: "destructive" });
+      return;
+    }
+
+    const payload: any = {
+      subject: examSubject,
+      title: examTitle.trim(),
+      topic: examTopic.trim() || null,
+      exam_type: examType,
+      exam_date: examDate || null,
+    };
+
+    if (editingExam) {
+      const { error } = await supabase.from("exams").update(payload).eq("id", editingExam.id);
+      if (error) {
+        toast({ title: "Hiba a mentésnél", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Dolgozat frissítve!" });
+    } else {
+      if (examShareToClass && examClassId) {
+        payload.class_id = examClassId;
+      }
+      payload.creator_id = user?.id || null;
+
+      const { data: inserted, error } = await supabase.from("exams").insert(payload).select().single();
+      if (error) {
+        toast({ title: "Hiba a hozzáadásnál", variant: "destructive" });
+        return;
+      }
+
+      if (examShareToClass && examClassId && inserted) {
+        const displayName = profile?.display_name || profile?.username || "Valaki";
+        const dateLabel = examDate ? new Date(examDate).toLocaleDateString("hu-HU", { month: "long", day: "numeric" }) : "hamarosan";
+        await supabase.from("class_messages").insert({
+          class_id: examClassId,
+          user_id: user!.id,
+          text: `📝 ${displayName} beírt egy dolgozatot: ${examType} ${examSubject} tantárgyból — "${examTitle.trim()}" (${dateLabel})`,
+          message_type: "text",
+        });
+      }
+
+      toast({ title: "Dolgozat feljegyezve!" });
+    }
+
+    setExamDialogOpen(false);
+    fetchExams();
+  };
+
+  const handleDeleteExam = async () => {
+    if (!deletingExam) return;
+    const { error } = await supabase.from("exams").delete().eq("id", deletingExam.id);
+    if (error) {
+      toast({ title: "Hiba a törlésnél", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Dolgozat törölve!" });
+    setExamDeleteOpen(false);
+    setDeletingExam(null);
+    fetchExams();
   };
 
   const handleDelete = async () => {
