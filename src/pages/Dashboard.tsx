@@ -85,6 +85,7 @@ const Dashboard = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [myClasses, setMyClasses] = useState<ClassItem[]>([]);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isTeacher = profile?.role === "teacher";
