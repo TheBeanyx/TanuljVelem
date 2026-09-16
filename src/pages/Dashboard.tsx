@@ -347,26 +347,37 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="tests">
-            <div className="grid md:grid-cols-2 gap-4">
-              {demoTests.map((t, i) => (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow"
-                >
-                  <Badge className={`${subjectColors[t.subject] || "bg-muted text-muted-foreground"} font-semibold mb-3`}>
-                    {t.subject}
-                  </Badge>
-                  <h3 className="font-bold text-lg">{t.title}</h3>
-                  <div className="flex items-center gap-3 mt-3">
-                    <span className="text-sm text-muted-foreground">{t.date}</span>
-                    {t.score && <Badge className="bg-success/10 text-success border-0">{t.score}</Badge>}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            {tests.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-semibold">Nincsenek dolgozatok</p>
+                <p className="text-sm mt-1">Kattints az "Új Dolgozat" gombra egy új hozzáadásához!</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {tests.map((t, i) => (
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => navigate("/tests")}
+                    className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow cursor-pointer"
+                  >
+                    <Badge className={`${subjectColors[t.subject] || "bg-muted text-muted-foreground"} font-semibold mb-3`}>
+                      {t.subject}
+                    </Badge>
+                    <h3 className="font-bold text-lg">{t.title}</h3>
+                    <div className="flex items-center gap-3 mt-3">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(t.created_at).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
+                      </span>
+                      <Badge variant="outline" className="text-xs">{t.grade}. évfolyam</Badge>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </main>
