@@ -275,10 +275,10 @@ const Dashboard = () => {
                 <BookOpen className="w-4 h-4" /> Házi Feladatok ({homeworks.length})
               </TabsTrigger>
               <TabsTrigger value="tests" className="rounded-full gap-2 data-[state=active]:bg-card">
-                <FileText className="w-4 h-4" /> Dolgozatok ({demoTests.length})
+                <FileText className="w-4 h-4" /> Dolgozatok ({tests.length})
               </TabsTrigger>
             </TabsList>
-            <Button onClick={tab === "homework" ? openAddDialog : undefined} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
+            <Button onClick={tab === "homework" ? openAddDialog : () => navigate("/tests?create=true")} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4" />
               {tab === "homework" ? "Új Házi" : "Új Dolgozat"}
             </Button>
