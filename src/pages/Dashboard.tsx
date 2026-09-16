@@ -46,13 +46,18 @@ type ClassItem = {
   name: string;
 };
 
-type TestItem = {
+type ExamItem = {
   id: string;
   subject: string;
   title: string;
-  grade: number;
-  created_at: string;
+  topic: string | null;
+  exam_type: string;
+  exam_date: string | null;
+  class_id: string | null;
+  creator_id: string | null;
 };
+
+const examTypes = ["Felmérő", "Témazáró", "Röpdolgozat", "Beugró", "Esszé", "Szóbeli felelés"];
 
 function getDeadlineInfo(deadline: string | null) {
   if (!deadline) return { label: "Nincs határidő", color: "bg-muted text-muted-foreground" };
