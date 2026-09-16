@@ -76,7 +76,7 @@ function getDeadlineInfo(deadline: string | null) {
 const Dashboard = () => {
   const [tab, setTab] = useState("homework");
   const [homeworks, setHomeworks] = useState<Homework[]>([]);
-  const [tests, setTests] = useState<TestItem[]>([]);
+  const [exams, setExams] = useState<ExamItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -124,13 +124,12 @@ const Dashboard = () => {
     setMyClasses(unique);
   };
 
-  const fetchTests = async () => {
+  const fetchExams = async () => {
     const { data } = await supabase
-      .from("tests")
-      .select("id, subject, title, grade, created_at")
-      .eq("is_system", false)
-      .order("created_at", { ascending: false });
-    setTests((data || []) as TestItem[]);
+      .from("exams")
+      .select("id, subject, title, topic, exam_type, exam_date, class_id, creator_id")
+      .order("exam_date", { ascending: true, nullsFirst: false });
+    setExams((data || []) as ExamItem[]);
   };
 
   const fetchHomeworks = async () => {
