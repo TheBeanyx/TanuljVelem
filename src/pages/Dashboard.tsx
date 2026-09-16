@@ -174,6 +174,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchHomeworks();
     fetchMyClasses();
+    fetchTests();
   }, [user]);
 
   const openAddDialog = () => {
