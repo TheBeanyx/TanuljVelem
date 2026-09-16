@@ -590,6 +590,106 @@ const Dashboard = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Add/Edit Exam Dialog */}
+      <Dialog open={examDialogOpen} onOpenChange={setExamDialogOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>{editingExam ? "Dolgozat szerkesztése" : "Új dolgozat feljegyzése"}</DialogTitle>
+            <DialogDescription>
+              {editingExam ? "Módosítsd a dolgozat adatait." : "Jegyezd fel a közelgő dolgozat részleteit."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label className="font-semibold">Tantárgy</Label>
+              <Select value={examSubject} onValueChange={setExamSubject}>
+                <SelectTrigger className="mt-1.5 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {subjects.map((s) => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="font-semibold">Típus</Label>
+              <Select value={examType} onValueChange={setExamType}>
+                <SelectTrigger className="mt-1.5 rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {examTypes.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="font-semibold">Téma / cím *</Label>
+              <Input value={examTitle} onChange={(e) => setExamTitle(e.target.value)} className="mt-1.5 rounded-xl" placeholder="pl. Másodfokú egyenletek témazáró" />
+            </div>
+            <div>
+              <Label className="font-semibold">Részletek</Label>
+              <Textarea value={examTopic} onChange={(e) => setExamTopic(e.target.value)} className="mt-1.5 rounded-xl" placeholder="pl. 4. fejezet, egyenletrendszerek" />
+            </div>
+            <div>
+              <Label className="font-semibold">Dátum</Label>
+              <Input type="date" value={examDate} onChange={(e) => setExamDate(e.target.value)} className="mt-1.5 rounded-xl" />
+            </div>
+
+            {!editingExam && myClasses.length > 0 && (
+              <div className="border border-border rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="examShareToClass"
+                    checked={examShareToClass}
+                    onCheckedChange={(v) => setExamShareToClass(v === true)}
+                  />
+                  <Label htmlFor="examShareToClass" className="font-semibold flex items-center gap-2 cursor-pointer">
+                    <Share2 className="w-4 h-4" /> Felírás az osztálycsoportba
+                  </Label>
+                </div>
+                {examShareToClass && (
+                  <Select value={examClassId} onValueChange={setExamClassId}>
+                    <SelectTrigger className="rounded-xl">
+                      <SelectValue placeholder="Válassz osztályt..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {myClasses.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExamDialogOpen(false)} className="rounded-xl">Mégse</Button>
+            <Button onClick={handleSaveExam} className="rounded-xl bg-primary hover:bg-primary/90">
+              {editingExam ? "Mentés" : "Hozzáadás"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Exam Confirmation Dialog */}
+      <Dialog open={examDeleteOpen} onOpenChange={setExamDeleteOpen}>
+        <DialogContent className="rounded-2xl">
+          <DialogHeader>
+            <DialogTitle>Dolgozat törlése</DialogTitle>
+            <DialogDescription>Ez a művelet nem vonható vissza.</DialogDescription>
+          </DialogHeader>
+          <p className="text-muted-foreground">Biztosan törölni szeretnéd a(z) „{deletingExam?.title}" dolgozatot?</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setExamDeleteOpen(false)} className="rounded-xl">Mégse</Button>
+            <Button variant="destructive" onClick={handleDeleteExam} className="rounded-xl">Törlés</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="rounded-2xl">
