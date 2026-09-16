@@ -383,10 +383,10 @@ const Dashboard = () => {
                 <BookOpen className="w-4 h-4" /> Házi Feladatok ({homeworks.length})
               </TabsTrigger>
               <TabsTrigger value="tests" className="rounded-full gap-2 data-[state=active]:bg-card">
-                <FileText className="w-4 h-4" /> Dolgozatok ({tests.length})
+                <FileText className="w-4 h-4" /> Dolgozatok ({exams.length})
               </TabsTrigger>
             </TabsList>
-            <Button onClick={tab === "homework" ? openAddDialog : () => navigate("/tests?create=true")} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
+            <Button onClick={tab === "homework" ? openAddDialog : openAddExam} className="rounded-full gap-2 bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4" />
               {tab === "homework" ? "Új Házi" : "Új Dolgozat"}
             </Button>
@@ -455,35 +455,62 @@ const Dashboard = () => {
           </TabsContent>
 
           <TabsContent value="tests">
-            {tests.length === 0 ? (
+            {exams.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-semibold">Nincsenek dolgozatok</p>
-                <p className="text-sm mt-1">Kattints az "Új Dolgozat" gombra egy új hozzáadásához!</p>
+                <p className="text-lg font-semibold">Nincsenek feljegyzett dolgozatok</p>
+                <p className="text-sm mt-1">Kattints az "Új Dolgozat" gombra egy új feljegyzéséhez!</p>
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
-                {tests.map((t, i) => (
-                  <motion.div
-                    key={t.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => navigate("/tests")}
-                    className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow cursor-pointer"
-                  >
-                    <Badge className={`${subjectColors[t.subject] || "bg-muted text-muted-foreground"} font-semibold mb-3`}>
-                      {t.subject}
-                    </Badge>
-                    <h3 className="font-bold text-lg">{t.title}</h3>
-                    <div className="flex items-center gap-3 mt-3">
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(t.created_at).toLocaleDateString("hu-HU", { month: "short", day: "numeric" })}
-                      </span>
-                      <Badge variant="outline" className="text-xs">{t.grade}. évfolyam</Badge>
-                    </div>
-                  </motion.div>
-                ))}
+                {exams.map((ex, i) => {
+                  const dl = getDeadlineInfo(ex.exam_date);
+                  return (
+                    <motion.div
+                      key={ex.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow group"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            <Badge className={`${subjectColors[ex.subject] || "bg-muted text-muted-foreground"} font-semibold`}>
+                              {ex.subject}
+                            </Badge>
+                            <Badge variant="secondary" className="font-semibold">{ex.exam_type}</Badge>
+                            {ex.class_id && (
+                              <Badge variant="outline" className="text-xs gap-1">
+                                <Share2 className="w-3 h-3" /> Osztály
+                              </Badge>
+                            )}
+                          </div>
+                          <h3 className="font-bold text-lg">{ex.title}</h3>
+                          {ex.topic && <p className="text-muted-foreground text-sm mt-1">{ex.topic}</p>}
+                          <Badge variant="outline" className={`mt-3 ${dl.color} border-0`}>
+                            <Clock className="w-3 h-3 mr-1" /> {dl.label}
+                          </Badge>
+                        </div>
+                        {(ex.creator_id === user?.id || profile?.role === "teacher") && (
+                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => openEditExam(ex)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="rounded-full w-8 h-8 text-destructive"
+                              onClick={() => { setDeletingExam(ex); setExamDeleteOpen(true); }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
