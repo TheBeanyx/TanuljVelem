@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
+import apkAsset from "@/assets/tanuljvelem-apk.asset.json";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -618,6 +619,31 @@ const Profile = () => {
                 </>
               )}
             </div>
+
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-2xl bg-green-500/10 flex items-center justify-center text-2xl">
+                  🤖
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">TanuljVelem alkalmazás Androidra</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Hivatalos Android telepítő ({(apkAsset.size / 1024 / 1024).toFixed(1)} MB)
+                  </p>
+                </div>
+              </div>
+              <a href={apkAsset.url} download="TanuljVelem-1.0.apk" className="block">
+                <Button className="w-full rounded-xl gap-2 font-bold py-5 bg-green-600 hover:bg-green-700 text-white">
+                  <Download className="w-5 h-5" /> Letöltés Androidra (APK)
+                </Button>
+              </a>
+              <ol className="mt-4 list-decimal list-inside space-y-1.5 text-xs text-muted-foreground">
+                <li>Koppints a letöltés gombra, majd nyisd meg a letöltött fájlt.</li>
+                <li>Ha kéri, engedélyezd az <strong>ismeretlen forrásból való telepítést</strong>.</li>
+                <li>Nyomd meg a <strong>Telepítés</strong> gombot – kész!</li>
+              </ol>
+            </div>
+
 
             <div className="bg-card rounded-2xl border border-border p-6">
               <h3 className="font-bold mb-2 flex items-center gap-2">
