@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
+import apkAsset from "@/assets/tanuljvelem-apk.asset.json";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
