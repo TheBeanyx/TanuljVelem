@@ -654,6 +654,35 @@ export type Database = {
         }
         Relationships: []
       }
+      homework_completions: {
+        Row: {
+          completed_at: string
+          homework_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          homework_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          homework_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homework_completions_homework_id_fkey"
+            columns: ["homework_id"]
+            isOneToOne: false
+            referencedRelation: "homeworks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       homeworks: {
         Row: {
           class_id: string | null
@@ -1279,6 +1308,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_email: { Args: never; Returns: boolean }
+      is_class_participant: {
+        Args: { _class_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_platform_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

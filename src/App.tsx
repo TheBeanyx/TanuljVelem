@@ -35,11 +35,13 @@ import StudyGroups from "./pages/StudyGroups";
 import NotFound from "./pages/NotFound";
 import AiAssistant from "./components/AiAssistant";
 import useChallengeReminder from "./hooks/useChallengeReminder";
+import useAppNotifications from "./hooks/useAppNotifications";
 
 const queryClient = new QueryClient();
 
 const AppShell = () => {
   useChallengeReminder();
+  useAppNotifications();
   return null;
 };
 
