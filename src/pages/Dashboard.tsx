@@ -431,7 +431,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <TabsList className="rounded-full bg-muted p-1">
               <TabsTrigger value="homework" className="rounded-full gap-2 data-[state=active]:bg-card">
-                <BookOpen className="w-4 h-4" /> Házi Feladatok ({homeworks.length})
+                <BookOpen className="w-4 h-4" /> Házi Feladatok ({activeHomeworks.length})
               </TabsTrigger>
               <TabsTrigger value="tests" className="rounded-full gap-2 data-[state=active]:bg-card">
                 <FileText className="w-4 h-4" /> Dolgozatok ({exams.length})
