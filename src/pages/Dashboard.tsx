@@ -392,31 +392,61 @@ const Dashboard = () => {
           </div>
 
           <TabsContent value="homework">
+            <div className="flex gap-1 mb-4 bg-muted p-1 rounded-full w-fit">
+              {([
+                { key: "active", label: `Aktív (${activeHomeworks.length})` },
+                { key: "done", label: `Kész (${doneHomeworks.length})` },
+              ] as const).map((f) => (
+                <Button
+                  key={f.key}
+                  size="sm"
+                  variant={hwFilter === f.key ? "default" : "ghost"}
+                  className="rounded-full text-xs"
+                  onClick={() => setHwFilter(f.key)}
+                >
+                  {f.key === "done" && <CheckCircle2 className="w-3 h-3 mr-1" />}
+                  {f.label}
+                </Button>
+              ))}
+            </div>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : homeworks.length === 0 ? (
+            ) : visibleHomeworks.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg font-semibold">Nincsenek házi feladatok</p>
-                <p className="text-sm mt-1">Kattints az "Új Házi" gombra egy új hozzáadásához!</p>
+                {hwFilter === "done" ? (
+                  <>
+                    <CheckCircle2 className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-semibold">Még nincs elkészült házi feladat</p>
+                    <p className="text-sm mt-1">Jelöld késznek az elvégzett házikat, és itt fogod látni őket!</p>
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-semibold">Nincsenek házi feladatok</p>
+                    <p className="text-sm mt-1">Kattints az "Új Házi" gombra egy új hozzáadásához!</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="grid md:grid-cols-2 gap-4">
-                {homeworks.map((hw, i) => {
+                {visibleHomeworks.map((hw, i) => {
                   const dl = getDeadlineInfo(hw.deadline);
+                  const isDone = completedIds.has(hw.id);
                   return (
                     <motion.div
                       key={hw.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.05 }}
-                      className="bg-card rounded-2xl border border-border p-5 hover:shadow-lg transition-shadow group"
+                      className={`bg-card rounded-2xl border p-5 hover:shadow-lg transition-shadow group ${
+                        isDone ? "border-success/40 bg-success/5" : "border-border"
+                      }`}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
                             <Badge className={`${subjectColors[hw.subject] || "bg-muted text-muted-foreground"} font-semibold`}>
                               {hw.subject}
                             </Badge>
@@ -425,25 +455,44 @@ const Dashboard = () => {
                                 <Share2 className="w-3 h-3" /> Osztály
                               </Badge>
                             )}
+                            {isDone && (
+                              <Badge className="bg-success/15 text-success text-xs gap-1">
+                                <CheckCircle2 className="w-3 h-3" /> Kész
+                              </Badge>
+                            )}
                           </div>
-                          <h3 className="font-bold text-lg">{hw.title}</h3>
-                          {hw.description && <p className="text-muted-foreground text-sm mt-1">{hw.description}</p>}
+                          <h3 className={`font-bold text-lg break-words ${isDone ? "line-through text-muted-foreground" : ""}`}>
+                            {hw.title}
+                          </h3>
+                          {hw.description && <p className="text-muted-foreground text-sm mt-1 break-words">{hw.description}</p>}
                           <Badge variant="outline" className={`mt-3 ${dl.color} border-0`}>
                             <Clock className="w-3 h-3 mr-1" /> {dl.label}
                           </Badge>
                         </div>
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => openEditDialog(hw)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
+                        <div className="flex flex-col items-end gap-2">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full w-8 h-8 text-destructive"
-                            onClick={() => { setDeletingHw(hw); setDeleteDialogOpen(true); }}
+                            size="sm"
+                            variant={isDone ? "secondary" : "outline"}
+                            className="rounded-full text-xs gap-1"
+                            onClick={() => toggleCompleted(hw.id)}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            {isDone ? <><Circle className="w-3 h-3" /> Visszaállít</> : <><CheckCircle2 className="w-3 h-3" /> Kész</>}
                           </Button>
+                          {hw.creator_id === user?.id && (
+                            <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                              <Button variant="ghost" size="icon" className="rounded-full w-8 h-8" onClick={() => openEditDialog(hw)}>
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="rounded-full w-8 h-8 text-destructive"
+                                onClick={() => { setDeletingHw(hw); setDeleteDialogOpen(true); }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </motion.div>
