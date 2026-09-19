@@ -176,6 +176,56 @@ const Dashboard = () => {
     setLoading(false);
   };
 
+  const fetchCompletions = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("homework_completions")
+      .select("homework_id")
+      .eq("user_id", user.id);
+    setCompletedIds(new Set((data || []).map((c: any) => c.homework_id)));
+  };
+
+  const toggleCompleted = async (homeworkId: string) => {
+    if (!user) return;
+    const isDone = completedIds.has(homeworkId);
+    const next = new Set(completedIds);
+    if (isDone) {
+      next.delete(homeworkId);
+      setCompletedIds(next);
+      const { error } = await supabase
+        .from("homework_completions")
+        .delete()
+        .eq("homework_id", homeworkId)
+        .eq("user_id", user.id);
+      if (error) {
+        toast({ title: "Hiba", variant: "destructive" });
+        fetchCompletions();
+        return;
+      }
+      toast({ title: "Visszaállítva aktívra" });
+    } else {
+      next.add(homeworkId);
+      setCompletedIds(next);
+      const { error } = await supabase
+        .from("homework_completions")
+        .insert({ homework_id: homeworkId, user_id: user.id });
+      if (error) {
+        toast({ title: "Hiba", variant: "destructive" });
+        fetchCompletions();
+        return;
+      }
+      toast({ title: "Kész! ✅", description: "A házi feladat a Kész listába került." });
+    }
+  };
+
+  const activeHomeworks = homeworks.filter((hw) => !completedIds.has(hw.id));
+  const doneHomeworks = homeworks.filter((hw) => completedIds.has(hw.id));
+  const visibleHomeworks = hwFilter === "done" ? doneHomeworks : activeHomeworks;
+
+  useEffect(() => {
+    fetchCompletions();
+  }, [user, homeworks.length]);
+
   useEffect(() => {
     fetchHomeworks();
     fetchMyClasses();
