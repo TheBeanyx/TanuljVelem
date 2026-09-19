@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
 import apkAsset from "@/assets/tanuljvelem-apk.asset.json";
+import { NOTIF_PREFS, getNotifPrefs, setNotifPref } from "@/lib/notificationPrefs";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -28,10 +29,7 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [grade, setGrade] = useState("8");
-  const [notifHomework, setNotifHomework] = useState(true);
-  const [notifTests, setNotifTests] = useState(true);
-  const [notifGames, setNotifGames] = useState(false);
-  const [notifResults, setNotifResults] = useState(true);
+  const [notifPrefs, setNotifPrefs] = useState(getNotifPrefs());
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
@@ -432,18 +430,21 @@ const Profile = () => {
             </div>
 
             <div className="bg-card rounded-2xl border border-border p-6">
-              <h2 className="font-bold text-lg mb-4">Értesítési beállítások</h2>
+              <h2 className="font-bold text-lg mb-1">Értesítési beállítások</h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Válaszd ki, miről szeretnél értesítést kapni.
+              </p>
               <div className="space-y-4">
-
-                {[
-                  { label: "Házi feladat határidők", value: notifHomework, set: setNotifHomework },
-                  { label: "Dolgozatok és tesztek", value: notifTests, set: setNotifTests },
-                  { label: "Új játékok", value: notifGames, set: setNotifGames },
-                  { label: "Eredmények", value: notifResults, set: setNotifResults },
-                ].map((n) => (
-                  <div key={n.label} className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{n.label}</span>
-                    <Switch checked={n.value} onCheckedChange={n.set} />
+                {NOTIF_PREFS.map((n) => (
+                  <div key={n.key} className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">{n.label}</p>
+                      <p className="text-xs text-muted-foreground">{n.description}</p>
+                    </div>
+                    <Switch
+                      checked={notifPrefs[n.key]}
+                      onCheckedChange={(v) => setNotifPrefs(setNotifPref(n.key, v))}
+                    />
                   </div>
                 ))}
               </div>
