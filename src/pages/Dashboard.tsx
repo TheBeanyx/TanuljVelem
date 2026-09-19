@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { motion } from "framer-motion";
-import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X, Share2 } from "lucide-react";
+import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X, Share2, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -90,6 +90,8 @@ const Dashboard = () => {
   const [selectedClassId, setSelectedClassId] = useState<string>("");
   const [myClasses, setMyClasses] = useState<ClassItem[]>([]);
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [hwFilter, setHwFilter] = useState<"active" | "done">("active");
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isTeacher = profile?.role === "teacher";
