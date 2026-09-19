@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { PRESET_AVATARS, resolveAvatarUrl } from "@/lib/avatars";
 import ReactMarkdown from "react-markdown";
 import apkAsset from "@/assets/tanuljvelem-apk.asset.json";
+import { NOTIF_PREFS, getNotifPrefs, setNotifPref } from "@/lib/notificationPrefs";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -28,10 +29,7 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [grade, setGrade] = useState("8");
-  const [notifHomework, setNotifHomework] = useState(true);
-  const [notifTests, setNotifTests] = useState(true);
-  const [notifGames, setNotifGames] = useState(false);
-  const [notifResults, setNotifResults] = useState(true);
+  const [notifPrefs, setNotifPrefs] = useState(getNotifPrefs());
   const [autoDeleteExpired, setAutoDeleteExpired] = useState(false);
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
