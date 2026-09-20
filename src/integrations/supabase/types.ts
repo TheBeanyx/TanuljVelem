@@ -260,6 +260,48 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string
+          description: string | null
+          end_time: string | null
+          event_date: string
+          event_type: string
+          id: string
+          start_time: string | null
+          subject: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date: string
+          event_type?: string
+          id?: string
+          start_time?: string | null
+          subject?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          end_time?: string | null
+          event_date?: string
+          event_type?: string
+          id?: string
+          start_time?: string | null
+          subject?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenge_daily_tasks: {
         Row: {
           awarded_points: number | null
@@ -1081,6 +1123,51 @@ export type Database = {
           },
         ]
       }
+      study_plans: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          minutes: number | null
+          plan_date: string
+          ref_id: string | null
+          ref_type: string | null
+          subject: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          what_to_study: string | null
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          minutes?: number | null
+          plan_date: string
+          ref_id?: string | null
+          ref_type?: string | null
+          subject?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          what_to_study?: string | null
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          minutes?: number | null
+          plan_date?: string
+          ref_id?: string | null
+          ref_type?: string | null
+          subject?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          what_to_study?: string | null
+        }
+        Relationships: []
+      }
       test_questions: {
         Row: {
           correct_answer: string
@@ -1199,6 +1286,48 @@ export type Database = {
           subject?: string
           time_limit_minutes?: number
           title?: string
+        }
+        Relationships: []
+      }
+      timetable_entries: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          end_time: string | null
+          id: string
+          period: number
+          room: string | null
+          start_time: string | null
+          subject: string
+          teacher: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          end_time?: string | null
+          id?: string
+          period?: number
+          room?: string | null
+          start_time?: string | null
+          subject: string
+          teacher?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          end_time?: string | null
+          id?: string
+          period?: number
+          room?: string | null
+          start_time?: string | null
+          subject?: string
+          teacher?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
