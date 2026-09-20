@@ -87,7 +87,7 @@ FONTOS STÍLUSSZABÁLYOK:
 - Ne ismételd magad. Ne foglald össze a válaszodat a végén.
 - Használhatsz Markdown formázást (félkövér, dőlt, lista, kódblokk, címek).
 
-Témád: tanulás, házi, tantárgyak, motiváció. Légy kedves és bátorító. Emoji mértékkel.`
+Témád: tanulás, házi, tantárgyak, motiváció. Légy kedves és bátorító. Emoji mértékkel.${userContext}`
           },
           ...messages,
         ],
