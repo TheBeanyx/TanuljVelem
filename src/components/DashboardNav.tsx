@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, Image as ImageIcon } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, CalendarRange, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -31,7 +31,17 @@ const navItems = [
       { to: "/pomodoro", label: "Pomodoro", icon: Timer },
     ],
   },
-  { to: "/schedule", label: "Órarend", icon: CalendarDays, badgeKey: null },
+  {
+    to: "/schedule",
+    label: "Órarend",
+    icon: CalendarDays,
+    badgeKey: null,
+    dropdown: [
+      { to: "/schedule", label: "Órarend", icon: CalendarDays },
+      { to: "/schedule?tab=calendar", label: "Naptár", icon: CalendarRange },
+      { to: "/schedule?tab=planner", label: "AI tervező", icon: Sparkles },
+    ],
+  },
   { to: "/materials", label: "Tananyag", icon: Library, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
