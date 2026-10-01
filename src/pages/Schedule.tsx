@@ -84,6 +84,9 @@ const fmtDay = (d: string) =>
 
 const Schedule = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get("tab") || "timetable";
+  const setTab = (v: string) => setSearchParams(v === "timetable" ? {} : { tab: v }, { replace: true });
   const [timetable, setTimetable] = useState<Timetable[]>([]);
   const [events, setEvents] = useState<Event[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
