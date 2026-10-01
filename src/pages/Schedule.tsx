@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DashboardNav from "@/components/DashboardNav";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -268,7 +269,7 @@ const Schedule = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="timetable">
+        <Tabs value={tab} onValueChange={setTab}>
           <TabsList className="w-full grid grid-cols-3 rounded-xl mb-4">
             <TabsTrigger value="timetable" className="gap-1.5 text-xs sm:text-sm">
               <Table2 className="w-4 h-4" /> Órarend
