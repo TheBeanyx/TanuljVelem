@@ -449,7 +449,7 @@ const Schedule = () => {
                 </CardHeader>
                 <CardContent className="pb-4">
                   <div className="grid grid-cols-7 gap-1 mb-1 text-center text-[11px] font-bold text-muted-foreground">
-                    {["H", "Sz", "Sze", "Cs", "P", "Szo", "V"].map((d, i) => (
+                    {["H", "K", "Sze", "Cs", "P", "Szo", "V"].map((d, i) => (
                       <div key={i}>{d}</div>
                     ))}
                   </div>
