@@ -1,5 +1,6 @@
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, CalendarRange, Image as ImageIcon } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, CalendarRange, Image as ImageIcon, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -61,11 +62,18 @@ const navItems = [
   },
 ];
 
+const NAV_GAP = 4;
+const MORE_RESERVE = 52;
+
 const DashboardNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { counts } = useUnreadCounts();
+
+  const navRef = useRef<HTMLElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const [fitCount, setFitCount] = useState(navItems.length);
 
   const handleLogout = async () => {
     await signOut();
@@ -81,6 +89,126 @@ const DashboardNav = () => {
     );
   };
 
+  const measure = () => {
+    const nav = navRef.current;
+    const m = measureRef.current;
+    if (!nav || !m) return;
+    const children = Array.from(m.children) as HTMLElement[];
+    if (children.length !== navItems.length) return;
+    const widths = children.map((el) => el.getBoundingClientRect().width);
+    const available = nav.clientWidth;
+    const totalAll = widths.reduce((a, b) => a + b, 0) + NAV_GAP * (widths.length - 1);
+    if (totalAll <= available) {
+      setFitCount(navItems.length);
+      return;
+    }
+    const limit = available - MORE_RESERVE;
+    let total = 0;
+    let count = 0;
+    for (let i = 0; i < widths.length; i++) {
+      const w = widths[i] + (i > 0 ? NAV_GAP : 0);
+      if (total + w <= limit) {
+        total += w;
+        count++;
+      } else break;
+    }
+    setFitCount(Math.max(count, 0));
+  };
+
+  useEffect(() => {
+    measure();
+    const raf = { id: 0 };
+    const schedule = () => {
+      cancelAnimationFrame(raf.id);
+      raf.id = requestAnimationFrame(measure);
+    };
+    const ro = new ResizeObserver(schedule);
+    if (navRef.current) ro.observe(navRef.current);
+    window.addEventListener("resize", schedule);
+    if (typeof document !== "undefined" && (document as any).fonts?.ready) {
+      (document as any).fonts.ready.then(schedule).catch(() => {});
+    }
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", schedule);
+      cancelAnimationFrame(raf.id);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const overflowItems = navItems.slice(fitCount);
+  const overflowHasBadge = overflowItems.some(
+    (item) => item.badgeKey && counts[item.badgeKey] > 0
+  );
+
+  const renderNavItem = (item: (typeof navItems)[number]) => {
+    const active = location.pathname === item.to;
+    const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
+
+    if (item.to === "/games") {
+      return (
+        <DropdownMenu key={item.to}>
+          <DropdownMenuTrigger asChild>
+            <Link to={item.to}>
+              <Button
+                variant={active ? "default" : "ghost"}
+                size="sm"
+                className={`rounded-full gap-1.5 text-sm relative ${active ? "bg-primary text-primary-foreground" : ""}`}
+              >
+                <item.icon className="w-4 h-4" />
+                <span className="hidden md:inline">{item.label}</span>
+              </Button>
+            </Link>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" className="min-w-[160px]">
+            <DropdownMenuItem onClick={() => navigate("/games")}>
+              <Gamepad2 className="w-4 h-4 mr-2" /> Játékok böngészése
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate("/games?create=true")}>
+              <Sparkles className="w-4 h-4 mr-2 text-chart-4" /> AI CREATE
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    if ("dropdown" in item && item.dropdown) {
+      return (
+        <HoverNavDropdown
+          key={item.to}
+          to={item.to}
+          label={item.label}
+          icon={item.icon}
+          items={item.dropdown}
+          badge={renderBadge(badgeCount)}
+        />
+      );
+    }
+
+    return (
+      <Link key={item.to} to={item.to}>
+        <Button
+          variant={active ? "default" : "ghost"}
+          size="sm"
+          className={`rounded-full gap-1.5 text-sm relative ${active ? "bg-primary text-primary-foreground" : ""}`}
+        >
+          <item.icon className="w-4 h-4" />
+          <span className="hidden md:inline">{item.label}</span>
+          {renderBadge(badgeCount)}
+        </Button>
+      </Link>
+    );
+  };
+
+  const renderMeasureClone = (item: (typeof navItems)[number]) => (
+    <span key={item.to} className="inline-flex">
+      <Button variant="ghost" size="sm" className="rounded-full gap-1.5 text-sm pointer-events-none">
+        <item.icon className="w-4 h-4" />
+        <span className="hidden md:inline">{item.label}</span>
+      </Button>
+    </span>
+  );
+
   return (
     <header className="bg-card border-b border-border sticky top-0 z-50">
       <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-1 sm:gap-2 max-w-full">
@@ -91,67 +219,108 @@ const DashboardNav = () => {
           <span className="text-lg font-extrabold hidden lg:block">TanuljVelem</span>
         </Link>
 
-        <nav className="flex items-center gap-1 flex-1 min-w-0 overflow-x-auto scrollbar-none">
+        <nav ref={navRef} className="relative flex items-center gap-1 flex-1 min-w-0 flex-nowrap">
+          {/* Hidden measuring row: mirrors every nav button so widths stay measurable */}
+          <div
+            ref={measureRef}
+            aria-hidden="true"
+            className="absolute -left-[9999px] -top-[9999px] flex gap-1 pointer-events-none"
+          >
+            {navItems.map(renderMeasureClone)}
+          </div>
 
-          {navItems.map((item) => {
-            const active = location.pathname === item.to;
-            const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
+          {navItems.map((item, index) => (
+            <span
+              key={item.to}
+              className={`shrink-0 ${index >= fitCount ? "hidden" : "inline-flex"}`}
+            >
+              {renderNavItem(item)}
+            </span>
+          ))}
 
-            if (item.to === "/games") {
-              return (
-                <DropdownMenu key={item.to}>
-                  <DropdownMenuTrigger asChild>
-                    <Link to={item.to}>
-                      <Button
-                        variant={active ? "default" : "ghost"}
-                        size="sm"
-                        className={`rounded-full gap-1.5 text-sm relative ${active ? "bg-primary text-primary-foreground" : ""}`}
-                      >
-                        <item.icon className="w-4 h-4" />
-                        <span className="hidden md:inline">{item.label}</span>
-                      </Button>
-                    </Link>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="min-w-[160px]">
-                    <DropdownMenuItem onClick={() => navigate("/games")}>
-                      <Gamepad2 className="w-4 h-4 mr-2" /> Játékok böngészése
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate("/games?create=true")}>
-                      <Sparkles className="w-4 h-4 mr-2 text-chart-4" /> AI CREATE
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              );
-            }
-
-            if ("dropdown" in item && item.dropdown) {
-              return (
-                <HoverNavDropdown
-                  key={item.to}
-                  to={item.to}
-                  label={item.label}
-                  icon={item.icon}
-                  items={item.dropdown}
-                  badge={renderBadge(badgeCount)}
-                />
-              );
-            }
-
-            return (
-              <Link key={item.to} to={item.to}>
-
+          {fitCount < navItems.length && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
-                  variant={active ? "default" : "ghost"}
+                  variant="ghost"
                   size="sm"
-                  className={`rounded-full gap-1.5 text-sm relative ${active ? "bg-primary text-primary-foreground" : ""}`}
+                  className="rounded-full gap-1.5 text-sm relative shrink-0"
+                  aria-label="Több menü"
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span className="hidden md:inline">{item.label}</span>
-                  {renderBadge(badgeCount)}
+                  <MoreHorizontal className="w-4 h-4" />
+                  <span className="hidden md:inline">Több</span>
+                  {overflowHasBadge && (
+                    <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive" />
+                  )}
                 </Button>
-              </Link>
-            );
-          })}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" sideOffset={8} className="max-h-[70vh] overflow-y-auto min-w-[200px]">
+                {overflowItems.map((item) => {
+                  const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
+                  const hasDropdown = "dropdown" in item && item.dropdown;
+
+                  if (hasDropdown) {
+                    return (
+                      <Fragment key={item.to}>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {item.label}
+                        </div>
+                        {item.dropdown!.map((sub) => {
+                          const SubIcon = sub.icon;
+                          const subActive =
+                            location.pathname + location.search === sub.to ||
+                            location.pathname === sub.to.split("?")[0] && sub.to.split("?").length === 1;
+                          return (
+                            <DropdownMenuItem
+                              key={sub.to}
+                              onClick={() => navigate(sub.to)}
+                              className={subActive ? "bg-accent font-semibold" : ""}
+                            >
+                              <SubIcon className="w-4 h-4 mr-2" />
+                              {sub.label}
+                            </DropdownMenuItem>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  }
+
+                  if (item.to === "/games") {
+                    return (
+                      <Fragment key={item.to}>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          {item.label}
+                        </div>
+                        <DropdownMenuItem onClick={() => navigate("/games")}>
+                          <Gamepad2 className="w-4 h-4 mr-2" /> Játékok böngészése
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate("/games?create=true")}>
+                          <Sparkles className="w-4 h-4 mr-2 text-chart-4" /> AI CREATE
+                        </DropdownMenuItem>
+                      </Fragment>
+                    );
+                  }
+
+                  const Icon = item.icon;
+                  return (
+                    <DropdownMenuItem
+                      key={item.to}
+                      onClick={() => navigate(item.to)}
+                      className={location.pathname === item.to ? "bg-accent font-semibold" : ""}
+                    >
+                      <Icon className="w-4 h-4 mr-2" />
+                      {item.label}
+                      {badgeCount > 0 && (
+                        <span className="ml-auto min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                          {badgeCount > 99 ? "99+" : badgeCount}
+                        </span>
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </nav>
 
         <div className="flex items-center gap-1 sm:gap-2 shrink-0">
