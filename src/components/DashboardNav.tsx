@@ -31,7 +31,17 @@ const navItems = [
       { to: "/pomodoro", label: "Pomodoro", icon: Timer },
     ],
   },
-  { to: "/schedule", label: "Órarend", icon: CalendarDays, badgeKey: null },
+  {
+    to: "/schedule",
+    label: "Órarend",
+    icon: CalendarDays,
+    badgeKey: null,
+    dropdown: [
+      { to: "/schedule", label: "Órarend", icon: CalendarDays },
+      { to: "/schedule?tab=calendar", label: "Naptár", icon: CalendarRange },
+      { to: "/schedule?tab=planner", label: "AI tervező", icon: Sparkles },
+    ],
+  },
   { to: "/materials", label: "Tananyag", icon: Library, badgeKey: null },
   { to: "/games", label: "Játékok", icon: Gamepad2, badgeKey: null },
   { to: "/tests", label: "Tesztek", icon: ClipboardList, badgeKey: null },
