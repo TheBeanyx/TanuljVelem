@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { Bell, Megaphone, MessageCircle, AtSign } from "lucide-react";
+import { Bell, Megaphone, MessageCircle, AtSign, CheckCheck, Timer, BookOpen, Shield, Mail } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { getLocalNotifs, getLocalReadAt, markLocalNotifsRead, NOTIF_FEED_EVENT } from "@/lib/notificationPrefs";
 import { Badge } from "@/components/ui/badge";
 import DashboardNav from "@/components/DashboardNav";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,23 +11,42 @@ import { supabase } from "@/integrations/supabase/client";
 
 type NotificationItem = {
   id: string;
-  type: "announcement" | "comment" | "mention";
+  type: string;
   title: string;
   desc: string;
-  date: string;
+  at: string;
+  url?: string;
 };
 
 const Notifications = () => {
   const { user, profile } = useAuth();
-  const { markRead } = useUnreadCounts();
+  const { markRead, refresh } = useUnreadCounts();
+  const [readAt, setReadAt] = useState<string>("9999");
+  const [tick, setTick] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const isTeacher = profile?.role === "teacher";
 
-  // Mark notifications as read on mount
   useEffect(() => {
-    if (user) markRead("notif", "all");
+    if (!user) return;
+    supabase.from("read_status").select("last_read_at").eq("user_id", user.id)
+      .eq("channel_type", "notif").eq("channel_id", "all").maybeSingle()
+      .then(({ data }) => {
+        const server = data?.last_read_at || "1970-01-01T00:00:00Z";
+        const local = getLocalReadAt();
+        setReadAt(new Date(server) > new Date(local) ? server : local);
+      });
+    const h = () => setTick((t) => t + 1);
+    window.addEventListener(NOTIF_FEED_EVENT, h);
+    return () => window.removeEventListener(NOTIF_FEED_EVENT, h);
   }, [user]);
+
+  const markAllRead = async () => {
+    markLocalNotifsRead();
+    await markRead("notif", "all");
+    setReadAt(new Date().toISOString());
+    refresh();
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -53,7 +75,7 @@ const Notifications = () => {
             type: "announcement",
             title: `Közlemény: ${a.subject || "Általános"}`,
             desc: `${name}: ${a.message.slice(0, 80)}${a.message.length > 80 ? "..." : ""}`,
-            date: new Date(a.created_at).toLocaleDateString("hu-HU"),
+            at: a.created_at, url: "/announcements",
           });
         }
       } else {
@@ -87,7 +109,7 @@ const Notifications = () => {
               type: "comment",
               title: `Hozzászólás: ${ann?.subject || "Közlemény"}`,
               desc: `${commenter?.display_name || commenter?.username || "Valaki"}: ${c.message.slice(0, 80)}`,
-              date: new Date(c.created_at).toLocaleDateString("hu-HU"),
+              at: c.created_at, url: "/announcements",
             });
           }
         }
@@ -121,36 +143,47 @@ const Notifications = () => {
             type: "mention",
             title: `Említés: ${className}`,
             desc: `${mentioner?.display_name || mentioner?.username || "Valaki"} megemlített téged a csoportban.`,
-            date: new Date(m.created_at).toLocaleDateString("hu-HU"),
+            at: m.created_at, url: "/classes",
           });
         }
       }
 
-      items.sort((a, b) => {
-        const da = new Date(a.date.split(".").reverse().join("-")).getTime();
-        const db = new Date(b.date.split(".").reverse().join("-")).getTime();
-        return db - da;
-      });
+      for (const n of getLocalNotifs()) {
+        if (n.key === "mention" || n.key === "announcement") continue; // already listed from the database
+        items.push({ id: `l-${n.id}`, type: n.key, title: n.title, desc: n.body, at: n.at, url: n.url });
+      }
+      items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
       setNotifications(items);
       setLoading(false);
     };
     fetchNotifications();
-  }, [user, isTeacher]);
+  }, [user, isTeacher, tick]);
 
   const iconMap: Record<string, any> = {
     announcement: Megaphone,
     comment: MessageCircle,
     mention: AtSign,
+    pomodoro_done: Timer,
+    homework_due: BookOpen,
+    new_message: Mail,
+    admin: Shield,
   };
+  const unread = notifications.filter((n) => new Date(n.at) > new Date(readAt)).length;
 
   return (
     <div className="min-h-screen bg-background">
       <DashboardNav />
       <main className="container mx-auto px-4 py-8 max-w-2xl">
-        <h1 className="text-2xl font-black flex items-center gap-2 mb-6">
-          <Bell className="w-6 h-6 text-primary" /> Értesítések
-        </h1>
+        <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
+          <h1 className="text-2xl font-black flex items-center gap-2">
+            <Bell className="w-6 h-6 text-primary" /> Értesítések
+            {unread > 0 && <Badge variant="destructive">{unread} új</Badge>}
+          </h1>
+          <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={markAllRead} disabled={unread === 0}>
+            <CheckCheck className="w-4 h-4" /> Mind elolvastam
+          </Button>
+        </div>
         {loading ? (
           <p className="text-muted-foreground text-center py-10">Betöltés...</p>
         ) : notifications.length === 0 ? (
@@ -163,8 +196,9 @@ const Notifications = () => {
           <div className="space-y-3">
             {notifications.map((n) => {
               const Icon = iconMap[n.type] || Bell;
+              const isNew = new Date(n.at) > new Date(readAt);
               return (
-                <div key={n.id} className="bg-card rounded-2xl border border-border p-4 flex items-start gap-4">
+                <Link to={n.url || "/notifications"} key={n.id} className={`bg-card rounded-2xl border p-4 flex items-start gap-4 hover:bg-muted/40 transition-colors ${isNew ? "border-primary/60 ring-1 ring-primary/30" : "border-border"}`}>
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                     n.type === "mention" ? "bg-accent/20" : "bg-primary/10"
                   }`}>
@@ -173,9 +207,10 @@ const Notifications = () => {
                   <div className="flex-1">
                     <p className="font-bold text-sm">{n.title}</p>
                     <p className="text-sm text-muted-foreground">{n.desc}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{n.date}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{new Date(n.at).toLocaleString("hu-HU")}</p>
                   </div>
-                </div>
+                  {isNew && <span className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5 shrink-0" />}
+                </Link>
               );
             })}
           </div>

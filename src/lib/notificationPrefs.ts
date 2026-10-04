@@ -41,14 +41,38 @@ export const setNotifPref = (key: NotifPrefKey, value: boolean) => {
   return next;
 };
 
-/** Shows a notification only if the user enabled this category and granted permission. */
+export type LocalNotif = { id: string; key: string; title: string; body: string; url: string; at: string };
+const FEED_KEY = "tv_local_notifs";
+const FEED_READ_KEY = "tv_local_notifs_read";
+export const NOTIF_FEED_EVENT = "tv-notif-feed";
+
+export const getLocalNotifs = (): LocalNotif[] => {
+  try { return JSON.parse(localStorage.getItem(FEED_KEY) || "[]"); } catch { return []; }
+};
+export const getLocalReadAt = () => localStorage.getItem(FEED_READ_KEY) || "1970-01-01T00:00:00Z";
+export const markLocalNotifsRead = () => {
+  localStorage.setItem(FEED_READ_KEY, new Date().toISOString());
+  window.dispatchEvent(new Event(NOTIF_FEED_EVENT));
+};
+export const unreadLocalCount = () => {
+  const r = getLocalReadAt();
+  return getLocalNotifs().filter((n) => n.at > r).length;
+};
+const pushLocal = (key: string, title: string, body: string, url: string) => {
+  const item: LocalNotif = { id: crypto.randomUUID(), key, title, body, url, at: new Date().toISOString() };
+  localStorage.setItem(FEED_KEY, JSON.stringify([item, ...getLocalNotifs()].slice(0, 100)));
+  window.dispatchEvent(new Event(NOTIF_FEED_EVENT));
+};
+
+/** Logs the notification into the in-app feed, and shows a browser notification if enabled + permitted. */
 export const notify = async (
-  key: NotifPrefKey,
+  key: NotifPrefKey | "announcement" | "mention" | "admin",
   title: string,
   body: string,
   url = "/"
 ) => {
-  if (!isNotifEnabled(key)) return;
+  pushLocal(key, title, body, url);
+  if (key in DEFAULTS && !isNotifEnabled(key as NotifPrefKey)) return;
   if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
   try {
     const reg = await navigator.serviceWorker?.getRegistration();
