@@ -66,12 +66,29 @@ export const useAppNotifications = () => {
         { event: "INSERT", schema: "public", table: "direct_messages", filter: `receiver_id=eq.${user.id}` },
         (payload: any) => {
           const text: string = payload.new?.text || "";
+          const isAdmin = payload.new?.is_system || payload.new?.is_suggestion;
           notify(
-            "new_message",
-            "Új üzenet érkezett 💬",
+            isAdmin ? "admin" : "new_message",
+            isAdmin ? (payload.new?.is_warning ? "Figyelmeztetés érkezett ⚠️" : "Új admin üzenet 🛡️") : "Új üzenet érkezett 💬",
             text.length > 80 ? `${text.slice(0, 80)}…` : text,
             "/messages"
           );
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "mentions", filter: `mentioned_user_id=eq.${user.id}` },
+        () => notify("mention", "Megemlítettek 📣", "Valaki megemlített egy csoportban.", "/notifications")
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "announcements" },
+        (payload: any) => {
+          const a = payload.new;
+          if (!a || a.sender_id === user.id) return;
+          if (a.visibility !== "public" && a.recipient_id !== user.id) return;
+          const m: string = a.message || "";
+          notify("announcement", `Új közlemény: ${a.subject || "Általános"} 📢`, m.length > 80 ? `${m.slice(0, 80)}…` : m, "/announcements");
         }
       )
       .subscribe();
