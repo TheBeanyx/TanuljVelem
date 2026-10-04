@@ -113,7 +113,6 @@ const DashboardNav = () => {
     if (children.length !== navItems.length) return;
     const widths = children.map((el) => el.getBoundingClientRect().width);
     const available = nav.clientWidth;
-    const totalAll = widths.reduce((a, b) => a + b, 0) + NAV_GAP * (widths.length - 1);
     const limit = available - MORE_RESERVE;
     let total = 0;
     let count = 0;
@@ -272,7 +271,6 @@ const DashboardNav = () => {
                   const hasDropdown = "dropdown" in item && item.dropdown;
 
                   if (hasDropdown) {
-                    const all = item.to === "/games" ? [] : item.dropdown!;
                     return (
                       <Fragment key={item.to}>
                         <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">

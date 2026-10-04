@@ -60,6 +60,12 @@ serve(async (req) => {
     const doneIds = new Set((done ?? []).map((d: any) => d.homework_id));
     const openHw = (homeworks ?? []).filter((h: any) => !doneIds.has(h.id));
 
+    // No open homework and no upcoming exam -> nothing to plan, don't invent anything
+    if (!openHw.length && !(exams ?? []).length) {
+      await supabase.from("study_plans").delete().eq("user_id", userId).gte("plan_date", today).eq("done", false);
+      return json({ summary: "", count: 0, empty: true });
+    }
+
     const days = ["hétfő", "kedd", "szerda", "csütörtök", "péntek", "szombat", "vasárnap"];
 
     const context = `Mai dátum: ${today}. Tervezz legfeljebb ${horizonStr}-ig.
@@ -185,7 +191,7 @@ Csak a plan_study_days eszközt hívd meg.`,
         ref_id: typeof i.ref_id === "string" && uuidRe.test(i.ref_id) ? i.ref_id : null,
       }));
 
-    if (!rows.length) return json({ error: "Nincs mit ütemezni. Írj fel házi feladatot vagy dolgozatot!" }, 400);
+    if (!rows.length) return json({ summary: "", count: 0, empty: true });
 
     await supabase.from("study_plans").delete().eq("user_id", userId).gte("plan_date", today).eq("done", false);
     const { error: insertErr } = await supabase.from("study_plans").insert(rows);

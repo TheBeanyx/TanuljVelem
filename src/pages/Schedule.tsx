@@ -195,6 +195,11 @@ const Schedule = () => {
       });
       if (error) throw new Error(error.message);
       if ((data as any)?.error) throw new Error((data as any).error);
+      if ((data as any)?.empty) {
+        toast.info("Nincs felírt házi feladat vagy dolgozat, így nincs mit tervezni.");
+        load();
+        return;
+      }
       toast.success(`Kész! ${(data as any)?.count ?? 0} tanulási blokk ütemezve.`);
       if ((data as any)?.summary) toast.message((data as any).summary);
       load();
