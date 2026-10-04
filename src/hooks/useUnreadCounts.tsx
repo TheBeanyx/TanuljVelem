@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { NOTIF_FEED_EVENT } from "@/lib/notificationPrefs";
 
 type UnreadCounts = {
   messages: number;
@@ -64,6 +65,9 @@ export const useUnreadCounts = () => {
 
     // 3. Unread notifications (announcements/comments)
     const lastNotifRead = readMap.get("notif:all");
+    const localRead = localStorage.getItem("tv_local_notifs_read") || "1970-01-01T00:00:00Z";
+    let localFeed: any[] = [];
+    try { localFeed = JSON.parse(localStorage.getItem("tv_local_notifs") || "[]"); } catch {}
     const isTeacher = profile?.role === "teacher";
 
     let notifCount = 0;
@@ -97,6 +101,7 @@ export const useUnreadCounts = () => {
       .eq("mentioned_user_id", user.id)
       .gt("created_at", lastNotifRead || "1970-01-01T00:00:00Z");
     notifCount += mentionCount || 0;
+    notifCount += localFeed.filter((n) => n.key !== "mention" && n.key !== "announcement" && n.at > localRead).length;
 
     setCounts({ messages: dmCount, classes: classCount, notifications: notifCount });
   };
@@ -104,7 +109,9 @@ export const useUnreadCounts = () => {
   useEffect(() => {
     fetchCounts();
     const interval = setInterval(fetchCounts, 15000); // refresh every 15s
-    return () => clearInterval(interval);
+    const onFeed = () => fetchCounts();
+    window.addEventListener(NOTIF_FEED_EVENT, onFeed);
+    return () => { clearInterval(interval); window.removeEventListener(NOTIF_FEED_EVENT, onFeed); };
   }, [user, profile]);
 
   const markRead = async (channelType: string, channelId: string) => {
