@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle, Shield, Inbox, Lightbulb, TrendingUp } from "lucide-react";
+import { ArrowLeft, MessageSquare, Send, Search, Users, Reply, X, AlertTriangle, Shield, CheckCheck, Inbox, Lightbulb, TrendingUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -119,6 +119,24 @@ const Messages = () => {
     fetchChatMessages(selectedConversation.recipientId); fetchConversations();
   };
 
+  const [adminReadAt, setAdminReadAt] = useState("1970-01-01T00:00:00Z");
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("read_status").select("last_read_at").eq("user_id", user.id)
+      .eq("channel_type", "admin").eq("channel_id", "all").maybeSingle()
+      .then(({ data }) => data?.last_read_at && setAdminReadAt(data.last_read_at));
+  }, [user]);
+  const adminUnread = useMemo(() => adminMsgs.filter((m: any) => new Date(m.created_at) > new Date(adminReadAt)).length, [adminMsgs, adminReadAt]);
+
+  const markAllChatsRead = async () => {
+    await Promise.all(conversations.map((c) => markRead("dm", c.recipientId)));
+  };
+  const markAllAdminRead = async () => {
+    const senders = [...new Set(adminMsgs.map((m: any) => m.sender_id))];
+    await Promise.all([markRead("admin", "all"), ...senders.map((sid) => markRead("dm", sid))]);
+    setAdminReadAt(new Date().toISOString());
+  };
+
   // Admin messages derived data
   const warningCount = useMemo(() => adminMsgs.filter((m) => m.is_warning).length, [adminMsgs]);
   const suggestionCount = useMemo(() => adminMsgs.filter((m) => m.is_suggestion).length, [adminMsgs]);
@@ -180,9 +198,9 @@ const Messages = () => {
             <TabsTrigger value="chats" className="gap-2"><MessageSquare className="w-4 h-4" /> Beszélgetések</TabsTrigger>
             <TabsTrigger value="admin" className="gap-2 relative">
               <Shield className="w-4 h-4" /> Admin üzenetek
-              {warningCount > 0 && (
+              {adminUnread > 0 && (
                 <span className="ml-1 min-w-[20px] h-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
-                  {warningCount}
+                  {adminUnread}
                 </span>
               )}
             </TabsTrigger>
@@ -192,7 +210,10 @@ const Messages = () => {
           <TabsContent value="chats" className="mt-0">
             <div className="grid lg:grid-cols-[300px_1fr] gap-3 sm:gap-4 h-[calc(100dvh-220px)] min-h-[420px]">
               <div className={`bg-card rounded-2xl border border-border overflow-hidden flex-col min-h-0 ${selectedConversation ? "hidden lg:flex" : "flex"}`}>
-                <div className="p-3 border-b border-border">
+                <div className="p-3 border-b border-border space-y-2">
+                  <Button size="sm" variant="outline" className="w-full rounded-full gap-1.5" onClick={markAllChatsRead} disabled={!conversations.length}>
+                    <CheckCheck className="w-4 h-4" /> Mind elolvastam
+                  </Button>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input value={userSearch} onChange={(e) => handleSearch(e.target.value)} placeholder="Felhasználó keresése..." className="rounded-full pl-9" />
@@ -333,6 +354,9 @@ const Messages = () => {
                   {f === "all" ? "Összes" : f === "warning" ? `Figyelmeztetés (${warningCount})` : f === "points" ? `Pontok (${pointCount})` : `Javaslatok (${suggestionCount})`}
                 </Button>
               ))}
+              <Button size="sm" variant="secondary" className="rounded-full gap-1.5 ml-auto" onClick={markAllAdminRead} disabled={adminUnread === 0}>
+                <CheckCheck className="w-4 h-4" /> Mind elolvastam{adminUnread > 0 ? ` (${adminUnread})` : ""}
+              </Button>
             </div>
 
             <div className="space-y-3">
