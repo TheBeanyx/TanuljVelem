@@ -62,6 +62,22 @@ const navItems = [
   },
 ];
 
+const extraItems = [
+  {
+    to: "/__more",
+    label: "Egyéb",
+    icon: MoreHorizontal,
+    badgeKey: null,
+    dropdown: [
+      { to: "/notifications", label: "Értesítések", icon: Bell },
+      { to: "/achievements", label: "Eredmények", icon: Trophy },
+      { to: "/profile", label: "Profil & beállítások", icon: Users },
+      { to: "/suggestions", label: "Javaslatok", icon: Sparkles },
+      { to: "/rules", label: "Szabályzat", icon: FileText },
+    ],
+  },
+];
+
 const NAV_GAP = 4;
 const MORE_RESERVE = 52;
 
@@ -98,10 +114,6 @@ const DashboardNav = () => {
     const widths = children.map((el) => el.getBoundingClientRect().width);
     const available = nav.clientWidth;
     const totalAll = widths.reduce((a, b) => a + b, 0) + NAV_GAP * (widths.length - 1);
-    if (totalAll <= available) {
-      setFitCount(navItems.length);
-      return;
-    }
     const limit = available - MORE_RESERVE;
     let total = 0;
     let count = 0;
@@ -238,7 +250,7 @@ const DashboardNav = () => {
             </span>
           ))}
 
-          {fitCount < navItems.length && (
+          {(
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -255,11 +267,12 @@ const DashboardNav = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={8} className="max-h-[70vh] overflow-y-auto min-w-[200px]">
-                {overflowItems.map((item) => {
+                {[...navItems, ...extraItems].map((item) => {
                   const badgeCount = item.badgeKey ? counts[item.badgeKey] : 0;
                   const hasDropdown = "dropdown" in item && item.dropdown;
 
                   if (hasDropdown) {
+                    const all = item.to === "/games" ? [] : item.dropdown!;
                     return (
                       <Fragment key={item.to}>
                         <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
