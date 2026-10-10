@@ -910,6 +910,48 @@ export type Database = {
         }
         Relationships: []
       }
+      published_teacher_websites: {
+        Row: {
+          html: string
+          id: string
+          owner_id: string
+          published_at: string
+          slug: string
+          title: string
+        }
+        Insert: {
+          html: string
+          id: string
+          owner_id: string
+          published_at?: string
+          slug: string
+          title: string
+        }
+        Update: {
+          html?: string
+          id?: string
+          owner_id?: string
+          published_at?: string
+          slug?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "published_teacher_websites_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "teacher_websites"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "published_teacher_websites_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       read_status: {
         Row: {
           channel_id: string
@@ -1167,6 +1209,70 @@ export type Database = {
           what_to_study?: string | null
         }
         Relationships: []
+      }
+      teacher_site_authors: {
+        Row: {
+          user_id: string
+        }
+        Insert: {
+          user_id: string
+        }
+        Update: {
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_site_authors_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_websites: {
+        Row: {
+          blocks: Json
+          created_at: string
+          editor_mode: string
+          html: string
+          id: string
+          owner_id: string
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          blocks?: Json
+          created_at?: string
+          editor_mode?: string
+          html?: string
+          id?: string
+          owner_id: string
+          slug: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          blocks?: Json
+          created_at?: string
+          editor_mode?: string
+          html?: string
+          id?: string
+          owner_id?: string
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_websites_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       test_questions: {
         Row: {
@@ -1429,6 +1535,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_author_teacher_site: { Args: never; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
