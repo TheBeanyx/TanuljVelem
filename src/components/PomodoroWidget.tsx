@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Timer, Play, Pause, RotateCcw, Minimize2, Music, VolumeX } from "lucide-react";
-import { TRACKS, TrackId, playTrack, stopMusic } from "@/lib/studyMusic";
-import { notify } from "@/lib/notificationPrefs";
+import { Timer, Play, Pause, RotateCcw, Minimize2, Music, VolumeX, PictureInPicture2 } from "lucide-react";
+import { TRACKS } from "@/lib/studyMusic";
+import { usePomodoro } from "@/hooks/usePomodoro";
+import { DURATIONS, PomodoroMode as Mode } from "@/lib/pomodoro";
 
-type Mode = "focus" | "short" | "long";
-const DURATIONS: Record<Mode, number> = { focus: 25 * 60, short: 5 * 60, long: 15 * 60 };
 const LABEL: Record<Mode, string> = { focus: "Fókusz", short: "Rövid szünet", long: "Hosszú szünet" };
 
 interface Props {
@@ -16,55 +15,9 @@ interface Props {
 
 const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
   const [open, setOpen] = useState(defaultOpen || embedded);
-  const [mode, setMode] = useState<Mode>("focus");
-  const [seconds, setSeconds] = useState(DURATIONS.focus);
-  const [running, setRunning] = useState(false);
-  const [completed, setCompleted] = useState(0);
-  const [track, setTrack] = useState<TrackId>("off");
+  const { mode, seconds, running, completed, track, setTrack, toggle, reset, openPictureInPicture } = usePomodoro();
   const [showMusic, setShowMusic] = useState(false);
-  const intervalRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = window.setInterval(() => {
-        setSeconds((s) => {
-          if (s <= 1) {
-            setRunning(false);
-            stopMusic();
-            try {
-              new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=").play();
-            } catch {}
-            notify(
-              "pomodoro_done",
-              mode === "focus" ? "Fókusz blokk letelt! 🍅" : "Vége a szünetnek! ⏰",
-              mode === "focus" ? "Szép munka — tarts most egy rövid szünetet." : "Indíts egy új fókusz blokkot.",
-              "/pomodoro"
-            );
-            if (mode === "focus") setCompleted((c) => c + 1);
-            return 0;
-          }
-          return s - 1;
-        });
-      }, 1000);
-    }
-    return () => { if (intervalRef.current) window.clearInterval(intervalRef.current); };
-  }, [running, mode]);
-
-  // music follows the timer
-  useEffect(() => {
-    if (running && track !== "off") playTrack(track);
-    else stopMusic();
-  }, [running, track]);
-
-  useEffect(() => () => stopMusic(), []);
-
-  const switchMode = (m: Mode) => {
-    setMode(m);
-    setSeconds(DURATIONS[m]);
-    setRunning(false);
-  };
-
-  const reset = () => { setRunning(false); setSeconds(DURATIONS[mode]); };
+  const switchMode = (m: Mode) => reset(m);
 
   const min = Math.floor(seconds / 60).toString().padStart(2, "0");
   const sec = (seconds % 60).toString().padStart(2, "0");
@@ -72,13 +25,14 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
 
   if (!open && !embedded) {
     return (
-      <button
+      <Button
+        size="icon"
         onClick={() => setOpen(true)}
         className="fixed bottom-24 right-4 z-40 w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:scale-105 transition"
         aria-label="Pomodoro időzítő"
       >
         <Timer className="w-5 h-5" />
-      </button>
+      </Button>
     );
   }
 
@@ -131,7 +85,7 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
           fill="#ffffff"
           fontSize="40"
           fontWeight="900"
-          style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "1px" }}
+          style={{ fontVariantNumeric: "tabular-nums", letterSpacing: "0" }}
         >
           {min}:{sec}
         </text>
@@ -149,6 +103,9 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
           <span className="text-lg">🍅</span> Pomodoro
           {completed > 0 && <span className="text-xs text-muted-foreground">· {completed} kör</span>}
         </div>
+        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={openPictureInPicture} aria-label="Kép a képben" title="Kép a képben">
+          <PictureInPicture2 className="w-4 h-4" />
+        </Button>
         {!embedded && (
           <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setOpen(false)}>
             <Minimize2 className="w-3 h-3" />
@@ -170,10 +127,10 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
       {tomato}
 
       <div className="flex gap-2">
-        <Button className="flex-1" onClick={() => setRunning((r) => !r)}>
+        <Button className="flex-1" onClick={toggle}>
           {running ? <><Pause className="w-4 h-4 mr-1" />Szünet</> : <><Play className="w-4 h-4 mr-1" />Indítás</>}
         </Button>
-        <Button variant="outline" size="icon" onClick={reset}><RotateCcw className="w-4 h-4" /></Button>
+        <Button variant="outline" size="icon" onClick={() => reset()} aria-label="Időzítő visszaállítása"><RotateCcw className="w-4 h-4" /></Button>
         <Button
           variant={track === "off" ? "outline" : "default"}
           size="icon"
@@ -213,7 +170,7 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
   }
 
   return (
-    <Card className="fixed bottom-24 right-4 z-40 w-[280px] p-4 shadow-2xl border-2">
+    <Card className="fixed bottom-24 right-4 z-40 w-[280px] max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto p-4 shadow-2xl border-2">
       {body}
     </Card>
   );
