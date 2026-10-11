@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const navItems = [
+const baseNavItems = [
   { to: "/dashboard", label: "Házi Feladat", icon: BookOpen, badgeKey: null },
   {
     to: "/learn",
@@ -86,6 +86,10 @@ const DashboardNav = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { counts } = useUnreadCounts();
+  const navItems = profile?.role === "teacher" ? [...baseNavItems, {
+    to: "/teacher/editor", label: "Tanár", icon: GraduationCap, badgeKey: null,
+    dropdown: [{ to: "/teacher/editor", label: "Weboldal szerkesztő", icon: NotebookPen }],
+  }] : baseNavItems;
 
   const navRef = useRef<HTMLElement | null>(null);
   const measureRef = useRef<HTMLDivElement | null>(null);
@@ -145,7 +149,7 @@ const DashboardNav = () => {
       cancelAnimationFrame(raf.id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [profile?.role]);
 
   const overflowItems = navItems.slice(fitCount);
   const overflowHasBadge = overflowItems.some(
@@ -276,7 +280,7 @@ const DashboardNav = () => {
                         <div className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           {item.label}
                         </div>
-                        {item.dropdown!.map((sub) => {
+                        {item.dropdown?.map((sub) => {
                           const SubIcon = sub.icon;
                           const subActive =
                             location.pathname + location.search === sub.to ||
