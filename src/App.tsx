@@ -37,6 +37,10 @@ import NotFound from "./pages/NotFound";
 import AiAssistant from "./components/AiAssistant";
 import useChallengeReminder from "./hooks/useChallengeReminder";
 import useAppNotifications from "./hooks/useAppNotifications";
+import { PomodoroProvider } from "@/hooks/usePomodoro";
+import GlobalPomodoro from "@/components/GlobalPomodoro";
+import TeacherEditor from "@/pages/TeacherEditor";
+import PublishedTeacherSite from "@/pages/PublishedTeacherSite";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +58,7 @@ const App = () => (
         <Sonner />
         <AppShell />
         <BrowserRouter>
+          <PomodoroProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
@@ -65,6 +70,8 @@ const App = () => (
             <Route path="/games/:id" element={<GamePlayer />} />
             <Route path="/tests" element={<Tests />} />
             <Route path="/learn" element={<Learn />} />
+            <Route path="/learn/:slug" element={<PublishedTeacherSite />} />
+            <Route path="/teacher/editor" element={<TeacherEditor />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/pdf-analyzer" element={<PdfAnalyzer />} />
             <Route path="/image-analyzer" element={<ImageAnalyzer />} />
@@ -87,6 +94,8 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AiAssistant />
+          <GlobalPomodoro />
+          </PomodoroProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
