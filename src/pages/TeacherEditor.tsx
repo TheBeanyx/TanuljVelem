@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { Code2, LayoutTemplate, Plus, Save, Globe, Trash2, ArrowUp, ArrowDown, Type, Image, MousePointer2, Minus, Upload, ExternalLink, Copy, EyeOff } from "lucide-react";
+import { Code2, LayoutTemplate, Plus, Save, Globe, Trash2, ArrowUp, ArrowDown, Type, Image, MousePointer2, Minus, Upload, ExternalLink, Copy, EyeOff, PanelTop, Settings2, Home } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardNav from "@/components/DashboardNav";
@@ -11,11 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { SiteBlock, blocksToHtml, isValidSiteSlug, sitePath } from "@/lib/teacherSites";
+import { SiteBlock, VisualSite, SiteTheme, emptyVisualSite, readVisualSite, newSitePage, visualSiteToHtml, safeEmbedUrl, isValidSiteSlug, sitePath } from "@/lib/teacherSites";
+import TeacherSiteSettings, { BlockDesign } from "@/components/TeacherSiteSettings";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 
-const blockTypes = [{ type: "heading", label: "Címsor", icon: Type }, { type: "text", label: "Szöveg", icon: Type }, { type: "image", label: "Kép", icon: Image }, { type: "button", label: "Gomb", icon: MousePointer2 }, { type: "divider", label: "Elválasztó", icon: Minus }] as const;
+const blockTypes = [{ type: "heading", label: "Címsor", icon: Type }, { type: "text", label: "Szöveg", icon: Type }, { type: "image", label: "Kép", icon: Image }, { type: "button", label: "Gomb", icon: MousePointer2 }, { type: "divider", label: "Elválasztó", icon: Minus }, { type: "embed", label: "Beágyazás", icon: PanelTop }] as const;
 export default function TeacherEditor() {
   const { user, profile, loading } = useAuth();
   const [eligible, setEligible] = useState<boolean | null>(null);
@@ -27,11 +28,19 @@ export default function TeacherEditor() {
   const [slug, setSlug] = useState("");
   const [mode, setMode] = useState<"visual" | "html">("visual");
   const [html, setHtml] = useState("");
-  const [blocks, setBlocks] = useState<SiteBlock[]>([]);
+  const [visual, setVisual] = useState<VisualSite>(emptyVisualSite);
+  const [pageId, setPageId] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState("100%");
+  const currentPage = visual.pages.find(p => p.id === pageId) ?? visual.pages[0];
+  const blocks = currentPage.blocks;
+  const setBlocks = (value: SiteBlock[] | ((prev: SiteBlock[]) => SiteBlock[])) => setVisual(prev => ({ ...prev, pages: prev.pages.map(p => p.id === currentPage.id ? { ...p, blocks: typeof value === "function" ? value(p.blocks) : value } : p) }));
+  const updateTheme = (patch: Partial<SiteTheme>) => { setVisual(prev => ({ ...prev, theme: { ...prev.theme, ...patch } })); setDirty(true); };
+  const updatePage = (patch: Partial<typeof currentPage>) => { setVisual(prev => ({ ...prev, pages: prev.pages.map(p => p.id === currentPage.id ? { ...p, ...patch } : p) })); setDirty(true); };
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const source = mode === "html" ? html : blocksToHtml(title, blocks);
+  const source = mode === "html" ? html : visualSiteToHtml(title, visual);
   const loadSites = async () => {
     if (!user) return;
     const { data, error } = await supabase.from("teacher_websites").select("*").eq("owner_id", user.id).order("updated_at", { ascending: false });
@@ -58,7 +67,7 @@ export default function TeacherEditor() {
     if (!canSwitch()) return;
     setId(site?.id ?? null); setTitle(site?.title ?? ""); setSlug(site?.slug ?? "");
     setMode(site?.editor_mode === "html" ? "html" : "visual"); setHtml(site?.html ?? "");
-    setBlocks(Array.isArray(site?.blocks) ? site.blocks as unknown as SiteBlock[] : []); setEditing(true); setDirty(false);
+    const loaded = readVisualSite(site?.blocks); setVisual(loaded); setPageId(loaded.homePageId); setEditing(true); setDirty(false);
   };
   const updateBlock = (blockId: string, patch: Partial<SiteBlock>) => { setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...patch } : b)); setDirty(true); };
   const moveBlock = (index: number, direction: number) => {
@@ -69,10 +78,12 @@ export default function TeacherEditor() {
   const save = async (publish = false) => {
     if (!user || busy) return;
     if (!title.trim() || !isValidSiteSlug(slug)) { toast.error("Adj címet és érvényes címet: kisbetűk, számok és kötőjelek, legfeljebb 80 karakter."); return; }
-    if (publish && (mode === "html" ? !html.trim() : !blocks.length)) { toast.error("Előbb adj tartalmat az oldalhoz."); return; }
+    if (mode === "visual" && visual.pages.some(p => p.slug && !isValidSiteSlug(p.slug)) || mode === "visual" && new Set(visual.pages.map(p => p.slug || "home")).size !== visual.pages.length) { toast.error("Minden aloldalnak egyedi, érvényes webcím kell."); return; }
+    if (mode === "visual" && visual.pages.some(p => p.blocks.some(b => b.type === "embed" && !safeEmbedUrl(b.url)))) { toast.error("A beágyazáshoz Google Naptár, Google Űrlap vagy YouTube beágyazási cím kell."); return; }
+    if (publish && (mode === "html" ? !html.trim() : !visual.pages.some(p => p.blocks.length))) { toast.error("Előbb adj tartalmat az oldalhoz."); return; }
     setBusy(true);
     const nextId = id ?? crypto.randomUUID();
-    const { error } = await supabase.from("teacher_websites").upsert({ id: nextId, owner_id: user.id, title: title.trim(), slug, editor_mode: mode, html, blocks: blocks as unknown as Json, updated_at: new Date().toISOString() });
+    const { error } = await supabase.from("teacher_websites").upsert({ id: nextId, owner_id: user.id, title: title.trim(), slug, editor_mode: mode, html, blocks: visual as unknown as Json, updated_at: new Date().toISOString() });
     if (error) { toast.error(error.code === "23505" ? "Ez a cím már foglalt. Válassz másikat." : "A mentés nem sikerült."); setBusy(false); return; }
     setId(nextId); setDirty(false);
     if (publish) {
@@ -93,10 +104,10 @@ export default function TeacherEditor() {
     const { error } = await supabase.from("teacher_websites").delete().eq("id", site.id);
     if (error) toast.error("A törlés nem sikerült."); else { if (id === site.id) { setEditing(false); setDirty(false); setId(null); } await loadSites(); }
   };
-  const uploadImage = async (file: File | undefined, blockId: string) => {
+  const uploadImage = async (file: File | undefined, blockId?: string) => {
     if (!file) return;
     if (!["image/png", "image/jpeg", "image/webp", "image/gif"].includes(file.type) || file.size > 2 * 1024 * 1024) { toast.error("PNG, JPG, WebP vagy GIF kép, legfeljebb 2 MB."); return; }
-    const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === "string") updateBlock(blockId, { url: reader.result }); }; reader.readAsDataURL(file);
+    const reader = new FileReader(); reader.onload = () => { if (typeof reader.result === "string") blockId ? updateBlock(blockId, { url: reader.result }) : updateTheme({ backgroundImage: reader.result }); }; reader.readAsDataURL(file);
   };
   if (loading || (user && eligible === null)) return <div className="p-12 text-center">Betöltés…</div>;
   if (!user) return <Navigate to="/login" replace />;
@@ -114,7 +125,8 @@ export default function TeacherEditor() {
           <div className="grid sm:grid-cols-2 gap-4 mb-4"><div><Label htmlFor="site-title">Oldal címe</Label><Input id="site-title" value={title} onChange={e => { setTitle(e.target.value); setDirty(true); }} className="mt-1" /></div><div><Label htmlFor="site-slug">Webcím vége</Label><Input id="site-slug" value={slug} maxLength={80} onChange={e => { setSlug(e.target.value.toLowerCase()); setDirty(true); }} placeholder="biologia-7" className="mt-1" /><p className="text-xs text-muted-foreground mt-1 break-all">{window.location.origin}/learn/{slug || "…"}</p></div></div>
           <div className="flex flex-wrap items-center gap-2 mb-4"><Tabs value={mode} onValueChange={value => { setMode(value as "visual" | "html"); setDirty(true); }}><TabsList><TabsTrigger value="visual"><LayoutTemplate className="w-4 h-4 mr-2" />Vizuális</TabsTrigger><TabsTrigger value="html"><Code2 className="w-4 h-4 mr-2" />HTML</TabsTrigger></TabsList></Tabs><div className="flex-1" /><span className="text-xs text-muted-foreground">{dirty ? "Nem mentett változások" : id ? "Mentve" : "Új piszkozat"}</span><Button variant="outline" disabled={busy} onClick={() => save()}><Save className="w-4 h-4 mr-2" />Mentés</Button><Button disabled={busy} onClick={() => save(true)}><Globe className="w-4 h-4 mr-2" />Közzététel</Button></div>
           {id && publishedIds.includes(id) && <div className="flex flex-wrap gap-2 mb-4"><Button asChild variant="outline" size="sm"><a href={sitePath(sites.find(s => s.id === id)?.slug ?? slug)} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4 mr-2" />Nyilvános oldal</a></Button><Button variant="ghost" size="sm" onClick={async () => { try { await navigator.clipboard.writeText(`${window.location.origin}${sitePath(sites.find(s => s.id === id)?.slug ?? slug)}`); toast.success("Webcím másolva."); } catch { toast.error("A másolás nem sikerült."); } }}><Copy className="w-4 h-4 mr-2" />Cím másolása</Button><Button variant="ghost" size="sm" disabled={busy} onClick={unpublish}><EyeOff className="w-4 h-4 mr-2" />Közzététel visszavonása</Button></div>}
-          <div className="grid xl:grid-cols-2 gap-5">
+          {mode === "visual" && <><div className="flex flex-wrap gap-2 border-b border-border pb-3 mb-3">{visual.pages.map(p => <Button key={p.id} size="sm" variant={p.id === currentPage.id ? "secondary" : "ghost"} onClick={() => setPageId(p.id)}>{p.id === visual.homePageId && <Home className="w-3 h-3 mr-1" />}{p.title || "Aloldal"}</Button>)}<Button size="sm" variant="outline" onClick={() => { const p = newSitePage("Új aloldal", `oldal-${visual.pages.length + 1}`); setVisual(prev => ({ ...prev, pages: [...prev.pages, p] })); setPageId(p.id); setDirty(true); }}><Plus className="w-3 h-3 mr-1" />Aloldal</Button><Button size="sm" variant={showSettings ? "secondary" : "ghost"} onClick={() => setShowSettings(v => !v)}><Settings2 className="w-4 h-4 mr-1" />Megjelenés</Button></div><div className="flex flex-wrap items-end gap-2 mb-4"><div className="flex-1 min-w-[140px]"><Label>Aloldal neve</Label><Input aria-label="Aloldal neve" value={currentPage.title} onChange={e => updatePage({ title: e.target.value })} /></div><div className="flex-1 min-w-[140px]"><Label>Aloldal webcíme</Label><Input aria-label="Aloldal webcíme" value={currentPage.slug} placeholder="Főoldal" onChange={e => updatePage({ slug: e.target.value.toLowerCase() })} /></div><Button variant="outline" size="icon" title="Legyen főoldal" aria-label="Legyen főoldal" onClick={() => { setVisual(prev => ({ ...prev, homePageId: currentPage.id })); setDirty(true); }}><Home className="w-4 h-4" /></Button><Button variant="ghost" size="icon" aria-label="Aloldal törlése" disabled={visual.pages.length === 1} onClick={() => { if (!confirm("Törlöd az aloldalt és elemeit?")) return; const pages = visual.pages.filter(p => p.id !== currentPage.id); setVisual(prev => ({ ...prev, pages, homePageId: prev.homePageId === currentPage.id ? pages[0].id : prev.homePageId })); setPageId(pages[0].id); setDirty(true); }}><Trash2 className="w-4 h-4" /></Button></div>{showSettings && <TeacherSiteSettings theme={visual.theme} update={updateTheme} upload={file => uploadImage(file)} />}</>}
+          <div className="grid xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.2fr)] gap-5">
             <div className="min-w-0">
               {mode === "html" ? <><Button variant="outline" size="sm" className="mb-3" onClick={() => fileRef.current?.click()}><Upload className="w-4 h-4 mr-2" />HTML fájl feltöltése</Button><input ref={fileRef} type="file" accept=".html,.htm,text/html" className="hidden" onChange={async e => { const file = e.target.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { toast.error("A HTML fájl legfeljebb 2 MB lehet."); return; } setHtml(await file.text()); setDirty(true); e.target.value = ""; }} /><Textarea aria-label="HTML kód" value={html} onChange={e => { setHtml(e.target.value); setDirty(true); }} className="font-mono text-sm min-h-[520px]" spellCheck={false} /></> : <>
                 <div className="flex flex-wrap gap-2 mb-4">{blockTypes.map(item => <Button key={item.type} size="sm" variant="outline" onClick={() => { setBlocks(prev => [...prev, { id: crypto.randomUUID(), type: item.type, content: "", url: "", align: "left", animation: "none" }]); setDirty(true); }}><item.icon className="w-4 h-4 mr-1" />{item.label}</Button>)}</div>
@@ -122,13 +134,16 @@ export default function TeacherEditor() {
                 <div className="space-y-3">{blocks.map((block, index) => <div key={block.id} className="border border-border rounded-lg p-3 bg-card space-y-3">
                   <div className="flex items-center gap-1"><span className="text-sm font-bold flex-1">{blockTypes.find(t => t.type === block.type)?.label}</span><Button size="icon" variant="ghost" className="w-8 h-8" disabled={index === 0} onClick={() => moveBlock(index, -1)} aria-label="Elem feljebb"><ArrowUp className="w-4 h-4" /></Button><Button size="icon" variant="ghost" className="w-8 h-8" disabled={index === blocks.length - 1} onClick={() => moveBlock(index, 1)} aria-label="Elem lejjebb"><ArrowDown className="w-4 h-4" /></Button><Button size="icon" variant="ghost" className="w-8 h-8" onClick={() => { setBlocks(prev => prev.filter(b => b.id !== block.id)); setDirty(true); }} aria-label="Elem törlése"><Trash2 className="w-4 h-4" /></Button></div>
                   {block.type !== "divider" && <Textarea aria-label={block.type === "image" ? "Kép leírása" : "Elem szövege"} value={block.content} onChange={e => updateBlock(block.id, { content: e.target.value })} rows={block.type === "text" ? 4 : 2} />}
-                  {(block.type === "image" || block.type === "button") && <Input aria-label={block.type === "image" ? "Kép címe" : "Gomb hivatkozása"} placeholder="https://…" value={block.url.startsWith("data:") ? "" : block.url} onChange={e => updateBlock(block.id, { url: e.target.value })} />}
+                  {(block.type === "image" || block.type === "button" || block.type === "embed") && <Input aria-label={block.type === "image" ? "Kép címe" : block.type === "embed" ? "Beágyazás címe vagy iframe kódja" : "Gomb hivatkozása"} placeholder="https://…" value={block.url.startsWith("data:") ? "" : block.url} onChange={e => updateBlock(block.id, { url: e.target.value })} />}
+                  {block.type === "embed" && block.url && !safeEmbedUrl(block.url) && <p className="text-xs text-destructive">Google Naptár, Google Űrlap vagy YouTube beágyazási cím szükséges.</p>}
+                  {block.type === "button" && <Select value={block.pageId || "external"} onValueChange={v => updateBlock(block.id, { pageId: v === "external" ? undefined : v })}><SelectTrigger aria-label="Gomb céloldala"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="external">Külső hivatkozás</SelectItem>{visual.pages.map(p => <SelectItem key={p.id} value={p.id}>{p.title}</SelectItem>)}</SelectContent></Select>}
                   {block.type === "image" && <Label className="block text-xs text-muted-foreground">{block.url.startsWith("data:") ? "Kép feltöltve · csere" : "Kép feltöltése (max. 2 MB)"}<Input type="file" accept="image/png,image/jpeg,image/webp,image/gif" className="mt-1" onChange={e => uploadImage(e.target.files?.[0], block.id)} /></Label>}
                   <div className="grid grid-cols-2 gap-2"><Select value={block.align} onValueChange={value => updateBlock(block.id, { align: value as SiteBlock["align"] })}><SelectTrigger aria-label="Igazítás"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="left">Balra</SelectItem><SelectItem value="center">Középre</SelectItem><SelectItem value="right">Jobbra</SelectItem></SelectContent></Select><Select value={block.animation} onValueChange={value => updateBlock(block.id, { animation: value as SiteBlock["animation"] })}><SelectTrigger aria-label="Animáció"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">Nincs animáció</SelectItem><SelectItem value="fade">Áttűnés</SelectItem><SelectItem value="slide">Beúszás</SelectItem><SelectItem value="pulse">Pulzálás</SelectItem></SelectContent></Select></div>
+                  <BlockDesign block={block} update={patch => updateBlock(block.id, patch)} />
                 </div>)}</div>
               </>}
             </div>
-            <section className="min-w-0"><h2 className="text-sm font-bold mb-3">Előnézet</h2><div className="border border-border rounded-lg overflow-hidden sticky top-24"><TeacherSiteFrame title={title} html={source} className="h-[600px]" /></div></section>
+            <section className="min-w-0"><div className="flex items-center justify-between gap-2 mb-3"><h2 className="text-sm font-bold">Előnézet</h2><Select value={previewWidth} onValueChange={setPreviewWidth}><SelectTrigger className="w-36" aria-label="Előnézet mérete"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="100%">Asztali</SelectItem><SelectItem value="768px">Tablet</SelectItem><SelectItem value="375px">Telefon</SelectItem></SelectContent></Select></div><div className="border border-border rounded-lg overflow-auto sticky top-24 bg-muted p-2"><div className={`mx-auto max-w-full ${previewWidth === "375px" ? "w-[375px]" : previewWidth === "768px" ? "w-[768px]" : "w-full"}`}><TeacherSiteFrame title={title} html={source} className="h-[640px]" /></div></div></section>
           </div>
         </div>}
       </div>
