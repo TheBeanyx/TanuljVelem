@@ -16,7 +16,7 @@ interface Props {
 const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
   const [open, setOpen] = useState(defaultOpen || embedded);
   const { mode, seconds, running, completed, track, setTrack, toggle, reset, openPictureInPicture } = usePomodoro();
-  const [showMusic, setShowMusic] = useState(false);
+  const [showMusic, setShowMusic] = useState(embedded);
   const switchMode = (m: Mode) => reset(m);
 
   const min = Math.floor(seconds / 60).toString().padStart(2, "0");
@@ -136,6 +136,7 @@ const PomodoroWidget = ({ defaultOpen = false, embedded = false }: Props) => {
           size="icon"
           onClick={() => setShowMusic((s) => !s)}
           aria-label="Tanulást segítő zene"
+          aria-expanded={showMusic}
         >
           {track === "off" ? <VolumeX className="w-4 h-4" /> : <Music className="w-4 h-4" />}
         </Button>
