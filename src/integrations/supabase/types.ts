@@ -826,6 +826,45 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_paths: {
+        Row: {
+          completed: Json
+          created_at: string
+          grade: number | null
+          id: string
+          subject: string | null
+          title: string
+          units: Json
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          completed?: Json
+          created_at?: string
+          grade?: number | null
+          id?: string
+          subject?: string | null
+          title: string
+          units?: Json
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          completed?: Json
+          created_at?: string
+          grade?: number | null
+          id?: string
+          subject?: string | null
+          title?: string
+          units?: Json
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           class_id: string
