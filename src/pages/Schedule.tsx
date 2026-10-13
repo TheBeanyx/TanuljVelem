@@ -700,6 +700,11 @@ const Schedule = () => {
                                 {p.subject && <Badge variant="secondary" className="text-[10px]">{p.subject}</Badge>}
                                 {p.ref_type === "exam" && <Badge variant="destructive" className="text-[10px]">Dolgozatra</Badge>}
                                 {p.ref_type === "homework" && <Badge variant="outline" className="text-[10px]">Házi</Badge>}
+                                {p.ref_type === "path" && (
+                                  <a href={p.ref_id ? `/path?id=${p.ref_id}` : "/path"}>
+                                    <Badge className="text-[10px]">Lecke indítása</Badge>
+                                  </a>
+                                )}
                                 {p.minutes && (
                                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Clock className="w-3 h-3" /> {p.minutes} perc
