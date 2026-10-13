@@ -44,7 +44,7 @@ serve(async (req) => {
     horizon.setDate(horizon.getDate() + 21);
     const horizonStr = horizon.toISOString().slice(0, 10);
 
-    const [{ data: homeworks }, { data: exams }, { data: done }, { data: timetable }, { data: events }] =
+    const [{ data: homeworks }, { data: exams }, { data: done }, { data: timetable }, { data: events }, { data: paths }] =
       await Promise.all([
         supabase.from("homeworks").select("id, subject, title, description, deadline").order("deadline"),
         supabase.from("exams").select("id, subject, title, topic, exam_type, exam_date").order("exam_date"),
@@ -55,13 +55,22 @@ serve(async (req) => {
           .select("title, event_type, event_date")
           .gte("event_date", today)
           .lte("event_date", horizonStr),
+        supabase.from("learning_paths").select("id, title, subject, units, completed").eq("user_id", userId),
       ]);
+
+    const pathLines = (paths ?? []).map((p: any) => {
+      const doneSet = new Set((p.completed ?? []) as string[]);
+      const next = (p.units ?? []).flatMap((u: any) => (u.lessons ?? []).map((l: any) => ({ ...l, unit: u.title })))
+        .filter((l: any) => !doneSet.has(l.id)).slice(0, 4);
+      if (!next.length) return null;
+      return `- id=${p.id} | ${p.subject ?? ""} ${p.title} | következő leckék: ${next.map((l: any) => `${l.unit} / ${l.title}`).join("; ")}`;
+    }).filter(Boolean);
 
     const doneIds = new Set((done ?? []).map((d: any) => d.homework_id));
     const openHw = (homeworks ?? []).filter((h: any) => !doneIds.has(h.id));
 
     // No open homework and no upcoming exam -> nothing to plan, don't invent anything
-    if (!openHw.length && !(exams ?? []).length) {
+    if (!openHw.length && !(exams ?? []).length && !pathLines.length) {
       await supabase.from("study_plans").delete().eq("user_id", userId).gte("plan_date", today).eq("done", false);
       return json({ summary: "", count: 0, empty: true });
     }
@@ -89,6 +98,9 @@ ${(exams ?? []).length
             )
             .join("\n")
         : "(nincs)"}
+
+TANULÁSI ÖSVÉNYEK (Duolingo-szerű leckék, 10-15 perc/lecke; ha releváns egy dolgozathoz, azt a leckét javasold felkészülésként, egyébként napi 1 leckét ütemezz ref_type=path és ref_id=ösvény id):
+${pathLines.length ? pathLines.join("\n") : "(nincs)"}
 
 ÓRAREND (mely napokon van az adott tantárgy):
 ${(timetable ?? []).length
@@ -140,7 +152,7 @@ Csak a plan_study_days eszközt hívd meg.`,
                         subject: { type: "string" },
                         what_to_study: { type: "string" },
                         minutes: { type: "number" },
-                        ref_type: { type: "string", enum: ["homework", "exam", "other"] },
+                        ref_type: { type: "string", enum: ["homework", "exam", "path", "other"] },
                         ref_id: { type: "string", description: "a kapcsolódó házi/dolgozat id-ja, ha van" },
                       },
                       required: ["plan_date", "title", "what_to_study", "minutes", "ref_type"],
@@ -187,7 +199,7 @@ Csak a plan_study_days eszközt hívd meg.`,
         subject: i.subject ? String(i.subject).slice(0, 60) : null,
         what_to_study: i.what_to_study ? String(i.what_to_study).slice(0, 1200) : null,
         minutes: Math.max(10, Math.min(180, Number(i.minutes) || 30)),
-        ref_type: ["homework", "exam", "other"].includes(i.ref_type) ? i.ref_type : "other",
+        ref_type: ["homework", "exam", "path", "other"].includes(i.ref_type) ? i.ref_type : "other",
         ref_id: typeof i.ref_id === "string" && uuidRe.test(i.ref_id) ? i.ref_id : null,
       }));
 
