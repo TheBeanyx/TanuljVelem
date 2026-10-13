@@ -15,6 +15,7 @@ import GamePlayer from "./pages/GamePlayer";
 import Tests from "./pages/Tests";
 import Learn from "./pages/Learn";
 import Schedule from "./pages/Schedule";
+import LearningPath from "./pages/LearningPath";
 import PdfAnalyzer from "./pages/PdfAnalyzer";
 import ImageAnalyzer from "./pages/ImageAnalyzer";
 import AiTutor from "./pages/AiTutor";
@@ -72,6 +73,7 @@ const App = () => (
             <Route path="/learn" element={<Learn />} />
             <Route path="/learn/:slug" element={<PublishedTeacherSite />} />
             <Route path="/teacher/editor" element={<TeacherEditor />} />
+            <Route path="/path" element={<LearningPath />} />
             <Route path="/schedule" element={<Schedule />} />
             <Route path="/pdf-analyzer" element={<PdfAnalyzer />} />
             <Route path="/image-analyzer" element={<ImageAnalyzer />} />
