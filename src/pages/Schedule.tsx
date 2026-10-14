@@ -69,6 +69,7 @@ type Plan = {
   what_to_study: string | null;
   minutes: number | null;
   ref_type: string | null;
+  ref_id?: string | null;
   done: boolean;
 };
 type Homework = { id: string; subject: string; title: string; deadline: string | null };
