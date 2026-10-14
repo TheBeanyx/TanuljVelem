@@ -826,12 +826,49 @@ export type Database = {
         }
         Relationships: []
       }
+      learning_path_progress: {
+        Row: {
+          completed: Json
+          id: string
+          path_id: string
+          updated_at: string
+          user_id: string
+          xp: number
+        }
+        Insert: {
+          completed?: Json
+          id?: string
+          path_id: string
+          updated_at?: string
+          user_id: string
+          xp?: number
+        }
+        Update: {
+          completed?: Json
+          id?: string
+          path_id?: string
+          updated_at?: string
+          user_id?: string
+          xp?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learning_path_progress_path_id_fkey"
+            columns: ["path_id"]
+            isOneToOne: false
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_paths: {
         Row: {
           completed: Json
           created_at: string
           grade: number | null
           id: string
+          is_public: boolean
+          plays: number
           subject: string | null
           title: string
           units: Json
@@ -844,6 +881,8 @@ export type Database = {
           created_at?: string
           grade?: number | null
           id?: string
+          is_public?: boolean
+          plays?: number
           subject?: string | null
           title: string
           units?: Json
@@ -856,6 +895,8 @@ export type Database = {
           created_at?: string
           grade?: number | null
           id?: string
+          is_public?: boolean
+          plays?: number
           subject?: string | null
           title?: string
           units?: Json
@@ -1574,6 +1615,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bump_path_plays: { Args: { _path_id: string }; Returns: undefined }
       can_author_teacher_site: { Args: never; Returns: boolean }
       has_role: {
         Args: {
