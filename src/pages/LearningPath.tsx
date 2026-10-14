@@ -163,17 +163,30 @@ const LearningPath = () => {
   );
 };
 
-const PathMap = ({ path, onBack, onStart, onDelete }: { path: Path; onBack: () => void; onStart: (l: Lesson) => void; onDelete: () => void }) => {
+const PathMap = ({ path, isOwner, onBack, onStart, onDelete, onTogglePublic }: { path: Path; isOwner: boolean; onBack: () => void; onStart: (l: Lesson) => void; onDelete: () => void; onTogglePublic: () => void }) => {
   const order = path.units.flatMap((u) => u.lessons.map((l) => l.id));
   const done = new Set(path.completed ?? []);
   const nextId = order.find((id) => !done.has(id));
   let idx = 0;
+  const copyLink = () => {
+    navigator.clipboard.writeText(`${window.location.origin}/path?id=${path.id}`);
+    toast({ title: "Link másolva!" });
+  };
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-2 mb-6 flex-wrap">
         <Button variant="ghost" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1" />Vissza</Button>
-        <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Ösvény törlése"><Trash2 className="w-4 h-4" /></Button>
+        <div className="flex items-center gap-2">
+          {isOwner && (
+            <Button variant={path.is_public ? "default" : "outline"} size="sm" className="rounded-full" onClick={onTogglePublic}>
+              {path.is_public ? <><Globe className="w-4 h-4 mr-1" />Publikus</> : <><LockKeyhole className="w-4 h-4 mr-1" />Privát – megosztás</>}
+            </Button>
+          )}
+          {path.is_public && <Button variant="ghost" size="icon" onClick={copyLink} aria-label="Link másolása"><Share2 className="w-4 h-4" /></Button>}
+          {isOwner && <Button variant="ghost" size="icon" onClick={onDelete} aria-label="Ösvény törlése"><Trash2 className="w-4 h-4" /></Button>}
+        </div>
       </div>
+      {!isOwner && path.author && <p className="text-center text-xs text-muted-foreground">Készítette: {path.author}</p>}
       <h1 className="text-2xl font-extrabold text-center">{path.title}</h1>
       <p className="text-center text-sm text-muted-foreground mb-8">{path.xp} XP · {done.size}/{order.length} lecke kész</p>
       {path.units.map((u, ui) => (
