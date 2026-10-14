@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -44,6 +44,12 @@ import TeacherEditor from "@/pages/TeacherEditor";
 import PublishedTeacherSite from "@/pages/PublishedTeacherSite";
 
 const queryClient = new QueryClient();
+
+// The quick AI helper is hidden in the focused step-by-step learning mode
+const AssistantGate = () => {
+  const { pathname } = useLocation();
+  return pathname.startsWith("/path") ? null : <AiAssistant />;
+};
 
 const AppShell = () => {
   useChallengeReminder();
@@ -95,7 +101,7 @@ const App = () => (
             <Route path="/study-groups" element={<StudyGroups />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <AiAssistant />
+          <AssistantGate />
           <GlobalPomodoro />
           </PomodoroProvider>
         </BrowserRouter>
