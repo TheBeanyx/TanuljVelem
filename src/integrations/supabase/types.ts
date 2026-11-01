@@ -1413,6 +1413,7 @@ export type Database = {
           score: number
           test_id: string
           total_questions: number
+          user_id: string | null
         }
         Insert: {
           answers?: Json
@@ -1422,6 +1423,7 @@ export type Database = {
           score: number
           test_id: string
           total_questions: number
+          user_id?: string | null
         }
         Update: {
           answers?: Json
@@ -1431,6 +1433,7 @@ export type Database = {
           score?: number
           test_id?: string
           total_questions?: number
+          user_id?: string | null
         }
         Relationships: [
           {
