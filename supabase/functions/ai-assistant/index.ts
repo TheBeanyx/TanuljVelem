@@ -41,6 +41,7 @@ serve(async (req) => {
               .limit(40),
             supabase.from("homework_completions").select("homework_id").eq("user_id", userData.user.id),
           ]);
+          const { data: ob } = await supabase.from("user_onboarding").select("learning_style, answers").eq("user_id", userData.user.id).maybeSingle();
 
           const doneIds = new Set((done ?? []).map((d: any) => d.homework_id));
           const hwLines = (homeworks ?? []).map((h: any) =>
@@ -59,7 +60,7 @@ ${hwLines.length ? hwLines.join("\n") : "(nincs felírt házi feladat)"}
 DOLGOZATOK:
 ${exLines.length ? exLines.join("\n") : "(nincs felírt dolgozat)"}
 
-Ha a felhasználó a házijáról vagy dolgozatáról kérdez (pl. "mi a házim", "magyarázd el a biológia házimat"), a fenti listából azonosítsd a megfelelő tételt, és arról beszélj. Ha nem találsz megfelelőt, mondd meg, hogy nincs ilyen felírva.`;
+${ob ? `TANULÁSI PROFIL: típus=${ob.learning_style}; ${JSON.stringify(ob.answers)}. Magyarázataidat ehhez igazítsd (pl. vizuálisnak táblázat/ábra, mozgásosnak gyakorló feladat).\n\n` : ""}Ha a felhasználó a házijáról vagy dolgozatáról kérdez (pl. "mi a házim", "magyarázd el a biológia házimat"), a fenti listából azonosítsd a megfelelő tételt, és arról beszélj. Ha nem találsz megfelelőt, mondd meg, hogy nincs ilyen felírva.`;
         }
       } catch (ctxErr) {
         console.error("context fetch error:", ctxErr);

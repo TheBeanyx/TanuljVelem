@@ -29,6 +29,13 @@
       "when": 1793518962641,
       "tag": "0003_privacy_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793519368354,
+      "tag": "0004_user_onboarding",
+      "breakpoints": true
     }
   ]
 }
