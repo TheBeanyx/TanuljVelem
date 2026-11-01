@@ -56,9 +56,8 @@ const LearningPath = () => {
     const names = new Map((profs ?? []).map((p) => [p.id, p.display_name || p.username]));
     const progMap = new Map((prog ?? []).map((p) => [p.path_id, p]));
     setPaths(rows.map((r) => {
-      const own = r.user_id === user.id;
       const pr = progMap.get(r.id);
-      return { ...r, author: names.get(r.user_id) ?? "Ismeretlen", completed: own ? r.completed : ((pr?.completed as string[]) ?? []), xp: own ? r.xp : (pr?.xp ?? 0) };
+      return { ...r, author: names.get(r.user_id) ?? "Ismeretlen", completed: (pr?.completed as string[]) ?? [], xp: pr?.xp ?? 0 };
     }));
     setLoading(false);
   }, [user]);
@@ -113,14 +112,10 @@ const LearningPath = () => {
     if (!user) return;
     const completed = Array.from(new Set([...(path.completed ?? []), lesson.id]));
     const newXp = (path.xp ?? 0) + xp;
-    if (path.user_id === user.id) {
-      await supabase.from("learning_paths").update({ completed, xp: newXp, updated_at: new Date().toISOString() }).eq("id", path.id);
-    } else {
-      if (!path.completed?.length) await supabase.rpc("bump_path_plays", { _path_id: path.id });
-      await supabase.from("learning_path_progress").upsert(
-        { user_id: user.id, path_id: path.id, completed, xp: newXp, updated_at: new Date().toISOString() },
-        { onConflict: "user_id,path_id" });
-    }
+    if (path.user_id !== user.id && !path.completed?.length) await supabase.rpc("bump_path_plays", { _path_id: path.id });
+    await supabase.from("learning_path_progress").upsert(
+      { user_id: user.id, path_id: path.id, completed, xp: newXp, updated_at: new Date().toISOString() },
+      { onConflict: "user_id,path_id" });
     const today = new Date().toISOString().slice(0, 10);
     await supabase.from("study_plans").update({ done: true }).eq("ref_id", path.id).eq("plan_date", today);
     setActive(null);

@@ -55,10 +55,10 @@ serve(async (req) => {
           .select("title, event_type, event_date")
           .gte("event_date", today)
           .lte("event_date", horizonStr),
-        supabase.from("learning_paths").select("id, title, subject, units, completed").eq("user_id", userId),
+        supabase.from("learning_path_progress").select("completed, learning_paths(id, title, subject, units, user_id)").eq("user_id", userId),
       ]);
 
-    const pathLines = (paths ?? []).map((p: any) => {
+    const pathLines = (paths ?? []).filter((r: any) => r.learning_paths).map((r: any) => ({ ...r.learning_paths, completed: r.completed })).map((p: any) => {
       const doneSet = new Set((p.completed ?? []) as string[]);
       const next = (p.units ?? []).flatMap((u: any) => (u.lessons ?? []).map((l: any) => ({ ...l, unit: u.title })))
         .filter((l: any) => !doneSet.has(l.id)).slice(0, 4);
