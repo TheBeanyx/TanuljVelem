@@ -44,7 +44,7 @@ serve(async (req) => {
     horizon.setDate(horizon.getDate() + 21);
     const horizonStr = horizon.toISOString().slice(0, 10);
 
-    const [{ data: homeworks }, { data: exams }, { data: done }, { data: timetable }, { data: events }, { data: paths }] =
+    const [{ data: homeworks }, { data: exams }, { data: done }, { data: timetable }, { data: events }, { data: paths }, { data: ownPaths }] =
       await Promise.all([
         supabase.from("homeworks").select("id, subject, title, description, deadline").order("deadline"),
         supabase.from("exams").select("id, subject, title, topic, exam_type, exam_date").order("exam_date"),
@@ -56,9 +56,13 @@ serve(async (req) => {
           .gte("event_date", today)
           .lte("event_date", horizonStr),
         supabase.from("learning_path_progress").select("completed, learning_paths(id, title, subject, units, user_id)").eq("user_id", userId),
+        supabase.from("learning_paths").select("id, title, subject, units, user_id").eq("user_id", userId),
       ]);
 
-    const pathLines = (paths ?? []).filter((r: any) => r.learning_paths).map((r: any) => ({ ...r.learning_paths, completed: r.completed })).map((p: any) => {
+    const progressed = (paths ?? []).filter((r: any) => r.learning_paths).map((r: any) => ({ ...r.learning_paths, completed: r.completed }));
+    const seen = new Set(progressed.map((p: any) => p.id));
+    const allPaths = [...progressed, ...(ownPaths ?? []).filter((p: any) => !seen.has(p.id)).map((p: any) => ({ ...p, completed: [] }))];
+    const pathLines = allPaths.map((p: any) => {
       const doneSet = new Set((p.completed ?? []) as string[]);
       const next = (p.units ?? []).flatMap((u: any) => (u.lessons ?? []).map((l: any) => ({ ...l, unit: u.title })))
         .filter((l: any) => !doneSet.has(l.id)).slice(0, 4);
