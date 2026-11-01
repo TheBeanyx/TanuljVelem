@@ -1541,6 +1541,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_onboarding: {
+        Row: {
+          answers: Json
+          completed_at: string
+          learning_style: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          completed_at?: string
+          learning_style: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          completed_at?: string
+          learning_style?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           granted_at: string
