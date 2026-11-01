@@ -40,6 +40,7 @@ import useChallengeReminder from "./hooks/useChallengeReminder";
 import useAppNotifications from "./hooks/useAppNotifications";
 import { PomodoroProvider } from "@/hooks/usePomodoro";
 import GlobalPomodoro from "@/components/GlobalPomodoro";
+import OnboardingGate from "@/components/OnboardingGate";
 import TeacherEditor from "@/pages/TeacherEditor";
 import PublishedTeacherSite from "@/pages/PublishedTeacherSite";
 
@@ -103,6 +104,7 @@ const App = () => (
           </Routes>
           <AssistantGate />
           <GlobalPomodoro />
+          <OnboardingGate />
           </PomodoroProvider>
         </BrowserRouter>
       </TooltipProvider>
