@@ -6,4 +6,4 @@
 - [x] Add teacher-only HTML / visual website editor with private drafts and public /learn/:slug publishing.
 - [x] Verify timer navigation and external window, real student-write denial, and simulated teacher editing / public rendering (7 unit tests passed).
 - [x] Onboarding kérdések regisztráció után (privát)
-- [ ] 8 tanulási stílus + 45 kérdéses "Nem tudom" stílusteszt
+- [x] 8 tanulási stílus + 45 kérdéses "Nem tudom" stílusteszt
