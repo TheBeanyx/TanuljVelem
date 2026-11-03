@@ -36,6 +36,13 @@
       "when": 1793519368354,
       "tag": "0004_user_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793735484656,
+      "tag": "0005_parent_accounts",
+      "breakpoints": true
     }
   ]
 }

@@ -613,6 +613,65 @@ export type Database = {
           },
         ]
       }
+      family_chat_messages: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          sender_id: string
+          text: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          text: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_chat_messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "family_chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_chats: {
+        Row: {
+          created_at: string
+          id: string
+          include_student: boolean
+          parent_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          include_student?: boolean
+          parent_id: string
+          student_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          include_student?: boolean
+          parent_id?: string
+          student_id?: string
+          teacher_id?: string
+        }
+        Relationships: []
+      }
       flashcard_items: {
         Row: {
           back: string
@@ -930,6 +989,60 @@ export type Database = {
           mentioned_user_id?: string
           mentioner_user_id?: string
           message_id?: string
+        }
+        Relationships: []
+      }
+      parent_link_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          parent_email: string | null
+          student_id: string
+          used_at: string | null
+          used_by: string | null
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          parent_email?: string | null
+          student_id: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          parent_email?: string | null
+          student_id?: string
+          used_at?: string | null
+          used_by?: string | null
+        }
+        Relationships: []
+      }
+      parent_links: {
+        Row: {
+          created_at: string
+          id: string
+          parent_id: string
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          parent_id: string
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          parent_id?: string
+          student_id?: string
         }
         Relationships: []
       }
@@ -1644,6 +1757,10 @@ export type Database = {
     Functions: {
       bump_path_plays: { Args: { _path_id: string }; Returns: undefined }
       can_author_teacher_site: { Args: never; Returns: boolean }
+      create_family_chat: {
+        Args: { _include_student: boolean; _student: string; _teacher: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1656,7 +1773,24 @@ export type Database = {
         Args: { _class_id: string; _user_id: string }
         Returns: boolean
       }
+      is_family_chat_member: {
+        Args: { _chat: string; _user: string }
+        Returns: boolean
+      }
+      is_parent_of: {
+        Args: { _parent: string; _student: string }
+        Returns: boolean
+      }
       is_platform_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_teacher_of_student: {
+        Args: { _student: string; _teacher: string }
+        Returns: boolean
+      }
+      parent_can_view_item: {
+        Args: { _class: string; _creator: string }
+        Returns: boolean
+      }
+      redeem_parent_code: { Args: { _code: string }; Returns: string }
     }
     Enums: {
       app_role: "operator" | "moderator" | "staff" | "admin" | "superadmin"
