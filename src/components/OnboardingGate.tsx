@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
+import { QUIZ, STYLES, scoreQuiz, type StyleKey } from "@/lib/learningStyles";
 
 type Option = { value: string; label: string; emoji: string; desc?: string };
 type Question = { key: string; title: string; subtitle?: string; multi?: boolean; options?: Option[]; text?: boolean };
@@ -15,12 +16,7 @@ type Question = { key: string; title: string; subtitle?: string; multi?: boolean
 const QUESTIONS: Question[] = [
   {
     key: "learning_style", title: "Milyen tanulási típus vagy?", subtitle: "Válaszd azt, ami a legjobban illik rád.",
-    options: [
-      { value: "visual", label: "Vizuális", emoji: "👀", desc: "Ábrák, színek, képek, videók" },
-      { value: "auditory", label: "Auditív", emoji: "🎧", desc: "Hallgatás, magyarázat, hangos ismétlés" },
-      { value: "reading", label: "Olvasó / író", emoji: "📖", desc: "Jegyzetelés, szövegek, listák" },
-      { value: "kinesthetic", label: "Mozgásos", emoji: "🤸", desc: "Kipróbálás, gyakorlás, feladatok" },
-    ],
+    options: [...STYLES, { value: "unknown", label: "Nem tudom", emoji: "🤔", desc: "Kitöltök egy 45 kérdéses tesztet" }],
   },
   {
     key: "grade", title: "Hányadikos vagy?",
@@ -79,6 +75,8 @@ const OnboardingGate = () => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string | string[]>>({});
   const [saving, setSaving] = useState(false);
+  const [quiz, setQuiz] = useState<number[] | null>(null);
+  const [quizResult, setQuizResult] = useState<{ top: StyleKey; scores: Record<StyleKey, number> } | null>(null);
 
   useEffect(() => {
     if (loading || !user) { setNeeded(false); return; }
@@ -93,6 +91,7 @@ const OnboardingGate = () => {
   const canNext = q.text || (q.multi ? Array.isArray(val) && val.length > 0 : !!val);
 
   const pick = (v: string) => {
+    if (q.key === "learning_style" && v === "unknown") { setQuiz([]); setQuizResult(null); return; }
     if (q.multi) {
       const cur = Array.isArray(val) ? val : [];
       setAnswers({ ...answers, [q.key]: cur.includes(v) ? cur.filter((x) => x !== v) : [...cur, v] });
@@ -106,6 +105,7 @@ const OnboardingGate = () => {
     if (!user) return;
     setSaving(true);
     const { learning_style, ...rest } = answers;
+    if (quizResult) (rest as Record<string, unknown>).style_scores = quizResult.scores;
     const { error } = await supabase.from("user_onboarding").upsert({
       user_id: user.id, learning_style: String(learning_style), answers: rest, updated_at: new Date().toISOString(),
     });
@@ -116,6 +116,68 @@ const OnboardingGate = () => {
   };
 
   const last = step === QUESTIONS.length - 1;
+
+  if (quiz) {
+    const qi = quiz.length;
+    const answer = (n: number) => {
+      const next = [...quiz, n];
+      if (next.length === QUIZ.length) {
+        const r = scoreQuiz(next);
+        setQuizResult(r);
+        setAnswers((a) => ({ ...a, learning_style: r.top }));
+      }
+      setQuiz(next);
+    };
+    const done = qi >= QUIZ.length;
+    const top = quizResult ? STYLES.find((s) => s.value === quizResult.top)! : null;
+    return (
+      <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur flex items-center justify-center p-4 overflow-y-auto">
+        <div className="w-full max-w-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <Button variant="ghost" size="icon" onClick={() => (qi === 0 || done ? setQuiz(null) : setQuiz(quiz.slice(0, -1)))} aria-label="Vissza"><ArrowLeft className="w-5 h-5" /></Button>
+            <Progress value={(Math.min(qi, QUIZ.length) / QUIZ.length) * 100} className="h-3 flex-1" />
+            <span className="text-xs text-muted-foreground font-bold">{Math.min(qi + 1, QUIZ.length)}/{QUIZ.length}</span>
+          </div>
+          {done && top && quizResult ? (
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
+              <div className="text-center">
+                <div className="text-6xl">{top.emoji}</div>
+                <div className="text-sm text-muted-foreground mt-2">A te tanulási típusod:</div>
+                <h2 className="text-3xl font-extrabold">{top.label}</h2>
+                <p className="text-muted-foreground mt-1">{top.desc}</p>
+              </div>
+              <div className="mt-6 space-y-2">
+                {[...STYLES].sort((x, y) => quizResult.scores[y.value] - quizResult.scores[x.value]).map((s) => (
+                  <div key={s.value} className="flex items-center gap-2 text-sm">
+                    <span className="w-6">{s.emoji}</span>
+                    <span className="w-44 truncate">{s.label}</span>
+                    <Progress value={quizResult.scores[s.value]} className="h-2 flex-1" />
+                    <span className="w-10 text-right font-bold">{quizResult.scores[s.value]}%</span>
+                  </div>
+                ))}
+              </div>
+              <Button className="w-full rounded-full mt-6" onClick={() => { setQuiz(null); setStep(1); }}>Tovább<ArrowRight className="w-4 h-4 ml-1" /></Button>
+            </motion.div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div key={qi} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.15 }}>
+                <div className="text-sm font-bold text-primary mb-2">Mennyire igaz rád?</div>
+                <h2 className="text-2xl font-extrabold min-h-[4rem]">{QUIZ[qi].text}</h2>
+                <div className="grid grid-cols-3 gap-3 mt-6">
+                  {[["Nem igaz", "🙅", 0], ["Részben", "🤷", 1], ["Igaz", "🙋", 2]].map(([l, e, n]) => (
+                    <motion.button key={l as string} whileTap={{ scale: 0.95 }} onClick={() => answer(n as number)}
+                      className="rounded-2xl border-2 border-b-4 border-border hover:bg-muted p-4 text-center">
+                      <div className="text-3xl">{e}</div><div className="font-bold mt-1 text-sm">{l}</div>
+                    </motion.button>
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[100] bg-background/95 backdrop-blur flex items-center justify-center p-4 overflow-y-auto">
