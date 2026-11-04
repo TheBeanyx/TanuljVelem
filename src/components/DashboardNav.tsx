@@ -59,6 +59,23 @@ const baseNavItems = [
       { to: "/classes", label: "Osztály", icon: Users },
       { to: "/announcements", label: "Közlemények", icon: Megaphone },
       { to: "/study-groups", label: "Tanulócsoportok", icon: Users2 },
+      { to: "/family-chats", label: "Szülői üzenetek", icon: Users },
+    ],
+  },
+];
+
+// Parents only follow their child's work, so they get a reduced menu
+const parentNavItems: typeof baseNavItems = [
+  { to: "/parent", label: "Gyermekem", icon: Users, badgeKey: null },
+  {
+    to: "/family-chats",
+    label: "Üzenetek",
+    icon: MessageSquare,
+    badgeKey: "messages" as const,
+    dropdown: [
+      { to: "/family-chats", label: "Tanári beszélgetések", icon: Users },
+      { to: "/messages", label: "Privát üzenetek", icon: MessageSquare },
+      { to: "/announcements", label: "Közlemények", icon: Megaphone },
     ],
   },
 ];
@@ -87,7 +104,7 @@ const DashboardNav = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const { counts } = useUnreadCounts();
-  const navItems = profile?.role === "teacher" ? [...baseNavItems, {
+  const navItems = profile?.role === "parent" ? parentNavItems : profile?.role === "teacher" ? [...baseNavItems, {
     to: "/teacher/editor", label: "Tanár", icon: GraduationCap, badgeKey: null,
     dropdown: [{ to: "/teacher/editor", label: "Weboldal szerkesztő", icon: NotebookPen }],
   }] : baseNavItems;

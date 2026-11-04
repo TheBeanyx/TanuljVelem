@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import RichMarkdown from "@/components/RichMarkdown";
+import ReactMarkdown from "react-markdown";
 import { fetchLinkedChildren, fetchProfiles, fetchStudentTeachers, type Person } from "@/lib/familyData";
 
 type Chat = { id: string; parent_id: string; student_id: string; teacher_id: string; include_student: boolean; created_at: string };
@@ -147,7 +147,7 @@ const FamilyChats = ({ onlyStudentId }: { onlyStudentId?: string }) => {
                   <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[85%] rounded-2xl px-3 py-2 break-words ${mine ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                       {!mine && <p className="text-[11px] font-bold opacity-80 mb-0.5">{name(m.sender_id)} <Badge variant="secondary" className="text-[10px] px-1 py-0 ml-1">{roleTag(m.sender_id, selected)}</Badge></p>}
-                      <div className="text-sm"><RichMarkdown content={m.text} /></div>
+                      <div className="text-sm [&_p]:my-0 [&_a]:underline [&_strong]:font-bold"><ReactMarkdown>{m.text}</ReactMarkdown></div>
                       <p className="text-[10px] opacity-60 mt-0.5 text-right">{new Date(m.created_at).toLocaleString("hu-HU", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</p>
                     </div>
                   </div>
