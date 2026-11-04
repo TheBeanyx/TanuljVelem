@@ -43,6 +43,13 @@
       "when": 1793735484656,
       "tag": "0005_parent_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793814895490,
+      "tag": "0006_allow_parent_role",
+      "breakpoints": true
     }
   ]
 }
