@@ -95,6 +95,9 @@ const Dashboard = () => {
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const isTeacher = profile?.role === "teacher";
+  const navigateTo = useNavigate();
+  // Parent accounts have their own overview page
+  useEffect(() => { if (profile?.role === "parent") navigateTo("/parent", { replace: true }); }, [profile?.role]);
 
   const fetchMyClasses = async () => {
     if (!user) return;

@@ -69,7 +69,7 @@ const QUESTIONS: Question[] = [
 const HIDDEN = ["/", "/login", "/register", "/forgot-password", "/reset-password"];
 
 const OnboardingGate = () => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const { pathname } = useLocation();
   const [needed, setNeeded] = useState(false);
   const [step, setStep] = useState(0);
@@ -84,7 +84,8 @@ const OnboardingGate = () => {
       .then(({ data, error }) => { if (!error) setNeeded(!data); });
   }, [user, loading]);
 
-  if (!needed || HIDDEN.includes(pathname) || /^\/learn\/[^/]+/.test(pathname)) return null;
+  // The learning-style questions are for students and teachers, not parents
+  if (!needed || profile?.role === "parent" || HIDDEN.includes(pathname) || /^\/learn\/[^/]+/.test(pathname)) return null;
 
   const q = QUESTIONS[step];
   const val = answers[q.key];

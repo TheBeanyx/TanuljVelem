@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ParentLinkCard from "@/components/ParentLinkCard";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -318,6 +319,7 @@ const Profile = () => {
 
 
           <TabsContent value="settings" className="space-y-6">
+            {profile?.role === "student" && <ParentLinkCard />}
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-4 mb-6">
                 <Avatar className="w-16 h-16 ring-2 ring-primary/20">
@@ -328,7 +330,7 @@ const Profile = () => {
                 </Avatar>
                 <div>
                   <p className="font-bold text-lg">{profile?.username || "..."}</p>
-                  <p className="text-sm text-muted-foreground">{profile?.role === "teacher" ? "Tanár" : "Diák"}</p>
+                  <p className="text-sm text-muted-foreground">{profile?.role === "teacher" ? "Tanár" : profile?.role === "parent" ? "Szülő" : "Diák"}</p>
                 </div>
               </div>
 

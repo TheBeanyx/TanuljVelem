@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
-  const [role, setRole] = useState<"student" | "teacher">("student");
+  const [role, setRole] = useState<"student" | "teacher" | "parent">("student");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -72,17 +72,20 @@ const Register = () => {
           <div>
             <Label className="font-semibold mb-3 block">Ki vagy?</Label>
             <div className="flex gap-3">
-              {(["student", "teacher"] as const).map((r) => (
+              {(["student", "teacher", "parent"] as const).map((r) => (
                 <button
                   key={r}
                   type="button"
                   onClick={() => setRole(r)}
-                  className={`flex-1 py-3 rounded-xl border-2 font-bold transition-all ${role === r ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                  className={`flex-1 py-3 px-1 rounded-xl border-2 font-bold text-sm sm:text-base transition-all ${role === r ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
                 >
-                  {r === "student" ? "🎓 Diák" : "👨‍🏫 Tanár"}
+                  {r === "student" ? "🎓 Diák" : r === "teacher" ? "👨‍🏫 Tanár" : "👪 Szülő"}
                 </button>
               ))}
             </div>
+            {role === "parent" && (
+              <p className="text-xs text-muted-foreground mt-2">Szülőként a gyermeked által küldött kóddal láthatod a házijait, dolgozatait és teszteredményeit.</p>
+            )}
           </div>
 
           <div>

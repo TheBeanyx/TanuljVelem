@@ -43,6 +43,8 @@ import GlobalPomodoro from "@/components/GlobalPomodoro";
 import OnboardingGate from "@/components/OnboardingGate";
 import TeacherEditor from "@/pages/TeacherEditor";
 import PublishedTeacherSite from "@/pages/PublishedTeacherSite";
+import ParentDashboard from "@/pages/ParentDashboard";
+import FamilyChatsPage from "@/pages/FamilyChatsPage";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +102,8 @@ const App = () => (
             <Route path="/rules" element={<Rules />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/study-groups" element={<StudyGroups />} />
+            <Route path="/parent" element={<ParentDashboard />} />
+            <Route path="/family-chats" element={<FamilyChatsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <AssistantGate />
