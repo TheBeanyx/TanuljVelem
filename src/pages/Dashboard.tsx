@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { BookOpen, FileText, Plus, Edit, Trash2, Clock, X, Share2, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
