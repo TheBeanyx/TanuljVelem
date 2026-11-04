@@ -1199,6 +1199,159 @@ export type Database = {
         }
         Relationships: []
       }
+      school_announcements: {
+        Row: {
+          author_id: string
+          created_at: string
+          id: string
+          message: string
+          pinned: boolean
+          school_id: string
+          title: string | null
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          id?: string
+          message: string
+          pinned?: boolean
+          school_id: string
+          title?: string | null
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          id?: string
+          message?: string
+          pinned?: boolean
+          school_id?: string
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_announcements_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_join_codes: {
+        Row: {
+          code: string
+          created_at: string
+          expires_at: string
+          id: string
+          student_id: string
+          used_at: string | null
+          used_for_school: string | null
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          student_id: string
+          used_at?: string | null
+          used_for_school?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          student_id?: string
+          used_at?: string | null
+          used_for_school?: string | null
+        }
+        Relationships: []
+      }
+      school_members: {
+        Row: {
+          added_by: string | null
+          id: string
+          joined_at: string
+          member_role: string
+          school_id: string
+          user_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          id?: string
+          joined_at?: string
+          member_role: string
+          school_id: string
+          user_id: string
+        }
+        Update: {
+          added_by?: string | null
+          id?: string
+          joined_at?: string
+          member_role?: string
+          school_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_members_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      school_principals: {
+        Row: {
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "school_principals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      schools: {
+        Row: {
+          city: string | null
+          created_at: string
+          id: string
+          name: string
+          principal_id: string
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          principal_id: string
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          principal_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       study_group_members: {
         Row: {
           group_id: string
@@ -1755,8 +1908,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_school_member: {
+        Args: { _code?: string; _school: string; _username: string }
+        Returns: string
+      }
       bump_path_plays: { Args: { _path_id: string }; Returns: undefined }
       can_author_teacher_site: { Args: never; Returns: boolean }
+      can_post_school_announcement: {
+        Args: { _school: string; _user: string }
+        Returns: boolean
+      }
       create_family_chat: {
         Args: { _include_student: boolean; _student: string; _teacher: string }
         Returns: string
@@ -1782,6 +1943,15 @@ export type Database = {
         Returns: boolean
       }
       is_platform_staff: { Args: { _user_id: string }; Returns: boolean }
+      is_principal: { Args: { _user: string }; Returns: boolean }
+      is_school_member: {
+        Args: { _school: string; _user: string }
+        Returns: boolean
+      }
+      is_school_principal: {
+        Args: { _school: string; _user: string }
+        Returns: boolean
+      }
       is_teacher_of_student: {
         Args: { _student: string; _teacher: string }
         Returns: boolean
