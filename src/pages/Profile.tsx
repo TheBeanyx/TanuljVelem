@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ParentLinkCard from "@/components/ParentLinkCard";
+import SchoolCodeCard from "@/components/SchoolCodeCard";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -320,6 +321,7 @@ const Profile = () => {
 
           <TabsContent value="settings" className="space-y-6">
             {profile?.role === "student" && <ParentLinkCard />}
+            {profile?.role === "student" && <SchoolCodeCard />}
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center gap-4 mb-6">
                 <Avatar className="w-16 h-16 ring-2 ring-primary/20">

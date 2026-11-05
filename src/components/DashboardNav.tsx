@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, CalendarRange, Image as ImageIcon, MoreHorizontal, Footprints } from "lucide-react";
+import { GraduationCap, BookOpen, Gamepad2, ClipboardList, Users, UserPlus, Bell, LogOut, MessageSquare, Megaphone, Sparkles, Brain, FileText, Trophy, NotebookPen, Bot, Flame, Library, StickyNote, Timer, Users2, CalendarDays, CalendarRange, Image as ImageIcon, MoreHorizontal, Footprints, School } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -60,6 +60,7 @@ const baseNavItems = [
       { to: "/announcements", label: "Közlemények", icon: Megaphone },
       { to: "/study-groups", label: "Tanulócsoportok", icon: Users2 },
       { to: "/family-chats", label: "Szülői üzenetek", icon: Users },
+      { to: "/school", label: "Iskola", icon: School },
     ],
   },
 ];
@@ -76,6 +77,7 @@ const parentNavItems: typeof baseNavItems = [
       { to: "/family-chats", label: "Tanári beszélgetések", icon: Users },
       { to: "/messages", label: "Privát üzenetek", icon: MessageSquare },
       { to: "/announcements", label: "Közlemények", icon: Megaphone },
+      { to: "/school", label: "Iskola", icon: School },
     ],
   },
 ];
@@ -106,7 +108,10 @@ const DashboardNav = () => {
   const { counts } = useUnreadCounts();
   const navItems = profile?.role === "parent" ? parentNavItems : profile?.role === "teacher" ? [...baseNavItems, {
     to: "/teacher/editor", label: "Tanár", icon: GraduationCap, badgeKey: null,
-    dropdown: [{ to: "/teacher/editor", label: "Weboldal szerkesztő", icon: NotebookPen }],
+    dropdown: [
+      { to: "/teacher/editor", label: "Weboldal szerkesztő", icon: NotebookPen },
+      { to: "/school", label: "Iskola", icon: School },
+    ],
   }] : baseNavItems;
 
   const navRef = useRef<HTMLElement | null>(null);
