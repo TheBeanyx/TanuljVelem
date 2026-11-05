@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Register = () => {
   const [role, setRole] = useState<"student" | "teacher" | "parent">("student");
+  const [isPrincipal, setIsPrincipal] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -39,6 +40,7 @@ const Register = () => {
           username,
           display_name: displayName || username,
           role,
+          is_principal: role === "teacher" && isPrincipal ? "true" : "false",
         },
       },
     });
@@ -83,6 +85,15 @@ const Register = () => {
                 </button>
               ))}
             </div>
+            {role === "teacher" && (
+              <label className="mt-3 flex items-start gap-3 rounded-xl border-2 border-border p-3 cursor-pointer hover:border-primary/50">
+                <input type="checkbox" checked={isPrincipal} onChange={(e) => setIsPrincipal(e.target.checked)} className="mt-1 accent-primary" />
+                <span>
+                  <span className="font-bold block">🏫 Igazgató vagyok</span>
+                  <span className="text-xs text-muted-foreground">Iskolát hozhatsz létre, tagokat vehetsz fel, és iskolai bejelentéseket tehetsz közzé.</span>
+                </span>
+              </label>
+            )}
             {role === "parent" && (
               <p className="text-xs text-muted-foreground mt-2">Szülőként a gyermeked által küldött kóddal láthatod a házijait, dolgozatait és teszteredményeit.</p>
             )}
