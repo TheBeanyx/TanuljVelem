@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, Send, X, Sparkles, Loader2 } from "lucide-react";
+import { Bot, Send, X, Sparkles, Loader2, Headphones, KeyRound } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,9 +9,9 @@ import { supabase } from "@/integrations/supabase/client";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
-
-const AiAssistant = () => {
+const AiAssistant = ({ mode = "learning" }: { mode?: "learning" | "support" }) => {
+  const isSupport = mode === "support";
+  const chatUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${isSupport ? "support-chat" : "ai-assistant"}`;
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -44,14 +45,14 @@ const AiAssistant = () => {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData.session?.access_token;
-      const resp = await fetch(CHAT_URL, {
+      const resp = await fetch(chatUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
-        body: JSON.stringify({ messages: allMessages }),
+        body: JSON.stringify({ messages: allMessages.slice(-20) }),
       });
 
       if (!resp.ok || !resp.body) {
@@ -77,14 +78,18 @@ const AiAssistant = () => {
           if (!line.startsWith("data: ")) continue;
           const jsonStr = line.slice(6).trim();
           if (jsonStr === "[DONE]") break;
+          let parsed;
           try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content;
-            if (content) upsertAssistant(content);
+            parsed = JSON.parse(jsonStr);
           } catch {
             textBuffer = line + "\n" + textBuffer;
             break;
           }
+          if (parsed.error || parsed.type === "error") {
+            throw new Error("A válasz megszakadt. Próbáld újra később.");
+          }
+          const content = parsed.choices?.[0]?.delta?.content;
+          if (content) upsertAssistant(content);
         }
       }
     } catch (e: any) {
@@ -107,9 +112,11 @@ const AiAssistant = () => {
           >
             <Button
               onClick={() => setOpen(true)}
-              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full shadow-xl bg-primary hover:bg-primary/90 p-0"
+              aria-label={isSupport ? "Support – segítség az oldal használatához" : "AI tanulási segítő"}
+              title={isSupport ? "Support" : "AI tanulási segítő"}
+              className={`${isSupport ? "h-12 sm:h-14 px-4 gap-2" : "w-12 h-12 sm:w-14 sm:h-14 p-0"} rounded-full shadow-xl bg-primary hover:bg-primary/90`}
             >
-              <Bot className="w-5 h-5 sm:w-6 sm:h-6" />
+              {isSupport ? <><Headphones className="w-5 h-5" /><span>Support</span></> : <Bot className="w-5 h-5 sm:w-6 sm:h-6" />}
             </Button>
           </motion.div>
         )}
@@ -126,9 +133,9 @@ const AiAssistant = () => {
           >
             {/* Header */}
             <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-primary/5">
-              <Sparkles className="w-5 h-5 text-primary" />
-              <span className="font-bold text-sm flex-1">TanuljVelem AI</span>
-              <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setOpen(false)}>
+              {isSupport ? <Headphones className="w-5 h-5 text-primary" /> : <Sparkles className="w-5 h-5 text-primary" />}
+              <span className="font-bold text-sm flex-1">{isSupport ? "TanuljVelem Support" : "TanuljVelem AI"}</span>
+              <Button variant="ghost" size="icon" aria-label="Beszélgetés bezárása" className="w-7 h-7" onClick={() => setOpen(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </div>
@@ -137,15 +144,15 @@ const AiAssistant = () => {
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {messages.length === 0 && (
                 <div className="text-center text-muted-foreground text-sm py-8">
-                  <Bot className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                  {isSupport ? <Headphones className="w-10 h-10 mx-auto mb-2 opacity-30" /> : <Bot className="w-10 h-10 mx-auto mb-2 opacity-30" />}
                   <p>Szia! 👋 Miben segíthetek?</p>
-                  <p className="text-xs mt-1">Kérdezz bármit a tanulásról!</p>
+                  <p className="text-xs mt-1">{isSupport ? "Bejelentkezés, regisztráció vagy az oldal használata?" : "Kérdezz bármit a tanulásról!"}</p>
                 </div>
               )}
               {messages.map((m, i) => (
                 <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
+                    className={`min-w-0 break-words max-w-[85%] px-3 py-2 rounded-2xl text-sm ${
                       m.role === "user"
                         ? "bg-primary text-primary-foreground rounded-br-md"
                         : "bg-muted text-foreground rounded-bl-md"
@@ -170,11 +177,20 @@ const AiAssistant = () => {
             </div>
 
             {/* Input */}
-            <div className="p-3 border-t border-border flex gap-2">
+            {isSupport && (
+              <div className="px-3 pt-2 border-t border-border">
+                <Button asChild variant="ghost" size="sm" className="text-primary gap-2">
+                  <Link to="/forgot-password" onClick={() => setOpen(false)}><KeyRound className="w-4 h-4" />Elfelejtett jelszó</Link>
+                </Button>
+              </div>
+            )}
+            <div className={`p-3 ${isSupport ? "" : "border-t border-border"} flex gap-2`}>
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Írj egy kérdést..."
+                aria-label="Üzenet az AI-segítőnek"
+                maxLength={4000}
                 rows={1}
                 className="resize-none rounded-xl text-sm min-h-[38px] max-h-[100px]"
                 onKeyDown={(e) => {
@@ -184,7 +200,7 @@ const AiAssistant = () => {
                   }
                 }}
               />
-              <Button onClick={send} disabled={loading || !input.trim()} size="icon" className="rounded-xl shrink-0">
+              <Button onClick={send} aria-label="Üzenet küldése" disabled={loading || !input.trim()} size="icon" className="rounded-xl shrink-0">
                 <Send className="w-4 h-4" />
               </Button>
             </div>
