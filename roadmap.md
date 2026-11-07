@@ -1,4 +1,7 @@
 # Tasks
+- [ ] Replace the signed-out homepage assistant with public platform support; keep signed-in assistance unchanged.
+- [ ] Add safe forgotten-email recovery with an emailed confirmation link and verify password reset.
+- [ ] Verify public support and recovery screens; report any email delivery prerequisite.
 - [x] Expand the visual teacher editor with site styling, per-element sizing/colors, safe embeds and multiple pages.
 - [x] Verify legacy draft compatibility, page navigation, design settings and embedding restrictions (9 tests and browser check passed; external provider content depends on public sharing).
 - [x] Restore the embedded Pomodoro on return, show music choices on its page, and verify automatic floating navigation (8 tests and browser round-trip passed).
