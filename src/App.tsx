@@ -46,13 +46,17 @@ import PublishedTeacherSite from "@/pages/PublishedTeacherSite";
 import ParentDashboard from "@/pages/ParentDashboard";
 import SchoolPage from "@/pages/SchoolPage";
 import FamilyChatsPage from "@/pages/FamilyChatsPage";
+import { useAuth } from "@/hooks/useAuth";
+import { assistantMode } from "@/lib/assistantMode";
 
 const queryClient = new QueryClient();
 
 // The quick AI helper is hidden in the focused step-by-step learning mode
 const AssistantGate = () => {
   const { pathname } = useLocation();
-  return pathname.startsWith("/path") ? null : <AiAssistant />;
+  const { user, loading } = useAuth();
+  const mode = assistantMode(pathname, Boolean(user), loading);
+  return mode === "hidden" ? null : <AiAssistant key={mode} mode={mode} />;
 };
 
 const AppShell = () => {
